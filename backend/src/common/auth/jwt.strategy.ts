@@ -9,7 +9,7 @@ export class JwtHelper {
     return this.jwtService.sign(payload, { expiresIn });
   }
 
-  async verify<T = any>(token: string): Promise<T> {
+  async verify<T extends object = any>(token: string): Promise<T> {
     return this.jwtService.verify<T>(token);
   }
 }

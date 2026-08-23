@@ -17,8 +17,11 @@ data class FeedItemDto(
     val text: String,
     val type: ContentType,
     val author: String?,
+    val sourceUrl: String? = null,
     val categories: List<String> = emptyList(),
     val source: ApiSource,
+    val favorite: Boolean = false,
+    val updatedAt: String? = null,
 )
 
 data class AuthAnonymousRequest(
@@ -35,6 +38,16 @@ data class AuthAnonymousResponse(
     val userId: String,
 )
 
+data class AuthRefreshRequest(
+    val refreshToken: String,
+)
+
+data class AuthRefreshResponse(
+    val accessToken: String,
+    val expiresIn: Int,
+    val tokenType: String,
+)
+
 data class ContentListResponse(val items: List<UserContentResponse>?)
 
 data class UserContentResponse(
@@ -43,6 +56,41 @@ data class UserContentResponse(
     val favorite: Boolean,
     val archived: Boolean,
     val contentItem: FeedItemDto,
+)
+
+data class IngestUrlRequest(
+    val url: String,
+    val contextText: String? = null,
+)
+
+data class IngestUrlResponse(
+    val id: String,
+    val status: String,
+    val processingStage: String? = null,
+    val caption: String? = null,
+    val transcript: String? = null,
+    val ocrText: String? = null,
+    val takeaways: List<DerivedTakeawayDto>? = null,
+    val extractionConfidence: Double? = null,
+    val moderationStatus: String? = null,
+    val errorCode: String? = null,
+    val errorMessage: String? = null,
+    val contentItem: IngestedContentDto? = null,
+)
+
+data class DerivedTakeawayDto(
+    val text: String,
+    val type: String,
+    val confidence: Double,
+)
+
+data class IngestedContentDto(
+    val id: String,
+    val text: String,
+    val type: ContentType,
+    val author: String?,
+    val sourceUrl: String?,
+    val sourcePlatform: String?,
 )
 
 data class PreferenceResponse(
@@ -61,3 +109,25 @@ data class EventPayload(
 
 
 data class EventBatchRequest(val events: List<EventPayload>)
+
+data class EntitlementResponse(
+    val plan: String,
+    val isAnonymous: Boolean,
+    val email: String? = null,
+    val saveCount: Int,
+    val saveLimit: Int? = null,
+    val socialImportsUsed: Int,
+    val socialImportLimit: Int,
+    val accountPromptRecommended: Boolean,
+    val plusExpiresAt: String? = null,
+)
+
+data class EmailOtpRequest(val email: String)
+data class EmailOtpVerifyRequest(val email: String, val code: String)
+data class EmailOtpResponse(
+    val sent: Boolean,
+    val expiresInSeconds: Int,
+    val devCode: String? = null,
+)
+data class EmailOtpVerifyResponse(val verified: Boolean, val email: String, val plan: String)
+data class GooglePlayPurchaseRequest(val purchaseToken: String, val productId: String)

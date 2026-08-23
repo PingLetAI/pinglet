@@ -46,6 +46,7 @@ enum IngestionStatus {
   PROCESSING
   READY
   FAILED
+  REJECTED
 }
 
 enum EventType {
@@ -82,21 +83,49 @@ enum PendingActionType {
   IMPRESSION_BATCH
 }
 
+enum AccountPlan {
+  GUEST
+  FREE
+  PLUS
+}
+
 model User {
   id            String             @id @default(uuid())
   installationId String?            @unique
   isAnonymous   Boolean            @default(true)
+  email         String?            @unique
+  emailVerifiedAt DateTime?
+  plan          AccountPlan        @default(GUEST)
+  plusExpiresAt DateTime?
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
 
   devices       Device[]
   refreshTokens RefreshToken[]
   userContents  UserContent[]
-  catalogPrefs  UserCatalogPreference[]
+  catalogPrefs  UserCatalogPreference[] @relation("UserCatalogPreference")
+  favorites     Favorite[] @relation("UserFavorite")
   preferences   UserPreference?
   ingestions    Ingestion[]
   events        Event[]
   pendingActions PendingAction[]
+  purchases     PurchaseEntitlement[]
+}
+
+model PurchaseEntitlement {
+  id            String   @id @default(uuid())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  provider      String
+  productId     String
+  purchaseToken String   @unique
+  status        String
+  expiresAt     DateTime?
+  rawData       Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId, status])
 }
 
 model Device {
@@ -149,6 +178,7 @@ model ContentItem {
   events         Event[]
   favorites      Favorite[]
   queues         QueueItem[]
+  ingestions     Ingestion[]
 }
 
 model Category {
@@ -180,7 +210,8 @@ model Catalog {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
-  items CatalogItem[]
+  items               CatalogItem[]
+  userCatalogSettings UserCatalogPreference[] @relation("CatalogUserCatalogPreference")
 }
 
 model CatalogItem {
@@ -211,9 +242,9 @@ model UserContent {
 }
 
 model UserCatalogPreference {
-  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User   @relation("UserCatalogPreference", fields: [userId], references: [id], onDelete: Cascade)
   userId     String
-  catalog    Catalog @relation(fields: [catalogId], references: [id], onDelete: Cascade)
+  catalog    Catalog @relation("CatalogUserCatalogPreference", fields: [catalogId], references: [id], onDelete: Cascade)
   catalogId  String
   enabled    Boolean @default(true)
   weight     Float   @default(1)
@@ -233,16 +264,36 @@ model UserPreference {
 }
 
 model Ingestion {
-  id         String         @id @default(uuid())
-  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId     String
-  type       IngestionType
-  rawText    String?
-  sourceUrl  String?
-  assetUrl   String?
-  status     IngestionStatus @default(RECEIVED)
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
+  id                   String          @id @default(uuid())
+  user                 User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId               String
+  type                 IngestionType
+  rawText              String?
+  sourceUrl            String?
+  sourcePlatform       String?
+  assetUrl             String?
+  status               IngestionStatus @default(RECEIVED)
+  processingStage      String           @default("QUEUED")
+  caption              String?
+  transcript           String?
+  ocrText              String?
+  sourceDocument       String?
+  takeaways            Json?
+  frameReferences      Json?
+  extractionConfidence Float?
+  moderationStatus     String           @default("PENDING")
+  moderationResult     Json?
+  errorCode            String?
+  errorMessage         String?
+  contentItem          ContentItem?     @relation(fields: [contentItemId], references: [id], onDelete: SetNull)
+  contentItemId        String?
+  startedAt            DateTime?
+  finishedAt           DateTime?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
 }
 
 model Event {
@@ -261,7 +312,7 @@ model Event {
 model Favorite {
   id String @id @default(uuid())
   userId String
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation("UserFavorite", fields: [userId], references: [id], onDelete: Cascade)
   contentItemId String
   contentItem ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())

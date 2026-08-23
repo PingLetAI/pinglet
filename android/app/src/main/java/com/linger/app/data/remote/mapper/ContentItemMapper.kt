@@ -9,6 +9,9 @@ fun FeedItemDto.toDomain(): ContentItem = ContentItem(
     text = text,
     type = type,
     author = author,
+    sourceUrl = sourceUrl,
     categories = categories,
     source = if (source.name == "SYSTEM") ContentSource.SYSTEM else ContentSource.PERSONAL,
+    favorite = favorite,
+    updatedAt = updatedAt,
 )

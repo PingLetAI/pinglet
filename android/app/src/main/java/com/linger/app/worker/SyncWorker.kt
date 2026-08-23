@@ -13,7 +13,7 @@ class SyncWorker(context: Context, parameters: WorkerParameters) : CoroutineWork
 
     override suspend fun doWork(): Result = withContext(ioDispatcher) {
         try {
-            SyncScheduler.refreshWidget(applicationContext)
+            SyncScheduler.syncAndRefresh(applicationContext)
             Result.success()
         } catch (_: Exception) {
             Result.retry()

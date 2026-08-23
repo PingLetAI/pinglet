@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Linger</string>
+    <string name="favorite">Favorite</string>
+    <string name="next">Next</string>
+    <string name="widget_name">Linger</string>
+    <string name="widget_update_action">Update widget content</string>
+    <style name="Theme.Linger" parent="Theme.Material3.DayNight.NoActionBar"/>
+</resources>

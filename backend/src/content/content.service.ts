@@ -1,12 +1,16 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { EntitlementService } from '../entitlements/entitlement.service';
 
 @Injectable()
 export class ContentService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly entitlements: EntitlementService,
+  ) {}
 
   async listUserContent(userId: string, includeArchived = false) {
-    return this.prisma.userContent.findMany({
+    const rows = await this.prisma.userContent.findMany({
       where: {
         userId,
         archived: includeArchived ? undefined : false,
@@ -21,9 +25,27 @@ export class ContentService {
         },
       },
     });
+    return rows.map((row) => ({
+      id: row.id,
+      contentItemId: row.contentItemId,
+      favorite: row.favorite,
+      archived: row.archived,
+      contentItem: {
+        id: row.contentItem.id,
+        text: row.contentItem.text,
+        type: row.contentItem.type,
+        author: row.contentItem.author,
+        sourceUrl: row.contentItem.sourceUrl,
+        categories: row.contentItem.categories.map((entry) => entry.category.slug),
+        source: 'PERSONAL' as const,
+        favorite: row.favorite,
+        updatedAt: row.contentItem.updatedAt.toISOString(),
+      },
+    }));
   }
 
   async createUserContent(userId: string, payload: any) {
+    if (!payload?.skipEntitlementCheck) await this.entitlements.assertCanSave(userId);
     const rawText = `${payload?.text ?? ''}`.trim();
     if (!rawText) throw new BadRequestException('text is required');
 
@@ -54,6 +76,8 @@ export class ContentService {
           text: rawText,
           type: textType,
           author: payload.author,
+          sourceUrl: payload.sourceUrl,
+          sourcePlatform: payload.sourcePlatform,
           visibility: 'PRIVATE',
           ownerUserId: userId,
           normalizedText: normalized,
@@ -96,6 +120,146 @@ export class ContentService {
         },
       },
     });
+  }
+
+  async ingestUrl(userId: string, payload: any) {
+    const sourceUrl = this.parseSupportedUrl(`${payload?.url ?? ''}`);
+    const sourcePlatform = this.platformFor(sourceUrl.hostname);
+    const ingestion = await this.prisma.ingestion.create({
+      data: { userId, type: 'URL', sourceUrl: sourceUrl.toString(), rawText: payload?.contextText, status: 'RECEIVED' },
+    });
+
+    try {
+      await this.prisma.ingestion.update({ where: { id: ingestion.id }, data: { status: 'PROCESSING' } });
+      const metadata = await this.readPublicMetadata(sourceUrl);
+      const contextText = this.stripUrls(`${payload?.contextText ?? ''}`);
+      const takeaway = this.extractTakeaway(metadata.description || contextText || metadata.title);
+      if (!takeaway) {
+        throw new BadRequestException('This post is private or its text is unavailable. Add the takeaway manually and keep the link as its source.');
+      }
+      this.assertBaselinePolicy(takeaway);
+
+      const saved = await this.createUserContent(userId, {
+        text: takeaway,
+        type: 'QUOTE',
+        author: metadata.author || sourcePlatform,
+        sourceUrl: metadata.canonicalUrl || sourceUrl.toString(),
+        sourcePlatform,
+        categories: ['social-save'],
+        priority: 2,
+      });
+      await this.prisma.ingestion.update({ where: { id: ingestion.id }, data: { status: 'READY' } });
+
+      return {
+        ingestionId: ingestion.id,
+        status: 'READY',
+        item: {
+          id: saved?.contentItem.id,
+          text: saved?.contentItem.text,
+          type: saved?.contentItem.type,
+          author: saved?.contentItem.author,
+          sourceUrl: saved?.contentItem.sourceUrl,
+          sourcePlatform: saved?.contentItem.sourcePlatform,
+        },
+      };
+    } catch (error) {
+      await this.prisma.ingestion.update({ where: { id: ingestion.id }, data: { status: 'FAILED' } });
+      if (error instanceof BadRequestException) throw error;
+      throw new BadRequestException('The public post could not be read. Add its takeaway manually and keep the link as its source.');
+    }
+  }
+
+  private parseSupportedUrl(value: string) {
+    let parsed: URL;
+    try {
+      parsed = new URL(value.trim());
+    } catch {
+      throw new BadRequestException('A valid Instagram, TikTok, or Facebook link is required');
+    }
+    if (parsed.protocol !== 'https:' || !this.platformFor(parsed.hostname, false)) {
+      throw new BadRequestException('Only HTTPS links from Instagram, TikTok, and Facebook are currently supported');
+    }
+    parsed.hash = '';
+    return parsed;
+  }
+
+  private platformFor(hostname: string, required = true) {
+    const host = hostname.toLowerCase().replace(/^www\./, '');
+    if (host === 'instagram.com' || host.endsWith('.instagram.com')) return 'INSTAGRAM';
+    if (host === 'tiktok.com' || host.endsWith('.tiktok.com')) return 'TIKTOK';
+    if (host === 'facebook.com' || host.endsWith('.facebook.com') || host === 'fb.watch') return 'FACEBOOK';
+    if (required) throw new BadRequestException('Unsupported social platform');
+    return null;
+  }
+
+  private async readPublicMetadata(initialUrl: URL) {
+    let current = initialUrl;
+    for (let redirects = 0; redirects <= 3; redirects += 1) {
+      this.parseSupportedUrl(current.toString());
+      const response = await fetch(current, {
+        redirect: 'manual',
+        signal: AbortSignal.timeout(8000),
+        headers: {
+          'user-agent': 'Mozilla/5.0 (compatible; LingerLinkPreview/1.0)',
+          accept: 'text/html,application/xhtml+xml',
+        },
+      });
+      if (response.status >= 300 && response.status < 400) {
+        const location = response.headers.get('location');
+        if (!location) break;
+        current = new URL(location, current);
+        continue;
+      }
+      if (!response.ok) throw new Error(`source returned ${response.status}`);
+      const html = (await response.text()).slice(0, 1_000_000);
+      return {
+        title: this.meta(html, 'og:title') || this.meta(html, 'twitter:title'),
+        description: this.meta(html, 'og:description') || this.meta(html, 'twitter:description') || this.meta(html, 'description'),
+        author: this.meta(html, 'author'),
+        canonicalUrl: this.meta(html, 'og:url') || current.toString(),
+      };
+    }
+    throw new Error('too many redirects');
+  }
+
+  private meta(html: string, key: string) {
+    const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const patterns = [
+      new RegExp(`<meta[^>]+(?:property|name)=["']${escaped}["'][^>]+content=["']([^"']+)["']`, 'i'),
+      new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']${escaped}["']`, 'i'),
+    ];
+    for (const pattern of patterns) {
+      const value = html.match(pattern)?.[1];
+      if (value) return this.decodeHtml(value).trim();
+    }
+    return '';
+  }
+
+  private decodeHtml(value: string) {
+    return value
+      .replace(/&quot;/gi, '"').replace(/&#39;|&apos;/gi, "'")
+      .replace(/&amp;/gi, '&').replace(/&lt;/gi, '<').replace(/&gt;/gi, '>')
+      .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)));
+  }
+
+  private stripUrls(value: string) {
+    return value.replace(/https?:\/\/\S+/gi, '').replace(/\s+/g, ' ').trim();
+  }
+
+  private extractTakeaway(value: string) {
+    const clean = this.decodeHtml(`${value || ''}`)
+      .replace(/\s+/g, ' ')
+      .replace(/^.*? on (Instagram|TikTok|Facebook):\s*/i, '')
+      .trim();
+    if (clean.length < 12) return '';
+    const sentence = clean.match(/^.{12,280}?[.!?](?:\s|$)/)?.[0] || clean.slice(0, 280);
+    return sentence.replace(/[\s.,;:]+$/, '').trim();
+  }
+
+  private assertBaselinePolicy(text: string) {
+    if (text.length > 500 || /\u0000/.test(text)) throw new BadRequestException('The extracted text did not pass content checks');
+    const prohibited = /\b(child sexual|terrorist recruitment|buy illegal drugs)\b/i;
+    if (prohibited.test(text)) throw new BadRequestException('This content is not eligible to be saved');
   }
 
   async patchUserContent(userId: string, id: string, payload: any) {

@@ -1,7 +1,9 @@
-import { Body, Controller, Post, HttpCode } from '@nestjs/common';
+import { Body, Controller, Post, HttpCode, Req, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, Length } from 'class-validator';
+import { JwtAuthGuard } from '../common/auth/jwt-auth.guard';
 import { AuthService } from './auth.service';
+import { EmailOtpService } from './email-otp.service';
 
 class AnonymousDto {
   @IsString()
@@ -30,10 +32,19 @@ class RefreshDto {
   refreshToken!: string;
 }
 
+class RequestEmailOtpDto {
+  @IsEmail() email!: string;
+}
+
+class VerifyEmailOtpDto {
+  @IsEmail() email!: string;
+  @IsString() @Length(6, 6) code!: string;
+}
+
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly service: AuthService) {}
+  constructor(private readonly service: AuthService, private readonly emailOtp: EmailOtpService) {}
 
   @Post('anonymous')
   @HttpCode(200)
@@ -51,5 +62,17 @@ export class AuthController {
   @HttpCode(200)
   async refresh(@Body() body: RefreshDto) {
     return this.service.refreshAccess(body.refreshToken);
+  }
+
+  @Post('email/request')
+  @UseGuards(JwtAuthGuard)
+  requestEmailOtp(@Req() req: any, @Body() body: RequestEmailOtpDto) {
+    return this.emailOtp.request(req.user.sub, body.email);
+  }
+
+  @Post('email/verify')
+  @UseGuards(JwtAuthGuard)
+  verifyEmailOtp(@Req() req: any, @Body() body: VerifyEmailOtpDto) {
+    return this.emailOtp.verify(req.user.sub, body.email, body.code);
   }
 }

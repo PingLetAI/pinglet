@@ -14,6 +14,7 @@ fun ContentEntity.toDomain(contentType: String = this.type): ContentItem = Conte
         ContentType.QUOTE
     },
     author = author,
+    sourceUrl = sourceUrl,
     categories = emptyList(),
     source = if (source == "SYSTEM") ContentSource.SYSTEM else ContentSource.PERSONAL,
 )
@@ -27,6 +28,6 @@ fun ContentItem.toEntity(source: ContentSource): ContentEntity = ContentEntity(
     visibility = "SYSTEM",
     status = "ACTIVE",
     language = "en",
-    sourceUrl = null,
+    sourceUrl = sourceUrl,
     ownerUserId = null,
 )

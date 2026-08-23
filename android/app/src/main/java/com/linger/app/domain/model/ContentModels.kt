@@ -25,6 +25,7 @@ data class ContentItem(
     val text: String,
     val type: ContentType,
     val author: String? = null,
+    val sourceUrl: String? = null,
     val categories: List<String> = emptyList(),
     val source: ContentSource,
     val favorite: Boolean = false,
@@ -37,5 +38,5 @@ data class WidgetState(
     val author: String?,
     val shownAt: Long,
     val nextChangeAt: Long,
+    val favorite: Boolean = false,
 )
-

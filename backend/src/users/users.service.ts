@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 
+type PersonalSystemMix = 'MOSTLY_MINE' | 'BALANCED' | 'MORE_DISCOVERY';
+
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
@@ -46,12 +48,15 @@ export class UsersService {
     });
   }
 
-  async patchPreferences(userId: string, updates: { refreshMinutes?: number; personalSystemMix?: 'MOSTLY_MINE' | 'BALANCED' | 'MORE_DISCOVERY'; theme?: string }) {
+  async patchPreferences(
+    userId: string,
+    updates: { refreshMinutes?: number; personalSystemMix?: PersonalSystemMix; theme?: string },
+  ) {
     return this.prisma.userPreference.upsert({
       where: { userId },
       update: {
         refreshMinutes: updates.refreshMinutes,
-        personalSystemMix: updates.personalSystemMix as any,
+        personalSystemMix: updates.personalSystemMix,
         theme: updates.theme,
       },
       create: {

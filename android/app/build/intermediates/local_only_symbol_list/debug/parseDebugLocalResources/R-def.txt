@@ -1,0 +1,13 @@
+R_DEF: Internal format may change without notice
+local
+drawable ic_widget_heart_filled
+drawable ic_widget_heart_outline
+id widgetText
+layout widget_layout
+string app_name
+string favorite
+string next
+string widget_name
+string widget_update_action
+style Theme.Linger
+xml widget_info

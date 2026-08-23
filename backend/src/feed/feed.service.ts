@@ -6,6 +6,7 @@ export type FeedItem = {
   text: string;
   type: string;
   author: string | null;
+  sourceUrl: string | null;
   categories: string[];
   source: 'PERSONAL' | 'SYSTEM';
   favorite: boolean;
@@ -152,6 +153,7 @@ export class FeedService {
         text: row.contentItem.text,
         type: row.contentItem.type,
         author: row.contentItem.author,
+        sourceUrl: row.contentItem.sourceUrl,
         categories: row.contentItem.categories.map((cat) => cat.category.slug),
         source: 'SYSTEM',
         favorite: row.contentItem.favorites.length > 0,
@@ -162,11 +164,12 @@ export class FeedService {
 
     const items: FeedItem[] = [...personalItems
       .filter((item) => item.contentItemId)
-      .map((entry) => ({
+      .map<FeedItem>((entry) => ({
         id: entry.contentItem.id,
         text: entry.contentItem.text,
         type: entry.contentItem.type,
         author: entry.contentItem.author,
+        sourceUrl: entry.contentItem.sourceUrl,
         categories: entry.contentItem.categories.map((cat) => cat.category.slug),
         source: 'PERSONAL',
         favorite: entry.favorite,

@@ -1,0 +1,1 @@
+-keep,allowobfuscation,allowshrinking class com.linger.app.ui.add.AddContentViewModel

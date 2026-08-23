@@ -1,14 +1,28 @@
 package com.linger.app.data.remote
 
-import retrofit2.Response
 import retrofit2.http.*
 
 interface AppApiService {
     @POST("/api/v1/auth/anonymous")
     suspend fun anonymous(@Body request: AuthAnonymousRequest): AuthAnonymousResponse
 
+    @POST("/api/v1/auth/refresh")
+    suspend fun refresh(@Body request: AuthRefreshRequest): AuthRefreshResponse
+
+    @POST("/api/v1/auth/email/request")
+    suspend fun requestEmailOtp(@Body request: EmailOtpRequest): EmailOtpResponse
+
+    @POST("/api/v1/auth/email/verify")
+    suspend fun verifyEmailOtp(@Body request: EmailOtpVerifyRequest): EmailOtpVerifyResponse
+
     @GET("/api/v1/me")
     suspend fun me(): Map<String, Any>
+
+    @GET("/api/v1/me/entitlements")
+    suspend fun getEntitlements(): EntitlementResponse
+
+    @POST("/api/v1/me/entitlements/google-play")
+    suspend fun verifyGooglePlayPurchase(@Body request: GooglePlayPurchaseRequest): EntitlementResponse
 
     @GET("/api/v1/me/preferences")
     suspend fun getPreferences(): PreferenceResponse
@@ -30,6 +44,15 @@ interface AppApiService {
 
     @POST("/api/v1/me/content")
     suspend fun createContent(@Body body: Map<String, Any>): UserContentResponse
+
+    @POST("/api/v1/me/ingestions")
+    suspend fun createIngestion(@Body request: IngestUrlRequest): IngestUrlResponse
+
+    @GET("/api/v1/me/ingestions/{id}")
+    suspend fun getIngestion(@Path("id") id: String): IngestUrlResponse
+
+    @GET("/api/v1/me/ingestions")
+    suspend fun getIngestions(): List<IngestUrlResponse>
 
     @PATCH("/api/v1/me/content/{id}")
     suspend fun patchContent(@Path("id") id: String, @Body body: Map<String, Any>): UserContentResponse

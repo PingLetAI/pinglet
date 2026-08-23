@@ -5,6 +5,7 @@ import { DeviceService } from '../devices/device.service';
 import { UsersService } from '../users/users.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { EmailOtpService } from './email-otp.service';
 
 @Module({
   imports: [
@@ -15,7 +16,7 @@ import { AuthService } from './auth.service';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, PrismaService, DeviceService, UsersService],
+  providers: [AuthService, EmailOtpService, PrismaService, DeviceService, UsersService],
   exports: [AuthService],
 })
 export class AuthModule {}

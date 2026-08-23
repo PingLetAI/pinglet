@@ -1,4 +1,11 @@
-import { PrismaClient, ContentType, ContentVisibility, ContentStatus, DevicePlatform, PersonalSystemMix } from '@prisma/client';
+import {
+  ContentStatus,
+  ContentType,
+  ContentVisibility,
+  DevicePlatform,
+  PersonalSystemMix,
+  PrismaClient,
+} from '@prisma/client';
 import { createHash } from 'crypto';
 
 const prisma = new PrismaClient();
@@ -63,7 +70,13 @@ async function seedUsers() {
     create: {
       installationId: 'seed-anon-user',
       isAnonymous: false,
-      preferences: { create: { refreshMinutes: 30, personalSystemMix: PersonalSystemMix.BALANCED, theme: 'system' } },
+      preferences: {
+        create: {
+          refreshMinutes: 30,
+          personalSystemMix: PersonalSystemMix.BALANCED,
+          theme: 'system',
+        },
+      },
     },
   });
 
@@ -143,14 +156,24 @@ async function seedSystemContent(categoriesBySlug: { id: string; slug: string }[
     const textNorm = normalizeText(text);
     const hash = makeHash(text);
     const catalog = catalogSeed[i % catalogSeed.length];
-        const category = categoriesBySlug[i % categoriesBySlug.length];
+    const category = categoriesBySlug[i % categoriesBySlug.length];
+
+    const types: ContentType[] = [
+      ContentType.QUOTE,
+      ContentType.REMINDER,
+      ContentType.AFFIRMATION,
+      ContentType.GOAL,
+      ContentType.MESSAGE,
+      ContentType.NOTE,
+      ContentType.PASSAGE,
+    ];
 
     const created = await prisma.contentItem.upsert({
       where: { contentHash: hash },
       update: {},
       create: {
         text,
-        type: (Object.values(ContentType)[i % Object.values(ContentType).length] as ContentType),
+        type: types[i % types.length],
         visibility: ContentVisibility.SYSTEM,
         ownerUserId: null,
         language: 'en',

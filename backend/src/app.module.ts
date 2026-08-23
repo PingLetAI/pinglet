@@ -12,6 +12,7 @@ import { EventsModule } from './events/events.module';
 import { AdminModule } from './admin/admin.module';
 import { QueueModule } from './queue/queue.module';
 import { SyncModule } from './sync/sync.module';
+import { EntitlementModule } from './entitlements/entitlement.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { SyncModule } from './sync/sync.module';
     AdminModule,
     QueueModule,
     SyncModule,
+    EntitlementModule,
   ],
 })
 export class AppModule {}

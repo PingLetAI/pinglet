@@ -1,0 +1,295 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ContentType {
+  QUOTE
+  REMINDER
+  AFFIRMATION
+  GOAL
+  MESSAGE
+  NOTE
+  PASSAGE
+}
+
+enum ContentVisibility {
+  SYSTEM
+  PRIVATE
+  COMMUNITY
+}
+
+enum ContentStatus {
+  ACTIVE
+  ARCHIVED
+  PENDING
+  REJECTED
+}
+
+enum DevicePlatform {
+  ANDROID
+  IOS
+}
+
+enum IngestionType {
+  TEXT
+  URL
+  IMAGE
+}
+
+enum IngestionStatus {
+  RECEIVED
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum EventType {
+  CONTENT_SHOWN
+  CONTENT_SKIPPED
+  CONTENT_FAVORITED
+  CONTENT_OPENED
+}
+
+enum Surface {
+  WIDGET
+  APP
+  NOTIFICATION
+}
+
+enum PersonalSystemMix {
+  MOSTLY_MINE
+  BALANCED
+  MORE_DISCOVERY
+}
+
+enum CatalogItemSource {
+  PERSONAL
+  SYSTEM
+}
+
+enum PendingActionType {
+  CREATE_CONTENT
+  UPDATE_CONTENT
+  DELETE_CONTENT
+  FAVORITE
+  UNFAVORITE
+  ARCHIVE
+  IMPRESSION_BATCH
+}
+
+model User {
+  id             String   @id @default(uuid())
+  installationId String?  @unique
+  isAnonymous    Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  devices        Device[]
+  refreshTokens  RefreshToken[]
+  userContents   UserContent[]
+  catalogPrefs   UserCatalogPreference[] @relation("UserCatalogPreference")
+  favorites      Favorite[]              @relation("UserFavorite")
+  preferences    UserPreference?
+  ingestions     Ingestion[]
+  events         Event[]
+  pendingActions PendingAction[]
+}
+
+model Device {
+  id             String         @id @default(uuid())
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  installationId String         @unique
+  platform       DevicePlatform
+  timezone       String
+  locale         String
+  appVersion     String
+  lastSyncAt     DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  token     String    @unique
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  device    Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  deviceId  String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+}
+
+model ContentItem {
+  id             String            @id @default(uuid())
+  text           String
+  type           ContentType
+  author         String?
+  sourceUrl      String?
+  sourcePlatform String?
+  language       String            @default("en")
+  visibility     ContentVisibility
+  ownerUserId    String?
+  status         ContentStatus     @default(ACTIVE)
+  normalizedText String?
+  contentHash    String?           @unique
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  categories   ContentItemCategory[]
+  catalogItems CatalogItem[]
+  userContents UserContent[]
+  events       Event[]
+  favorites    Favorite[]
+  queues       QueueItem[]
+}
+
+model Category {
+  id          String  @id @default(uuid())
+  slug        String  @unique
+  name        String
+  description String?
+  isActive    Boolean @default(true)
+  sortOrder   Int     @default(0)
+
+  items ContentItemCategory[]
+}
+
+model ContentItemCategory {
+  contentItem   ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+  contentItemId String
+  category      Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId    String
+
+  @@id([contentItemId, categoryId])
+}
+
+model Catalog {
+  id          String   @id @default(uuid())
+  slug        String   @unique
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items               CatalogItem[]
+  userCatalogSettings UserCatalogPreference[] @relation("CatalogUserCatalogPreference")
+}
+
+model CatalogItem {
+  catalogId     String
+  contentItemId String
+  priority      Float  @default(1)
+
+  catalog     Catalog     @relation(fields: [catalogId], references: [id], onDelete: Cascade)
+  contentItem ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+
+  @@id([catalogId, contentItemId])
+}
+
+model UserContent {
+  id            String   @id @default(uuid())
+  userId        String
+  contentItemId String
+  favorite      Boolean  @default(false)
+  archived      Boolean  @default(false)
+  priority      Float    @default(1)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contentItem ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, contentItemId])
+}
+
+model UserCatalogPreference {
+  user      User    @relation("UserCatalogPreference", fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  catalog   Catalog @relation("CatalogUserCatalogPreference", fields: [catalogId], references: [id], onDelete: Cascade)
+  catalogId String
+  enabled   Boolean @default(true)
+  weight    Float   @default(1)
+
+  @@id([userId, catalogId])
+}
+
+model UserPreference {
+  id                String            @id @default(uuid())
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String            @unique
+  refreshMinutes    Int               @default(30)
+  personalSystemMix PersonalSystemMix @default(BALANCED)
+  theme             String            @default("system")
+  updatedAt         DateTime          @updatedAt
+  createdAt         DateTime          @default(now())
+}
+
+model Ingestion {
+  id        String          @id @default(uuid())
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  type      IngestionType
+  rawText   String?
+  sourceUrl String?
+  assetUrl  String?
+  status    IngestionStatus @default(RECEIVED)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+}
+
+model Event {
+  id            String       @id @default(uuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type          EventType
+  contentItemId String?
+  contentItem   ContentItem? @relation(fields: [contentItemId], references: [id], onDelete: SetNull)
+  surface       Surface
+  timestamp     DateTime     @default(now())
+  synced        Boolean      @default(false)
+  metadata      String?
+}
+
+model Favorite {
+  id            String      @id @default(uuid())
+  userId        String
+  user          User        @relation("UserFavorite", fields: [userId], references: [id], onDelete: Cascade)
+  contentItemId String
+  contentItem   ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+
+  @@unique([userId, contentItemId])
+}
+
+model QueueItem {
+  id            String            @id @default(uuid())
+  contentItemId String
+  contentItem   ContentItem       @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+  slotIndex     Int
+  source        CatalogItemSource @default(SYSTEM)
+  displayed     Boolean           @default(false)
+  validFrom     DateTime?
+  validUntil    DateTime?
+  createdAt     DateTime          @default(now())
+}
+
+model PendingAction {
+  id         String            @id @default(uuid())
+  userId     String
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  actionType PendingActionType
+  payload    String
+  attempts   Int               @default(0)
+  createdAt  DateTime          @default(now())
+}

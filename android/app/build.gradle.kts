@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
     id("kotlin-kapt")
     id("com.google.dagger.hilt.android")
@@ -11,12 +12,36 @@ android {
     namespace = "com.linger.app"
     compileSdk = 35
 
+    val debugApiBaseUrl =
+        (project.findProperty("LINGER_API_BASE_URL_DEBUG") as String?)
+            ?: System.getenv("LINGER_API_BASE_URL_DEBUG")
+            ?: "http://10.0.2.2:3000"
+    val releaseApiBaseUrl =
+        (project.findProperty("LINGER_API_BASE_URL_RELEASE") as String?)
+            ?: System.getenv("LINGER_API_BASE_URL_RELEASE")
+            ?: (project.findProperty("LINGER_API_BASE_URL") as String?)
+            ?: System.getenv("LINGER_API_BASE_URL")
+            ?: "https://api.linger.app"
+
+    fun escapeForBuildConfig(value: String): String =
+        "\"${value.replace("\\", "\\\\").replace("\"", "\\\"")}\""
+
     defaultConfig {
         applicationId = "com.linger.app"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
+    }
+
+    buildTypes {
+        debug {
+            buildConfigField("String", "API_BASE_URL", escapeForBuildConfig(debugApiBaseUrl))
+        }
+        release {
+            isMinifyEnabled = false
+            buildConfigField("String", "API_BASE_URL", escapeForBuildConfig(releaseApiBaseUrl))
+        }
     }
 
     compileOptions {
@@ -30,10 +55,7 @@ android {
 
     buildFeatures {
         compose = true
-    }
-
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.15"
+        buildConfig = true
     }
 
     packaging {
@@ -52,10 +74,13 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.0")
     implementation("androidx.activity:activity-compose:1.10.0")
     implementation("androidx.navigation:navigation-compose:2.8.9")
+    implementation("com.google.android.material:material:1.12.0")
+    implementation("com.android.billingclient:billing:9.1.0")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-extended")
 
     implementation("androidx.glance:glance-appwidget:1.1.1")
     implementation("androidx.glance:glance-material3:1.1.1")
@@ -71,6 +96,7 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.10.0")
 
     implementation("com.google.dagger:hilt-android:2.55")
+    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
     kapt("com.google.dagger:hilt-android-compiler:2.55")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")

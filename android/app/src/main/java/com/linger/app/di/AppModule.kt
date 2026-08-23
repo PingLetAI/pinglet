@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.linger.app.data.local.dao.ContentDao
 import com.linger.app.data.local.db.WidgetDatabase
 import com.linger.app.data.remote.AppApiService
+import com.linger.app.data.remote.ApiConfig
 import com.linger.app.data.remote.RetrofitClient
 import com.linger.app.data.repository.AuthRepository
 import com.linger.app.data.repository.AuthRepositoryImpl
@@ -24,7 +25,7 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideApi(): AppApiService = RetrofitClient.build("http://10.0.2.2:3000")
+    fun provideApi(): AppApiService = RetrofitClient.build(ApiConfig.apiBaseUrl())
 
     @Provides
     @Singleton

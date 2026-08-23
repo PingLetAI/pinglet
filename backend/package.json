@@ -6,8 +6,9 @@
   "scripts": {
     "start": "nest start",
     "start:dev": "nest start --watch",
-    "build": "nest build",
+    "build": "nest build && tsc --project tsconfig.worker.json",
     "start:prod": "node dist/main",
+    "start:worker": "node dist/worker",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
@@ -23,13 +24,16 @@
     "@nestjs/jwt": "^10.2.0",
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^10.4.15",
-    "@nestjs/swagger": "^8.0.2",
     "@nestjs/schedule": "^4.1.0",
+    "@nestjs/swagger": "^8.0.2",
     "@prisma/client": "^5.22.0",
+    "bullmq": "^5.58.5",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "csv-parse": "^5.5.6",
+    "google-auth-library": "^10.3.0",
     "ioredis": "^5.5.0",
+    "openai": "^5.19.1",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
@@ -53,8 +57,8 @@
     "prisma": "^5.22.0",
     "source-map-support": "^0.5.21",
     "ts-jest": "^29.2.5",
-    "tsx": "^4.16.2",
     "ts-node": "^10.9.2",
+    "tsx": "^4.16.2",
     "typescript": "^5.5.4"
   }
 }
