@@ -15,9 +15,13 @@ npm run build
 
 ## Vercel
 
-Import the repository into Vercel and set the project Root Directory to
-`website`. The root `vercel.json` installs and builds from that directory and
-rewrites client-side routes such as `/download` to the React entry point.
+The repository supports both Vercel configurations:
+
+- Repository root: the root `vercel.json` builds `website/` explicitly.
+- Root Directory `website`: `website/vercel.json` builds the current directory.
+
+Both configurations rewrite client-side routes such as `/download` to the React
+entry point. Using the repository root is recommended for this monorepo.
 
 Set these environment variables in the Vercel project:
 
