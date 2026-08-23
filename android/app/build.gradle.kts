@@ -32,6 +32,32 @@ android {
     fun escapeForBuildConfig(value: String): String =
         "\"${value.replace("\\", "\\\\").replace("\"", "\\\"")}\""
 
+    fun signingSecret(name: String): String? =
+        (project.findProperty(name) as String?)
+            ?: System.getenv(name)
+
+    val uploadStoreFile = signingSecret("PINGLET_UPLOAD_STORE_FILE")
+    val uploadStorePassword = signingSecret("PINGLET_UPLOAD_STORE_PASSWORD")
+    val uploadKeyAlias = signingSecret("PINGLET_UPLOAD_KEY_ALIAS")
+    val uploadKeyPassword = signingSecret("PINGLET_UPLOAD_KEY_PASSWORD")
+    val releaseSigningConfigured = listOf(
+        uploadStoreFile,
+        uploadStorePassword,
+        uploadKeyAlias,
+        uploadKeyPassword,
+    ).all { !it.isNullOrBlank() }
+
+    signingConfigs {
+        create("release") {
+            if (releaseSigningConfigured) {
+                storeFile = file(uploadStoreFile!!)
+                storePassword = uploadStorePassword
+                keyAlias = uploadKeyAlias
+                keyPassword = uploadKeyPassword
+            }
+        }
+    }
+
     defaultConfig {
         applicationId = "ai.pinglet.app"
         minSdk = 26
@@ -47,6 +73,9 @@ android {
         release {
             isMinifyEnabled = false
             buildConfigField("String", "API_BASE_URL", escapeForBuildConfig(releaseApiBaseUrl))
+            if (releaseSigningConfigured) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 
@@ -67,6 +96,14 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
+
+    tasks.matching { it.name == "bundleRelease" || it.name == "assembleRelease" }.configureEach {
+        doFirst {
+            check(releaseSigningConfigured) {
+                "Release signing is not configured. Set the PINGLET_UPLOAD_* properties in ~/.gradle/gradle.properties."
+            }
         }
     }
 }
