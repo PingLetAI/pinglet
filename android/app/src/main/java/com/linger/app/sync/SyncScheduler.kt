@@ -8,51 +8,66 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkRequest
+import androidx.work.Constraints
+import androidx.work.NetworkType
 import com.linger.app.data.local.DataStoreManager
 import com.linger.app.data.local.db.DatabaseProvider
 import com.linger.app.data.repository.AuthRepositoryImpl
 import com.linger.app.data.repository.ContentRepository
 import com.linger.app.data.repository.FeedRepository
+import com.linger.app.data.repository.SessionManager
 import com.linger.app.data.remote.ApiConfig
 import com.linger.app.data.remote.RetrofitClient
 import com.linger.app.widget.AmbientWidget
 import com.linger.app.widget.rotation.RotationManager
 import com.linger.app.worker.SyncWorker
+import com.linger.app.worker.RotationWorker
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.GlanceId
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import retrofit2.HttpException
-import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 object SyncScheduler {
     private const val PERIODIC_WORK_TAG = "linger-sync"
     private const val FORCE_REFRESH_WORK_TAG = "linger-force-refresh"
+    private const val ROTATION_WORK_TAG = "linger-rotation"
+    private const val FAVORITE_SYNC_WORK_TAG = "linger-favorite-sync"
     private const val DEFAULT_MINUTES = 30L
     private val syncMutex = Mutex()
 
     fun scheduleInitialSync(context: Context) {
         schedulePeriodicSync(context)
+        schedulePeriodicRotation(context)
+        scheduleWidgetRefresh(context)
+        scheduleImmediateNetworkSync(context)
     }
 
     private fun schedulePeriodicSync(context: Context) {
         val request = PeriodicWorkRequestBuilder<SyncWorker>(DEFAULT_MINUTES, TimeUnit.MINUTES)
+            .setConstraints(networkConstraints())
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, WorkRequest.MIN_BACKOFF_MILLIS, TimeUnit.MILLISECONDS)
             .build()
 
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             PERIODIC_WORK_TAG,
-            ExistingPeriodicWorkPolicy.KEEP,
+            ExistingPeriodicWorkPolicy.UPDATE,
+            request,
+        )
+    }
+
+    private fun schedulePeriodicRotation(context: Context) {
+        val request = PeriodicWorkRequestBuilder<RotationWorker>(DEFAULT_MINUTES, TimeUnit.MINUTES).build()
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            ROTATION_WORK_TAG,
+            ExistingPeriodicWorkPolicy.UPDATE,
             request,
         )
     }
 
     fun scheduleWidgetRefresh(context: Context) {
-        val request = OneTimeWorkRequestBuilder<SyncWorker>()
-            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, WorkRequest.MIN_BACKOFF_MILLIS, TimeUnit.MILLISECONDS)
-            .build()
+        val request = OneTimeWorkRequestBuilder<RotationWorker>().build()
 
         WorkManager.getInstance(context).enqueueUniqueWork(
             FORCE_REFRESH_WORK_TAG,
@@ -61,6 +76,39 @@ object SyncScheduler {
         )
     }
 
+    fun scheduleImmediateNetworkSync(context: Context) {
+        val request = OneTimeWorkRequestBuilder<SyncWorker>()
+            .setConstraints(networkConstraints())
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, WorkRequest.MIN_BACKOFF_MILLIS, TimeUnit.MILLISECONDS)
+            .build()
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            "$PERIODIC_WORK_TAG-immediate",
+            ExistingWorkPolicy.KEEP,
+            request,
+        )
+    }
+
+    fun scheduleFavoriteSync(context: Context) {
+        val request = OneTimeWorkRequestBuilder<SyncWorker>()
+            .setConstraints(networkConstraints())
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, WorkRequest.MIN_BACKOFF_MILLIS, TimeUnit.MILLISECONDS)
+            .build()
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            FAVORITE_SYNC_WORK_TAG,
+            ExistingWorkPolicy.APPEND_OR_REPLACE,
+            request,
+        )
+    }
+
+    fun scheduleWidgetAdded(context: Context) {
+        scheduleWidgetRefresh(context)
+        scheduleImmediateNetworkSync(context)
+    }
+
+    private fun networkConstraints() = Constraints.Builder()
+        .setRequiredNetworkType(NetworkType.CONNECTED)
+        .build()
+
     suspend fun syncAndRefresh(context: Context) = syncMutex.withLock {
         val dao = DatabaseProvider.database(context).contentDao()
         val dataStore = DataStoreManager(context)
@@ -68,93 +116,42 @@ object SyncScheduler {
         val authRepository = AuthRepositoryImpl(api)
         val contentRepository = ContentRepository(api, dao)
 
-        runCatching {
-            establishSession(dataStore, authRepository)
-            syncFeedWithAuthRecovery(contentRepository, authRepository, dataStore)
-        }
-        contentRepository.seedBootstrapItemsIfQueueEmpty()
-
-        refreshWidget(context)
-    }
-
-    private suspend fun establishSession(dataStore: DataStoreManager, authRepository: AuthRepositoryImpl) {
-        val installationId = readOrCreateInstallationId(dataStore)
-        val existingAccessToken = dataStore.readAccessToken()
-
-        if (existingAccessToken.isNotBlank()) {
-            RetrofitClient.setAuthToken(existingAccessToken)
-            return
-        }
-
-        val auth = authRepository.anonymous(installationId)
-        dataStore.setAuthSession(auth.accessToken, auth.refreshToken, auth.userId)
-        RetrofitClient.setAuthToken(auth.accessToken)
-    }
-
-    private suspend fun syncFeedWithAuthRecovery(
-        contentRepository: ContentRepository,
-        authRepository: AuthRepositoryImpl,
-        dataStore: DataStoreManager,
-    ) {
-        try {
+        val session = SessionManager(authRepository, dataStore)
+        val feed = session.withAuthRetry {
+            flushPendingFavorites(dao, api)
             contentRepository.syncFeed()
-            return
-        } catch (e: HttpException) {
-            if (e.code() != 401) return
-        } catch (_: Exception) {
-            return
         }
-
-        if (!refreshOrReAuthenticate(authRepository, dataStore)) {
-            return
-        }
-
-        runCatching { contentRepository.syncFeed() }
+        dataStore.mergeFeedFavoriteContentIds(
+            feedContentIds = feed.mapTo(mutableSetOf()) { it.id },
+            favoriteContentIds = feed.filter { it.favorite }.mapTo(mutableSetOf()) { it.id },
+        )
+        updateWidgets(context)
     }
 
-    private suspend fun refreshOrReAuthenticate(
-        authRepository: AuthRepositoryImpl,
-        dataStore: DataStoreManager,
-    ): Boolean {
-        val installationId = readOrCreateInstallationId(dataStore)
-        val refreshToken = dataStore.readRefreshToken()
-
-        if (refreshToken.isBlank()) {
-            return try {
-                val auth = authRepository.anonymous(installationId)
-                dataStore.setAuthSession(auth.accessToken, auth.refreshToken, auth.userId)
-                RetrofitClient.setAuthToken(auth.accessToken)
-                true
-            } catch (_: Exception) {
-                false
-            }
-        }
-
-        return try {
-            val refreshed = authRepository.refresh(refreshToken)
-            dataStore.setAuthSession(refreshed.accessToken, refreshToken, dataStore.readUserId())
-            RetrofitClient.setAuthToken(refreshed.accessToken)
-            true
-        } catch (_: Exception) {
-            dataStore.clearAuthSession()
+    private suspend fun flushPendingFavorites(dao: com.linger.app.data.local.dao.ContentDao, api: com.linger.app.data.remote.AppApiService) {
+        dao.pendingActions()
+            .filter { it.actionType == "FAVORITE" || it.actionType == "UNFAVORITE" }
+            .sortedBy { it.createdAt }
+            .forEach { action ->
             try {
-                val auth = authRepository.anonymous(installationId)
-                dataStore.setAuthSession(auth.accessToken, auth.refreshToken, auth.userId)
-                RetrofitClient.setAuthToken(auth.accessToken)
-                true
-            } catch (_: Exception) {
-                false
+                when (action.actionType) {
+                    "FAVORITE" -> api.favorite(action.payload)
+                    "UNFAVORITE" -> api.unfavorite(action.payload)
+                    else -> Unit
+                }
+                dao.deletePendingAction(action.id)
+            } catch (error: Exception) {
+                dao.incrementPendingActionAttempts(action.id)
+                throw error
             }
         }
     }
 
-    private suspend fun readOrCreateInstallationId(dataStore: DataStoreManager): String {
-        val existing = dataStore.readInstallationId()
-        if (existing.isNotBlank()) return existing
-
-        val generated = UUID.randomUUID().toString()
-        dataStore.setInstallationId(generated)
-        return generated
+    suspend fun rotateCachedContent(context: Context) = syncMutex.withLock {
+        val dao = DatabaseProvider.database(context).contentDao()
+        val api = RetrofitClient.build(ApiConfig.apiBaseUrl())
+        ContentRepository(api, dao).seedBootstrapItemsIfQueueEmpty()
+        refreshWidget(context)
     }
 
     suspend fun refreshWidget(context: Context) {
@@ -171,11 +168,17 @@ object SyncScheduler {
                 contentItemId = item.id,
                 text = item.text,
                 author = item.author,
+                sourceUrl = item.sourceUrl,
+                favorite = dataStore.isContentFavorite(item.id),
                 shownAt = now,
                 nextChangeAt = RotationManager.nextChangeAt(now, intervalMinutes),
             )
         }
 
+        updateWidgets(context)
+    }
+
+    private suspend fun updateWidgets(context: Context) {
         val glanceAppWidget = AmbientWidget()
         val widgetIds = GlanceAppWidgetManager(context).getGlanceIds<AmbientWidget>(
             AmbientWidget::class.java,

@@ -93,7 +93,7 @@ fun HomeScreen(onOpenContent: (String) -> Unit, onOpenUpcoming: () -> Unit) {
         if (state.upcoming.isEmpty()) {
             LingerCard(Modifier.fillMaxWidth()) {
                 Text("Your next saves will appear here.", style = MaterialTheme.typography.titleMedium)
-                Text("Use the center + button or share a post directly to Linger.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Use the center + button or share a post directly to PingLet.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else {
             state.upcoming.forEach { item ->

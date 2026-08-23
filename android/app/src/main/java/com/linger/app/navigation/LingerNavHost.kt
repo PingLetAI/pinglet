@@ -40,7 +40,7 @@ private val navItems = listOf(
 private val topLevelRoutes = navItems.map { it.route }.toSet()
 
 @Composable
-fun LingerNavHost(navController: NavHostController, sharedText: DeepLink?) {
+fun LingerNavHost(navController: NavHostController, sharedText: DeepLink?, initialContentId: String? = null) {
     val entry by navController.currentBackStackEntryAsState()
     val route = entry?.destination?.route ?: "home"
     Scaffold(
@@ -126,6 +126,9 @@ fun LingerNavHost(navController: NavHostController, sharedText: DeepLink?) {
         }
     }
     LaunchedEffect(sharedText) { if (sharedText != null) navController.navigate("add") }
+    LaunchedEffect(initialContentId) {
+        initialContentId?.takeIf { it.isNotBlank() }?.let { navController.navigate("content/$it") }
+    }
 }
 
 @Composable

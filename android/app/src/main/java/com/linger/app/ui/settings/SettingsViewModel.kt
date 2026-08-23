@@ -10,16 +10,37 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import android.content.Context
+import androidx.glance.appwidget.updateAll
+import com.linger.app.data.local.DataStoreManager
+import com.linger.app.widget.AmbientWidget
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val api: AppApiService,
     private val session: SessionManager,
+    private val dataStore: DataStoreManager,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
     private val _entitlement = MutableStateFlow<EntitlementResponse?>(null)
     val entitlement = _entitlement.asStateFlow()
+    val widgetTextSize = dataStore.widgetTextSize().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "SMALL")
+    val widgetOpacity = dataStore.widgetOpacity().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 78)
 
     fun refresh() = viewModelScope.launch {
         runCatching { session.withAuthRetry { api.getEntitlements() } }.onSuccess { _entitlement.value = it }
+    }
+
+    fun setWidgetTextSize(value: String) = viewModelScope.launch {
+        dataStore.setWidgetTextSize(value)
+        AmbientWidget().updateAll(context)
+    }
+
+    fun setWidgetOpacity(value: Int) = viewModelScope.launch {
+        dataStore.setWidgetOpacity(value)
+        AmbientWidget().updateAll(context)
     }
 }

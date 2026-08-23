@@ -1,1 +1,0 @@
--keep,allowobfuscation,allowshrinking class com.linger.app.ui.settings.SettingsViewModel

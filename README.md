@@ -1,6 +1,6 @@
-# Linger (Persistent Ambient Message Widget)
+# PingLet (Persistent Ambient Message Widget)
 
-Linger rotates a personal + system message on the Android home screen.
+PingLet rotates a personal + system message on the Android home screen.
 
 ## Product framing (v1)
 - Android only.

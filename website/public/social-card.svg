@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#1B1B17"/>
+  <circle cx="250" cy="315" r="170" fill="#F8F6F0"/>
+  <path fill="#DDAE3D" fill-rule="evenodd" d="M175 405V225H244C297 225 325 254 325 294C325 336 297 361 244 361H210V405ZM210 260V326H244C275 326 291 314 291 294C291 272 275 260 244 260Z"/>
+  <circle cx="251" cy="294" r="15" fill="#1B1B17"/>
+  <path d="M316 226C350 245 365 269 365 298C365 338 343 372 306 391" fill="none" stroke="#1B1B17" stroke-width="16" stroke-linecap="round"/>
+  <text x="485" y="300" fill="#F8F6F0" font-family="Trebuchet MS, sans-serif" font-size="132" font-weight="700">PingLet</text>
+  <text x="493" y="385" fill="#DDAE3D" font-family="Trebuchet MS, sans-serif" font-size="42" font-weight="600" letter-spacing="4">SAVE WHAT STICKS.</text>
+</svg>

@@ -11,6 +11,7 @@ import com.linger.app.data.local.entity.UserContentEntity
 import com.linger.app.data.remote.AppApiService
 import com.linger.app.data.repository.SessionManager
 import com.linger.app.widget.AmbientWidget
+import com.linger.app.data.repository.FavoriteRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -48,19 +49,7 @@ class LibraryViewModel @Inject constructor(
             updatingFavoriteIds = current.updatingFavoriteIds + contentItemId,
         )
         viewModelScope.launch {
-            val success = runCatching {
-                sessionManager.withAuthRetry {
-                    if (target) api.favorite(contentItemId) else api.unfavorite(contentItemId)
-                }
-            }.isSuccess
-            if (success) {
-                val userId = dataStore.readUserId()
-                dao.setUserContentFavorite(userId, contentItemId, target, System.currentTimeMillis())
-                if (dataStore.readLastDisplayedContentId() == contentItemId) {
-                    dataStore.setLastDisplayedFavorite(target)
-                    AmbientWidget().updateAll(context)
-                }
-            }
+            val success = runCatching { FavoriteRepository.setFavorite(context, contentItemId, target) }.isSuccess
             _state.value = _state.value.copy(
                 items = if (success) _state.value.items else _state.value.items.map {
                     if (it.contentItemId == contentItemId) it.copy(favorite = !target) else it

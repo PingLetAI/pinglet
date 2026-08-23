@@ -22,7 +22,7 @@ fun PaywallScreen(onBack: () -> Unit, onPurchased: () -> Unit, viewModel: Paywal
     fun price(plan: String, fallback: String) = offers.firstOrNull { it.basePlanId == plan }
         ?.pricingPhases?.pricingPhaseList?.lastOrNull()?.formattedPrice ?: fallback
 
-    LingerPage("LINGER PLUS", "An unlimited home for what matters.", "Keep every thought. Process more of the posts you find worth remembering.", onBack) {
+    LingerPage("PINGLET PLUS", "An unlimited home for what matters.", "Keep every thought. Process more of the posts you find worth remembering.", onBack) {
         LingerCard(color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = .82f)) {
             Text("Unlimited personal saves", style = MaterialTheme.typography.titleLarge)
             Text("30 original social imports each month")

@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
@@ -30,6 +31,10 @@ class DataStoreManager(private val context: Context) {
         val lastDisplayedShownAt = longKey("last_displayed_shown_at")
         val lastDisplayedNextChangeAt = longKey("last_displayed_next_change_at")
         val lastDisplayedFavorite = booleanPreferencesKey("last_displayed_favorite")
+        val lastDisplayedSourceUrl = stringKey("last_displayed_source_url")
+        val favoriteContentIds = stringSetPreferencesKey("favorite_content_ids")
+        val widgetTextSize = stringKey("widget_text_size")
+        val widgetOpacity = intPreferencesKey("widget_opacity")
         }
 
     fun installationId(): Flow<String> = prefsFlow.map { it[Keys.installationId] ?: "" }
@@ -46,6 +51,8 @@ class DataStoreManager(private val context: Context) {
     fun lastDisplayedShownAt(): Flow<Long> = prefsFlow.map { it[Keys.lastDisplayedShownAt] ?: 0L }
     fun lastDisplayedNextChangeAt(): Flow<Long> = prefsFlow.map { it[Keys.lastDisplayedNextChangeAt] ?: 0L }
     fun lastDisplayedFavorite(): Flow<Boolean> = prefsFlow.map { it[Keys.lastDisplayedFavorite] ?: false }
+    fun widgetTextSize(): Flow<String> = prefsFlow.map { it[Keys.widgetTextSize] ?: "SMALL" }
+    fun widgetOpacity(): Flow<Int> = prefsFlow.map { it[Keys.widgetOpacity] ?: 78 }
 
     suspend fun setInstallationId(value: String) {
         context.dataStore.edit { it[Keys.installationId] = value }
@@ -130,18 +137,61 @@ class DataStoreManager(private val context: Context) {
     suspend fun readLastDisplayedShownAt(): Long = lastDisplayedShownAt().firstOrNull() ?: 0L
     suspend fun readLastDisplayedNextChangeAt(): Long = lastDisplayedNextChangeAt().firstOrNull() ?: 0L
     suspend fun readLastDisplayedFavorite(): Boolean = lastDisplayedFavorite().firstOrNull() ?: false
+    suspend fun readLastDisplayedSourceUrl(): String = prefsFlow.map { it[Keys.lastDisplayedSourceUrl] ?: "" }.firstOrNull() ?: ""
+    suspend fun readFavoriteContentIds(): Set<String> = prefsFlow.map { it[Keys.favoriteContentIds] ?: emptySet() }.firstOrNull() ?: emptySet()
+
+    suspend fun isContentFavorite(contentItemId: String): Boolean = contentItemId in readFavoriteContentIds()
+
+    suspend fun setContentFavorite(contentItemId: String, favorite: Boolean) {
+        context.dataStore.edit { prefs ->
+            val ids = (prefs[Keys.favoriteContentIds] ?: emptySet()).toMutableSet()
+            if (favorite) ids.add(contentItemId) else ids.remove(contentItemId)
+            prefs[Keys.favoriteContentIds] = ids
+            if (prefs[Keys.lastDisplayedContentId] == contentItemId) {
+                prefs[Keys.lastDisplayedFavorite] = favorite
+            }
+        }
+    }
+
+    suspend fun replaceFavoriteContentIds(contentItemIds: Set<String>) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.favoriteContentIds] = contentItemIds
+            val currentId = prefs[Keys.lastDisplayedContentId]
+            if (!currentId.isNullOrBlank()) prefs[Keys.lastDisplayedFavorite] = currentId in contentItemIds
+        }
+    }
+
+    suspend fun mergeFeedFavoriteContentIds(feedContentIds: Set<String>, favoriteContentIds: Set<String>) {
+        context.dataStore.edit { prefs ->
+            val merged = (prefs[Keys.favoriteContentIds] ?: emptySet()).toMutableSet()
+            merged.removeAll(feedContentIds)
+            merged.addAll(favoriteContentIds)
+            prefs[Keys.favoriteContentIds] = merged
+            val currentId = prefs[Keys.lastDisplayedContentId]
+            if (!currentId.isNullOrBlank()) prefs[Keys.lastDisplayedFavorite] = currentId in merged
+        }
+    }
+
+    suspend fun setWidgetTextSize(value: String) {
+        context.dataStore.edit { it[Keys.widgetTextSize] = value }
+    }
+
+    suspend fun setWidgetOpacity(value: Int) {
+        context.dataStore.edit { it[Keys.widgetOpacity] = value.coerceIn(55, 92) }
+    }
 
     suspend fun setLastDisplayedFavorite(value: Boolean) {
         context.dataStore.edit { it[Keys.lastDisplayedFavorite] = value }
     }
 
-    suspend fun setLastDisplayedWidgetState(contentItemId: String, text: String, author: String?, shownAt: Long, nextChangeAt: Long) {
+    suspend fun setLastDisplayedWidgetState(contentItemId: String, text: String, author: String?, sourceUrl: String?, favorite: Boolean, shownAt: Long, nextChangeAt: Long) {
         context.dataStore.edit {
             it[Keys.lastDisplayedContentId] = contentItemId
             it[Keys.lastDisplayedContentText] = text
             it[Keys.lastDisplayedShownAt] = shownAt
             it[Keys.lastDisplayedNextChangeAt] = nextChangeAt
-            it[Keys.lastDisplayedFavorite] = false
+            it[Keys.lastDisplayedFavorite] = favorite
+            if (sourceUrl.isNullOrBlank()) it.remove(Keys.lastDisplayedSourceUrl) else it[Keys.lastDisplayedSourceUrl] = sourceUrl
             if (author.isNullOrBlank()) {
                 it.remove(Keys.lastDisplayedContentAuthor)
             } else {
@@ -158,6 +208,7 @@ class DataStoreManager(private val context: Context) {
             it.remove(Keys.lastDisplayedShownAt)
             it.remove(Keys.lastDisplayedNextChangeAt)
             it.remove(Keys.lastDisplayedFavorite)
+            it.remove(Keys.lastDisplayedSourceUrl)
         }
     }
 }

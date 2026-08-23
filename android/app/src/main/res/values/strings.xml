@@ -1,6 +1,6 @@
 <resources>
-    <string name="app_name">Linger</string>
-    <string name="widget_name">Linger</string>
+    <string name="app_name">PingLet</string>
+    <string name="widget_name">PingLet</string>
     <string name="widget_update_action">Update widget content</string>
     <string name="favorite">Favorite</string>
     <string name="next">Next</string>

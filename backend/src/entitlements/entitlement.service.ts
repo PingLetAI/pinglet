@@ -92,7 +92,7 @@ export class EntitlementService {
   async verifyGooglePlaySubscription(userId: string, purchaseToken: string, productId: string) {
     const db = this.prisma as any;
     const credentialsJson = this.config.get<string>('GOOGLE_PLAY_SERVICE_ACCOUNT_JSON');
-    const packageName = this.config.get<string>('GOOGLE_PLAY_PACKAGE_NAME') || 'com.linger.app';
+    const packageName = this.config.get<string>('GOOGLE_PLAY_PACKAGE_NAME') || 'ai.pinglet.app';
     if (!credentialsJson) {
       throw new ServiceUnavailableException({
         code: 'BILLING_NOT_CONFIGURED',

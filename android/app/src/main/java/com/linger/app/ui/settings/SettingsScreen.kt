@@ -29,12 +29,14 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val entitlement by viewModel.entitlement.collectAsState()
+    val widgetTextSize by viewModel.widgetTextSize.collectAsState()
+    val widgetOpacity by viewModel.widgetOpacity.collectAsState()
     val context = LocalContext.current
     LaunchedEffect(Unit) { viewModel.refresh() }
 
     LingerPage(
         eyebrow = "SETTINGS",
-        title = "Make Linger yours.",
+        title = "Make PingLet yours.",
         subtitle = "Your account, rotation, and widget at a glance.",
     ) {
         AccountSection(
@@ -90,12 +92,24 @@ fun SettingsScreen(
                 "Long-press the widget, then drag its handles. Its type and spacing adapt to the available width and height.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            Text("TEXT SIZE", style = MaterialTheme.typography.labelMedium)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf("SMALL", "MEDIUM", "LARGE").forEach { size ->
+                    FilterChip(selected = widgetTextSize == size, onClick = { viewModel.setWidgetTextSize(size) }, label = { Text(size.lowercase().replaceFirstChar { it.uppercase() }) })
+                }
+            }
+            Text("TRANSLUCENCY", style = MaterialTheme.typography.labelMedium)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(62 to "Light", 78 to "Balanced", 90 to "Solid").forEach { (opacity, label) ->
+                    FilterChip(selected = widgetOpacity == opacity, onClick = { viewModel.setWidgetOpacity(opacity) }, label = { Text(label) })
+                }
+            }
         }
 
         SectionLabel("ABOUT")
         SettingsActionRow(
             icon = Icons.Rounded.Info,
-            title = "Linger for Android",
+            title = "PingLet for Android",
             detail = "Version ${BuildConfig.VERSION_NAME}",
             trailing = "AMBIENT",
         )
@@ -133,7 +147,7 @@ private fun AccountSection(
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
                 Text(
-                    when (plan) { "PLUS" -> "Linger Plus"; "FREE" -> "Free account"; else -> "Guest profile" },
+                    when (plan) { "PLUS" -> "PingLet Plus"; "FREE" -> "Free account"; else -> "Guest profile" },
                     style = MaterialTheme.typography.titleLarge,
                 )
                 Text(
@@ -204,7 +218,7 @@ private fun AccountSection(
         LingerCard(color = MaterialTheme.colorScheme.inverseSurface) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "LINGER PLUS",
+                    "PINGLET PLUS",
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.secondary,
                 )

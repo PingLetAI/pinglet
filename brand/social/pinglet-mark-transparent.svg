@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <path fill="#DDAE3D" fill-rule="evenodd" d="M240 812V212H470C646 212 740 307 740 439C740 579 646 663 470 663H354V812ZM354 327V548H470C573 548 625 508 625 439C625 369 573 327 470 327Z"/>
+  <circle cx="491" cy="439" r="49" fill="#F8F6F0"/>
+  <path d="M707 213C820 275 871 357 871 449C871 584 799 696 675 758" fill="none" stroke="#F8F6F0" stroke-width="51" stroke-linecap="round"/>
+</svg>

@@ -34,7 +34,7 @@ fun ProcessingQueueScreen(onBack: () -> Unit, viewModel: ProcessingQueueViewMode
             QueueFilter.FAILED -> item.status == "FAILED" || item.status == "REJECTED"
         }
     }
-    LingerPage("Processing queue", "Working quietly.", "You can leave this screen while Linger reads each public post in the background.", onBack = onBack) {
+    LingerPage("Processing queue", "Working quietly.", "You can leave this screen while PingLet reads each public post in the background.", onBack = onBack) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             QueueFilter.entries.forEach { option ->
                 FilterChip(
@@ -68,7 +68,7 @@ fun ProcessingQueueScreen(onBack: () -> Unit, viewModel: ProcessingQueueViewMode
                     when (filter) {
                         QueueFilter.PROCESSING -> "New social saves appear here while they are being read."
                         QueueFilter.READY -> "Completed social saves will remain available here."
-                        QueueFilter.FAILED -> "Posts Linger could not access or process will appear here."
+                        QueueFilter.FAILED -> "Posts PingLet could not access or process will appear here."
                     },
                     style = MaterialTheme.typography.bodyMedium,
                 )

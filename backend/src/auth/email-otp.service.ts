@@ -72,10 +72,10 @@ export class EmailOtpService implements OnModuleDestroy {
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: this.config.get<string>('EMAIL_FROM') || 'Linger <hello@linger.app>',
+        from: this.config.get<string>('EMAIL_FROM') || 'PingLet <hello@pinglet.ai>',
         to: [email],
-        subject: 'Your Linger verification code',
-        html: `<p>Your Linger code is <strong>${code}</strong>.</p><p>It expires in 10 minutes.</p>`,
+        subject: 'Your PingLet verification code',
+        html: `<p>Your PingLet code is <strong>${code}</strong>.</p><p>It expires in 10 minutes.</p>`,
       }),
     });
     if (!response.ok) throw new BadRequestException('We could not send the verification email.');

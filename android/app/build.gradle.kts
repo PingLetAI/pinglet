@@ -13,21 +13,27 @@ android {
     compileSdk = 35
 
     val debugApiBaseUrl =
-        (project.findProperty("LINGER_API_BASE_URL_DEBUG") as String?)
+        (project.findProperty("PINGLET_API_BASE_URL_DEBUG") as String?)
+            ?: System.getenv("PINGLET_API_BASE_URL_DEBUG")
+            ?: (project.findProperty("LINGER_API_BASE_URL_DEBUG") as String?)
             ?: System.getenv("LINGER_API_BASE_URL_DEBUG")
             ?: "http://10.0.2.2:3000"
     val releaseApiBaseUrl =
-        (project.findProperty("LINGER_API_BASE_URL_RELEASE") as String?)
+        (project.findProperty("PINGLET_API_BASE_URL_RELEASE") as String?)
+            ?: System.getenv("PINGLET_API_BASE_URL_RELEASE")
+            ?: (project.findProperty("PINGLET_API_BASE_URL") as String?)
+            ?: System.getenv("PINGLET_API_BASE_URL")
+            ?: (project.findProperty("LINGER_API_BASE_URL_RELEASE") as String?)
             ?: System.getenv("LINGER_API_BASE_URL_RELEASE")
             ?: (project.findProperty("LINGER_API_BASE_URL") as String?)
             ?: System.getenv("LINGER_API_BASE_URL")
-            ?: "https://api.linger.app"
+            ?: "https://api.pinglet.ai"
 
     fun escapeForBuildConfig(value: String): String =
         "\"${value.replace("\\", "\\\\").replace("\"", "\\\"")}\""
 
     defaultConfig {
-        applicationId = "com.linger.app"
+        applicationId = "ai.pinglet.app"
         minSdk = 26
         targetSdk = 35
         versionCode = 1

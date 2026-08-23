@@ -200,7 +200,7 @@ export class ContentService {
         redirect: 'manual',
         signal: AbortSignal.timeout(8000),
         headers: {
-          'user-agent': 'Mozilla/5.0 (compatible; LingerLinkPreview/1.0)',
+          'user-agent': 'Mozilla/5.0 (compatible; PingLetLinkPreview/1.0)',
           accept: 'text/html,application/xhtml+xml',
         },
       });

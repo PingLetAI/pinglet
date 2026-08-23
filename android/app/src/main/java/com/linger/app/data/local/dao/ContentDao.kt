@@ -49,6 +49,18 @@ interface ContentDao {
     @Query("DELETE FROM pending_actions WHERE id = :id")
     suspend fun deletePendingAction(id: String)
 
+    @Query("DELETE FROM pending_actions WHERE payload = :contentItemId")
+    suspend fun deletePendingActionsForContent(contentItemId: String)
+
+    @Query("UPDATE pending_actions SET attempts = attempts + 1 WHERE id = :id")
+    suspend fun incrementPendingActionAttempts(id: String)
+
+    @Transaction
+    suspend fun replacePendingFavoriteAction(action: PendingActionEntity) {
+        deletePendingActionsForContent(action.payload)
+        upsertPendingActions(listOf(action))
+    }
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertHistory(entries: List<DisplayHistoryEntity>)
 

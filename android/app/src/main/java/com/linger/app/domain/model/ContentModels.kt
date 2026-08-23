@@ -39,4 +39,5 @@ data class WidgetState(
     val shownAt: Long,
     val nextChangeAt: Long,
     val favorite: Boolean = false,
+    val sourceUrl: String? = null,
 )

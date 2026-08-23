@@ -74,5 +74,5 @@ class PlayBillingManager @Inject constructor(@ApplicationContext context: Contex
         }
     }
 
-    companion object { const val PRODUCT_ID = "linger_plus" }
+    companion object { const val PRODUCT_ID = "pinglet_plus" }
 }

@@ -53,7 +53,7 @@ fun AddContentScreen(
         }
     }
 
-    LingerPage("New save", if (sourceUrl != null) "Turn this post into a keepsake." else "What should linger?", "Share a public link or write something you want to meet again.") {
+    LingerPage("New save", if (sourceUrl != null) "Turn this post into a Pinglet." else "What should stick?", "Share a public link or write something you want to meet again.") {
         state.entitlement?.takeIf { it.accountPromptRecommended }?.let { entitlement ->
             LingerCard(color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = .72f)) {
                 Text("Keep your saves safe", style = MaterialTheme.typography.titleLarge)
@@ -64,7 +64,7 @@ fun AddContentScreen(
         if (platform != null) {
             LingerCard(color = MaterialTheme.colorScheme.secondaryContainer) {
                 Text("$platform link detected", style = MaterialTheme.typography.labelLarge)
-                Text("You can leave this screen. Linger will preserve the source and process its words, images, and speech in the background.")
+                Text("You can leave this screen. PingLet will preserve the source and process its words, images, and speech in the background.")
             }
         }
         LingerCard {

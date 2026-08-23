@@ -38,6 +38,7 @@ import com.linger.app.data.remote.ApiConfig
 import com.linger.app.data.remote.RetrofitClient
 import com.linger.app.data.repository.AuthRepositoryImpl
 import com.linger.app.data.repository.SessionManager
+import com.linger.app.data.repository.FavoriteRepository
 import com.linger.app.domain.model.WidgetState
 import com.linger.app.widget.rotation.RotationManager
 import kotlinx.coroutines.flow.firstOrNull
@@ -63,8 +64,11 @@ class AmbientWidget : GlanceAppWidget() {
         val shownAt = dataStore.readLastDisplayedShownAt()
         val nextChangeAt = dataStore.readLastDisplayedNextChangeAt()
         val favorite = dataStore.readLastDisplayedFavorite()
+        val sourceUrl = dataStore.readLastDisplayedSourceUrl().ifBlank { null }
+        val textSize = dataStore.widgetTextSize().firstOrNull() ?: "SMALL"
+        val opacity = dataStore.widgetOpacity().firstOrNull() ?: 78
         val refreshMinutes = dataStore.refreshMinutes().firstOrNull() ?: 30
-        val surfaceColor = wallpaperTintedSurface(context)
+        val surfaceColor = wallpaperTintedSurface(context, opacity)
 
         provideContent {
             WidgetContent(
@@ -75,33 +79,35 @@ class AmbientWidget : GlanceAppWidget() {
                     shownAt = if (shownAt == 0L) now else shownAt,
                     nextChangeAt = if (nextChangeAt == 0L) RotationManager.nextChangeAt(now) else nextChangeAt,
                     favorite = favorite,
+                    sourceUrl = sourceUrl,
                 ),
                 refreshMinutes,
                 surfaceColor,
+                textSize,
             )
         }
     }
 }
 
 @Composable
-fun WidgetContent(state: WidgetState, intervalMinutes: Int, surfaceColor: Color) {
+fun WidgetContent(state: WidgetState, intervalMinutes: Int, surfaceColor: Color, textSize: String) {
     val context = LocalContext.current
-    val openApp = actionStartActivity(Intent(context, MainActivity::class.java))
+    val openApp = actionStartActivity(
+        Intent(context, MainActivity::class.java)
+            .putExtra(MainActivity.EXTRA_CONTENT_ID, state.contentId)
+            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+    )
     val size = LocalSize.current
     val compactWidth = size.width < 160.dp
     val compactHeight = size.height < 150.dp
-    val roomyHeight = size.height >= 220.dp
+    val expanded = size.height >= 220.dp && size.width >= 220.dp
     val contentPadding = when {
         compactHeight || compactWidth -> 12.dp
-        roomyHeight -> 16.dp
+        expanded -> 16.dp
         else -> 14.dp
     }
-    val messageFontSize = when {
-        compactHeight || compactWidth -> 14.sp
-        size.width >= 280.dp -> 18.sp
-        size.width >= 220.dp -> 17.sp
-        else -> 16.sp
-    }
+    val sizeAdjustment = when (textSize) { "LARGE" -> 2; "MEDIUM" -> 0; else -> -1 }
+    val messageFontSize = ((if (compactHeight || compactWidth) 13 else if (expanded) 17 else 15) + sizeAdjustment).sp
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
@@ -126,7 +132,7 @@ fun WidgetContent(state: WidgetState, intervalMinutes: Int, surfaceColor: Color)
                 ) {}
                 Spacer(modifier = GlanceModifier.width(8.dp))
                 Text(
-                    text = "LINGER",
+                    text = "PINGLET",
                     style = TextStyle(
                         color = ColorProvider(Color(0xFFF7F0DF)),
                         fontSize = 11.sp,
@@ -137,7 +143,7 @@ fun WidgetContent(state: WidgetState, intervalMinutes: Int, surfaceColor: Color)
             if (state.contentId.isNotBlank()) {
                 Box(
                     modifier = GlanceModifier
-                        .size(44.dp)
+                        .size(if (compactHeight) 38.dp else 44.dp)
                         .clickable(
                             actionRunCallback<FavoriteContentAction>(
                                 actionParametersOf(
@@ -150,41 +156,24 @@ fun WidgetContent(state: WidgetState, intervalMinutes: Int, surfaceColor: Color)
                     Image(
                         provider = ImageProvider(if (state.favorite) R.drawable.ic_widget_heart_filled else R.drawable.ic_widget_heart_outline),
                         contentDescription = if (state.favorite) "Remove from favorites" else "Add to favorites",
-                        modifier = GlanceModifier.size(26.dp),
+                        modifier = GlanceModifier.size(if (compactHeight) 22.dp else 26.dp),
                     )
                 }
             }
         }
 
-        Spacer(
-            modifier = GlanceModifier.fillMaxWidth().height(
-                when {
-                    compactHeight -> 10.dp
-                    roomyHeight -> 22.dp
-                    else -> 16.dp
-                },
-            ).clickable(openApp),
-        )
-        Spacer(modifier = GlanceModifier.fillMaxWidth().defaultWeight().clickable(openApp))
-
-        Text(
-            text = widgetDisplayText(state.text),
-            modifier = GlanceModifier.fillMaxWidth().clickable(openApp),
-            style = TextStyle(
-                color = ColorProvider(Color(0xFFFFF9EC)),
-                fontSize = messageFontSize,
-                fontWeight = FontWeight.Normal,
-            ),
-            maxLines = when {
-                compactHeight -> 2
-                roomyHeight -> 7
-                else -> 4
-            },
-        )
+        Spacer(modifier = GlanceModifier.height(if (compactHeight) 4.dp else 8.dp))
+        Box(modifier = GlanceModifier.fillMaxWidth().defaultWeight().clickable(openApp), contentAlignment = Alignment.CenterStart) {
+            Text(
+                text = widgetDisplayText(state.text),
+                modifier = GlanceModifier.fillMaxWidth(),
+                style = TextStyle(color = ColorProvider(Color(0xFFFFF9EC)), fontSize = messageFontSize, fontWeight = FontWeight.Normal),
+                maxLines = if (compactHeight) 2 else if (expanded) 7 else 4,
+            )
+        }
 
         if (!compactHeight) {
-            Spacer(modifier = GlanceModifier.fillMaxWidth().defaultWeight().clickable(openApp))
-            Spacer(modifier = GlanceModifier.fillMaxWidth().height(if (roomyHeight) 16.dp else 10.dp).clickable(openApp))
+            Spacer(modifier = GlanceModifier.fillMaxWidth().height(if (expanded) 12.dp else 7.dp).clickable(openApp))
             Box(
                 modifier = GlanceModifier
                     .width(28.dp)
@@ -205,6 +194,10 @@ fun WidgetContent(state: WidgetState, intervalMinutes: Int, surfaceColor: Color)
                 ),
                 maxLines = 1,
             )
+            if (expanded && state.sourceUrl != null) {
+                Spacer(modifier = GlanceModifier.height(3.dp))
+                Text("SOURCE SAVED", modifier = GlanceModifier.clickable(openApp), style = TextStyle(color = ColorProvider(Color(0xFFE7B64B)), fontSize = 9.sp, fontWeight = FontWeight.Bold))
+            }
         }
     }
 }
@@ -221,29 +214,11 @@ class FavoriteContentAction : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
         val contentId = parameters[contentIdKey]?.takeIf { it.isNotBlank() } ?: return
         val dataStore = DataStoreManager(context)
-        val api = RetrofitClient.build(ApiConfig.apiBaseUrl())
-        val session = SessionManager(AuthRepositoryImpl(api), dataStore)
-
         toggleMutex.withLock {
             if (dataStore.readLastDisplayedContentId() != contentId) return
 
             val targetFavorite = !dataStore.readLastDisplayedFavorite()
-            dataStore.setLastDisplayedFavorite(targetFavorite)
-            AmbientWidget().update(context, glanceId)
-
-            val updatedRemotely = runCatching {
-                session.withAuthRetry {
-                    if (targetFavorite) api.favorite(contentId) else api.unfavorite(contentId)
-                }
-            }.isSuccess
-
-            if (!updatedRemotely &&
-                dataStore.readLastDisplayedContentId() == contentId &&
-                dataStore.readLastDisplayedFavorite() == targetFavorite
-            ) {
-                dataStore.setLastDisplayedFavorite(!targetFavorite)
-                AmbientWidget().update(context, glanceId)
-            }
+            FavoriteRepository.setFavorite(context, contentId, targetFavorite)
         }
     }
 
@@ -253,8 +228,9 @@ class FavoriteContentAction : ActionCallback {
     }
 }
 
-private fun wallpaperTintedSurface(context: Context): Color {
-    val fallback = Color(0xC7191A17)
+private fun wallpaperTintedSurface(context: Context, opacityPercent: Int): Color {
+    val alpha = opacityPercent.coerceIn(55, 92) / 100f
+    val fallback = Color(0xFF191A17).copy(alpha = alpha)
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O_MR1) return fallback
 
     val wallpaperColor = runCatching {
@@ -271,10 +247,15 @@ private fun wallpaperTintedSurface(context: Context): Color {
         red = (wallpaperColor.red * tintStrength) + (0.09f * baseStrength),
         green = (wallpaperColor.green * tintStrength) + (0.10f * baseStrength),
         blue = (wallpaperColor.blue * tintStrength) + (0.09f * baseStrength),
-        alpha = 0.78f,
+        alpha = alpha,
     )
 }
 
 class AmbientWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = AmbientWidget()
+
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        com.linger.app.sync.SyncScheduler.scheduleWidgetAdded(context)
+    }
 }

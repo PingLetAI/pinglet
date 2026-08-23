@@ -1,0 +1,50 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #1b1b17;
+  --color-paper: #f8f6f0;
+  --color-gold: #ddae3d;
+  --color-clay: #b95f45;
+  --color-sage: #66735b;
+  --color-mint: #dff2ea;
+  --color-blush: #f5e2de;
+  --font-sans: "DM Sans", sans-serif;
+  --font-editorial: "Newsreader", serif;
+}
+
+html { scroll-behavior: smooth; }
+body { margin: 0; min-width: 320px; background: var(--color-paper); color: var(--color-ink); font-family: var(--font-sans); }
+button, a { -webkit-tap-highlight-color: transparent; }
+::selection { background: #ddae3d; color: #1b1b17; }
+
+.page-atmosphere {
+  background-image:
+    radial-gradient(circle at 8% 10%, rgba(221, 174, 61, .18), transparent 25rem),
+    radial-gradient(circle at 90% 15%, rgba(223, 242, 234, .85), transparent 28rem),
+    linear-gradient(rgba(27, 27, 23, .035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(27, 27, 23, .035) 1px, transparent 1px);
+  background-size: auto, auto, 48px 48px, 48px 48px;
+}
+
+.glass { background: rgba(248, 246, 240, .76); backdrop-filter: blur(18px); }
+.eyebrow { letter-spacing: .18em; text-transform: uppercase; font-size: .72rem; font-weight: 700; }
+.editorial { font-family: var(--font-editorial); }
+.balance { text-wrap: balance; }
+.shadow-soft { box-shadow: 0 30px 80px rgba(27, 27, 23, .12); }
+
+.reveal { animation: rise .75s cubic-bezier(.2,.8,.2,1) both; }
+.reveal-delay-1 { animation-delay: .1s; }
+.reveal-delay-2 { animation-delay: .2s; }
+.reveal-delay-3 { animation-delay: .3s; }
+.float-slow { animation: float 6s ease-in-out infinite; }
+.pulse-ring { animation: ping-ring 3.2s ease-out infinite; }
+
+@keyframes rise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes float { 0%,100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-10px) rotate(1deg); } }
+@keyframes ping-ring { 0% { opacity: .45; transform: scale(.88); } 70%,100% { opacity: 0; transform: scale(1.18); } }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .reveal, .float-slow, .pulse-ring { animation: none; }
+}

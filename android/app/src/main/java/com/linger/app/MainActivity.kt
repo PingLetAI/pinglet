@@ -22,16 +22,18 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private var sharedText by mutableStateOf<String?>(null)
+    private var widgetContentId by mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         sharedText = intent.sharedText()
+        widgetContentId = intent.getStringExtra(EXTRA_CONTENT_ID)
 
         setContent {
             LingerTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    AppRoot(sharedText)
+                    AppRoot(sharedText, widgetContentId)
                 }
             }
         }
@@ -41,20 +43,26 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         sharedText = intent.sharedText()
+        widgetContentId = intent.getStringExtra(EXTRA_CONTENT_ID)
     }
 
     private fun Intent?.sharedText(): String? = this?.takeIf {
         it.action == Intent.ACTION_SEND && it.type == "text/plain"
     }?.getStringExtra(Intent.EXTRA_TEXT)
+
+    companion object {
+        const val EXTRA_CONTENT_ID = "widget_content_id"
+    }
 }
 
 @Composable
-fun AppRoot(sharedText: String?) {
+fun AppRoot(sharedText: String?, widgetContentId: String?) {
     val navController = rememberNavController()
     val deepLink = sharedText?.let { DeepLink.AddContentText(it) }
 
     LingerNavHost(
         navController = navController,
         sharedText = deepLink,
+        initialContentId = widgetContentId,
     )
 }

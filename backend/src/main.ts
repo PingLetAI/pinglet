@@ -5,7 +5,7 @@ import { AppModule } from './app.module';
 
 function setupSwagger(app: INestApplication) {
   const config = new DocumentBuilder()
-    .setTitle('Linger API')
+    .setTitle('PingLet API')
     .setDescription('Rotating ambient message widget backend')
     .setVersion('0.1.0')
     .addBearerAuth()

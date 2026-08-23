@@ -45,6 +45,7 @@ class FeedRepository(private val dao: ContentDao) {
         text = text,
         type = try { ContentType.valueOf(type) } catch (_: Exception) { ContentType.QUOTE },
         author = author,
+        sourceUrl = sourceUrl,
         categories = emptyList(),
         source = if (source == "SYSTEM") ContentSource.SYSTEM else ContentSource.PERSONAL,
     )

@@ -26,6 +26,7 @@ import com.linger.app.data.remote.ApiConfig
 import com.linger.app.data.remote.RetrofitClient
 import com.linger.app.data.repository.AuthRepositoryImpl
 import com.linger.app.data.repository.SessionManager
+import com.linger.app.data.repository.FavoriteRepository
 import com.linger.app.ui.components.LingerCard
 import com.linger.app.ui.components.StatusPill
 import com.linger.app.ui.theme.LingerGold
@@ -45,15 +46,7 @@ fun ContentDetailScreen(contentId: String, onBack: () -> Unit) {
     LaunchedEffect(contentId) {
         val store = DataStoreManager(appContext)
         item = DatabaseProvider.database(appContext).contentDao().contentById(contentId)
-        favorite = if (store.readLastDisplayedContentId() == contentId) {
-            store.readLastDisplayedFavorite()
-        } else {
-            val api = RetrofitClient.build(ApiConfig.apiBaseUrl())
-            val session = SessionManager(AuthRepositoryImpl(api), store)
-            runCatching {
-                session.withAuthRetry { api.getMyContent() }.any { it.contentItemId == contentId && it.favorite }
-            }.getOrDefault(false)
-        }
+        favorite = store.isContentFavorite(contentId)
     }
 
     Scaffold(
@@ -70,20 +63,8 @@ fun ContentDetailScreen(contentId: String, onBack: () -> Unit) {
                             favorite = target
                             savingFavorite = true
                             scope.launch {
-                                val store = DataStoreManager(appContext)
-                                val api = RetrofitClient.build(ApiConfig.apiBaseUrl())
-                                val session = SessionManager(AuthRepositoryImpl(api), store)
-                                val success = runCatching {
-                                    session.withAuthRetry {
-                                        if (target) api.favorite(contentId) else api.unfavorite(contentId)
-                                    }
-                                }.isSuccess
-                                if (success && store.readLastDisplayedContentId() == contentId) {
-                                    store.setLastDisplayedFavorite(target)
-                                    AmbientWidget().updateAll(appContext)
-                                } else if (!success) {
-                                    favorite = !target
-                                }
+                                val success = runCatching { FavoriteRepository.setFavorite(appContext, contentId, target) }.isSuccess
+                                if (!success) favorite = !target
                                 savingFavorite = false
                             }
                         },
@@ -105,7 +86,7 @@ fun ContentDetailScreen(contentId: String, onBack: () -> Unit) {
                     Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 18.dp),
                     verticalArrangement = Arrangement.spacedBy(18.dp),
                 ) {
-                    StatusPill(if (content.source == "PERSONAL") "Saved by you" else "From Linger")
+                    StatusPill(if (content.source == "PERSONAL") "Saved by you" else "From PingLet")
                     LingerCard(Modifier.fillMaxWidth(), dark = true) {
                         Text(cleanDetailText(content.text), style = MaterialTheme.typography.headlineMedium)
                         content.author?.takeIf { it.isNotBlank() }?.let {

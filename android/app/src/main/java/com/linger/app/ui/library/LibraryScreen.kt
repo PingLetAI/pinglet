@@ -62,7 +62,7 @@ fun LibraryScreen(
                 Text(if (filter == LibraryFilter.FAVORITES) "No favorites yet" else "Your library is ready", style = MaterialTheme.typography.headlineMedium)
                 Text(
                     if (filter == LibraryFilter.FAVORITES) "Tap the heart on a quote or widget to keep it here."
-                    else "Write a thought or share a public social post to Linger.",
+                    else "Write a thought or share a public social post to PingLet.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 if (filter == LibraryFilter.ALL) Button(onClick = onOpenAdd) { Text("ADD YOUR FIRST SAVE", style = MaterialTheme.typography.labelLarge) }
