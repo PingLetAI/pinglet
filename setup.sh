@@ -47,6 +47,9 @@ if [ ! -f "$APP_DIR/backend/.env.production" ]; then
   echo ""
 fi
 
+echo "Syncing root .env for Docker Compose variable substitution..."
+grep -E '^(POSTGRES_DB|POSTGRES_USER|POSTGRES_PASSWORD)=' "$APP_DIR/backend/.env.production" > "$APP_DIR/.env"
+
 echo "Building Docker images..."
 $DOCKER_COMPOSE_BIN -f docker-compose.prod.yml build
 
