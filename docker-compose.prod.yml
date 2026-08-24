@@ -43,7 +43,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-pinglet_prod}
       POSTGRES_USER: ${POSTGRES_USER:-pinglet}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.production}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
