@@ -40,6 +40,8 @@ services:
     image: postgres:16-alpine
     container_name: pinglet-postgres
     restart: unless-stopped
+    env_file:
+      - ./backend/.env.production
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-pinglet_prod}
       POSTGRES_USER: ${POSTGRES_USER:-pinglet}
@@ -56,6 +58,8 @@ services:
     image: redis:7-alpine
     container_name: pinglet-redis
     restart: unless-stopped
+    env_file:
+      - ./backend/.env.production
     volumes:
       - redis_data:/data
     healthcheck:
