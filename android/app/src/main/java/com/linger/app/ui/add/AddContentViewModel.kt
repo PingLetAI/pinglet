@@ -41,7 +41,13 @@ class AddContentViewModel @Inject constructor(
     fun refreshEntitlements() {
         viewModelScope.launch {
             runCatching { sessionManager.withAuthRetry { api.getEntitlements() } }
-                .onSuccess { entitlement -> _state.value = _state.value.copy(entitlement = entitlement, gate = null) }
+                .onSuccess { entitlement ->
+                    _state.value = _state.value.copy(
+                        entitlement = entitlement,
+                        error = null,
+                        gate = null,
+                    )
+                }
         }
     }
 
@@ -49,12 +55,12 @@ class AddContentViewModel @Inject constructor(
         _state.value = _state.value.copy(gate = null)
     }
 
-    fun save(text: String, type: String, url: String?) {
+    fun save(text: String, type: String, url: String?, author: String? = null) {
         if (_state.value.saving) return
         viewModelScope.launch {
             _state.value = _state.value.copy(saving = true, saved = false, error = null, gate = null)
             runCatching {
-                sessionManager.withAuthRetry { saveContent(text, type, url) }
+                sessionManager.withAuthRetry { saveContent(text, type, url, author) }
             }.onSuccess { queuedId ->
                 _state.value = _state.value.copy(saving = false, saved = true, queuedIngestionId = queuedId)
             }.onFailure { error ->
@@ -73,11 +79,11 @@ class AddContentViewModel @Inject constructor(
         }
     }
 
-    private suspend fun saveContent(text: String, type: String, url: String?): String? =
+    private suspend fun saveContent(text: String, type: String, url: String?, author: String?): String? =
         if (url != null) {
             repository.enqueueUrl(url, text.replace(url, "").trim().ifBlank { null }).id
         } else {
-            repository.saveContent(text.trim(), type.uppercase(), null)
+            repository.saveContent(text.trim(), type.uppercase(), author)
             repository.syncFeed()
             null
         }

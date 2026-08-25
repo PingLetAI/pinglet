@@ -29,6 +29,7 @@ class SettingsViewModel @Inject constructor(
     val entitlement = _entitlement.asStateFlow()
     val widgetTextSize = dataStore.widgetTextSize().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "SMALL")
     val widgetOpacity = dataStore.widgetOpacity().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 78)
+    val personalSystemMix = dataStore.personalSystemMix().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "BALANCED")
 
     fun refresh() = viewModelScope.launch {
         runCatching { session.withAuthRetry { api.getEntitlements() } }.onSuccess { _entitlement.value = it }
@@ -42,5 +43,10 @@ class SettingsViewModel @Inject constructor(
     fun setWidgetOpacity(value: Int) = viewModelScope.launch {
         dataStore.setWidgetOpacity(value)
         AmbientWidget().updateAll(context)
+    }
+
+    fun setPersonalSystemMix(value: String) = viewModelScope.launch {
+        dataStore.setPersonalSystemMix(value)
+        runCatching { session.withAuthRetry { api.patchPreferences(mapOf("personalSystemMix" to value)) } }
     }
 }

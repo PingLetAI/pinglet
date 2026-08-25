@@ -33,7 +33,11 @@ class MainActivity : ComponentActivity() {
         setContent {
             LingerTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    AppRoot(sharedText, widgetContentId)
+                    AppRoot(
+                        sharedText = sharedText,
+                        widgetContentId = widgetContentId,
+                        onExternalShareFinished = { finish() },
+                    )
                 }
             }
         }
@@ -56,7 +60,11 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun AppRoot(sharedText: String?, widgetContentId: String?) {
+fun AppRoot(
+    sharedText: String?,
+    widgetContentId: String?,
+    onExternalShareFinished: () -> Unit,
+) {
     val navController = rememberNavController()
     val deepLink = sharedText?.let { DeepLink.AddContentText(it) }
 
@@ -64,5 +72,6 @@ fun AppRoot(sharedText: String?, widgetContentId: String?) {
         navController = navController,
         sharedText = deepLink,
         initialContentId = widgetContentId,
+        onExternalShareFinished = onExternalShareFinished,
     )
 }

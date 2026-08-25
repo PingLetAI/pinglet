@@ -56,6 +56,20 @@ class PlayBillingManager @Inject constructor(@ApplicationContext context: Contex
         ) { }
     }
 
+    suspend fun restorePurchases(): Boolean {
+        connect()
+        val params = QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.SUBS).build()
+        return suspendCancellableCoroutine { continuation ->
+            client.queryPurchasesAsync(params) { result, purchases ->
+                val active = if (result.responseCode == BillingClient.BillingResponseCode.OK) {
+                    purchases.filter { it.purchaseState == Purchase.PurchaseState.PURCHASED }
+                } else emptyList()
+                active.forEach(_purchases::tryEmit)
+                continuation.resume(active.isNotEmpty())
+            }
+        }
+    }
+
     override fun onPurchasesUpdated(result: BillingResult, purchases: MutableList<Purchase>?) {
         if (result.responseCode == BillingClient.BillingResponseCode.OK) {
             purchases.orEmpty().filter { it.purchaseState == Purchase.PurchaseState.PURCHASED }.forEach(_purchases::tryEmit)

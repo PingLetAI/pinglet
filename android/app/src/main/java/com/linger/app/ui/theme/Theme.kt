@@ -7,14 +7,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.linger.app.R
 
-val LingerInk = Color(0xFF1B1B17)
-val LingerPaper = Color(0xFFF8F6F0)
+val LingerInk = Color(0xFF12140F)
+val LingerPaper = Color(0xFFF0ECE3)
 val LingerGold = Color(0xFFDDAE3D)
-val LingerClay = Color(0xFFB95F45)
+val LingerClay = Color(0xFFA84F38)
 val LingerSage = Color(0xFF66735B)
 val LingerMint = Color(0xFFDFF2EA)
 val LingerBlush = Color(0xFFF5E2DE)
@@ -27,18 +29,18 @@ private val LightColors = lightColorScheme(
     tertiary = LingerClay,
     background = LingerPaper,
     onBackground = LingerInk,
-    surface = Color(0xFFFFFDF8),
+    surface = Color(0xFFFFFFFF),
     onSurface = LingerInk,
-    surfaceVariant = Color(0xFFECE8DF),
-    onSurfaceVariant = Color(0xFF625E55),
+    surfaceVariant = Color(0xFFE2DDD3),
+    onSurfaceVariant = Color(0xFF24261F),
     primaryContainer = Color(0xFFE8E5DD),
     onPrimaryContainer = LingerInk,
-    secondaryContainer = LingerMint,
+    secondaryContainer = Color(0xFFC5E2D5),
     onSecondaryContainer = Color(0xFF233B32),
-    tertiaryContainer = LingerBlush,
+    tertiaryContainer = Color(0xFFECCBC3),
     onTertiaryContainer = Color(0xFF492A24),
-    outline = Color(0xFFD5D0C6),
-    outlineVariant = Color(0xFFE7E2D9),
+    outline = Color(0xFF9F998D),
+    outlineVariant = Color(0xFFC7C0B4),
 )
 
 private val DarkColors = darkColorScheme(
@@ -59,23 +61,33 @@ private val DarkColors = darkColorScheme(
     onTertiaryContainer = Color(0xFFF5E2DE),
 )
 
+private val Editorial = FontFamily(Font(R.font.newsreader, weight = FontWeight.Normal), Font(R.font.newsreader, weight = FontWeight.SemiBold))
+private val Interface = FontFamily(
+    Font(R.font.manrope_regular, weight = FontWeight.Normal),
+    Font(R.font.manrope_medium, weight = FontWeight.Medium),
+    Font(R.font.manrope_semibold, weight = FontWeight.SemiBold),
+    Font(R.font.manrope_bold, weight = FontWeight.Bold),
+)
+
 private val LingerTypography = Typography(
-    displaySmall = TextStyle(fontFamily = FontFamily.Serif, fontWeight = FontWeight.Medium, fontSize = 34.sp, lineHeight = 38.sp, letterSpacing = (-0.5).sp),
-    headlineMedium = TextStyle(fontFamily = FontFamily.Serif, fontWeight = FontWeight.Medium, fontSize = 27.sp, lineHeight = 32.sp),
-    titleLarge = TextStyle(fontFamily = FontFamily.Serif, fontWeight = FontWeight.SemiBold, fontSize = 22.sp, lineHeight = 27.sp),
-    titleMedium = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.SemiBold, fontSize = 16.sp),
-    bodyLarge = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Normal, fontSize = 16.sp, lineHeight = 24.sp),
-    bodyMedium = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Normal, fontSize = 14.sp, lineHeight = 20.sp),
-    labelLarge = TextStyle(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, fontSize = 11.sp, letterSpacing = 1.sp),
-    labelMedium = TextStyle(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, fontSize = 10.sp, lineHeight = 14.sp, letterSpacing = 1.1.sp),
+    displaySmall = TextStyle(fontFamily = Editorial, fontWeight = FontWeight.SemiBold, fontSize = 30.sp, lineHeight = 34.sp, letterSpacing = (-0.3).sp),
+    headlineMedium = TextStyle(fontFamily = Editorial, fontWeight = FontWeight.Medium, fontSize = 26.sp, lineHeight = 32.sp),
+    headlineSmall = TextStyle(fontFamily = Editorial, fontWeight = FontWeight.SemiBold, fontSize = 23.sp, lineHeight = 28.sp),
+    titleLarge = TextStyle(fontFamily = Editorial, fontWeight = FontWeight.SemiBold, fontSize = 21.sp, lineHeight = 26.sp),
+    titleMedium = TextStyle(fontFamily = Interface, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, lineHeight = 20.sp),
+    bodyLarge = TextStyle(fontFamily = Interface, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, lineHeight = 24.sp),
+    bodyMedium = TextStyle(fontFamily = Interface, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, lineHeight = 20.sp),
+    bodySmall = TextStyle(fontFamily = Interface, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, lineHeight = 17.sp),
+    labelLarge = TextStyle(fontFamily = Interface, fontWeight = FontWeight.Bold, fontSize = 11.sp, letterSpacing = .65.sp),
+    labelMedium = TextStyle(fontFamily = Interface, fontWeight = FontWeight.Bold, fontSize = 10.sp, lineHeight = 14.sp, letterSpacing = .7.sp),
 )
 
 private val LingerShapes = Shapes(
     extraSmall = RoundedCornerShape(8.dp),
     small = RoundedCornerShape(12.dp),
-    medium = RoundedCornerShape(18.dp),
-    large = RoundedCornerShape(24.dp),
-    extraLarge = RoundedCornerShape(30.dp),
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(20.dp),
+    extraLarge = RoundedCornerShape(26.dp),
 )
 
 @Composable

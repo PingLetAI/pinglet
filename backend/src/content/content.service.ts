@@ -44,6 +44,50 @@ export class ContentService {
     }));
   }
 
+  async getUserContentDetail(userId: string, contentItemId: string) {
+    const saved = await this.prisma.userContent.findUnique({
+      where: { userId_contentItemId: { userId, contentItemId } },
+      include: { contentItem: { include: { categories: { include: { category: true } } } } },
+    });
+    if (!saved) throw new NotFoundException('Saved content not found');
+
+    const [ingestion, entitlement] = await Promise.all([
+      this.prisma.ingestion.findFirst({
+        where: { userId, contentItemId, status: 'READY', moderationStatus: 'APPROVED' },
+        orderBy: { finishedAt: 'desc' },
+      }),
+      this.entitlements.getSummary(userId),
+    ]);
+    const analysis = ingestion?.analysis as any;
+    const plus = entitlement.plan === 'PLUS';
+    const hasAnalysis = Boolean(ingestion && (analysis || ingestion.takeaways || ingestion.transcript || ingestion.ocrText));
+    const previewInsight = Array.isArray(analysis?.insights) ? analysis.insights.slice(0, 1) : [];
+
+    return {
+      content: {
+        id: saved.contentItem.id, text: saved.contentItem.text, type: saved.contentItem.type,
+        author: saved.contentItem.author, sourceUrl: saved.contentItem.sourceUrl,
+        sourcePlatform: saved.contentItem.sourcePlatform, favorite: saved.favorite,
+        categories: saved.contentItem.categories.map((entry) => entry.category.slug),
+      },
+      overview: analysis?.summary?.short || null,
+      insights: plus ? analysis?.insights || [] : previewInsight,
+      comprehensiveSummary: plus ? analysis?.summary?.comprehensive || null : null,
+      actions: plus ? analysis?.actions || [] : [],
+      themes: plus ? analysis?.themes || [] : [],
+      takeaways: plus ? ingestion?.takeaways || [] : Array.isArray(ingestion?.takeaways) ? ingestion!.takeaways.slice(0, 1) : [],
+      transcript: plus ? ingestion?.transcript || null : null,
+      visibleText: plus ? ingestion?.ocrText || null : null,
+      caption: plus ? ingestion?.caption || null : null,
+      access: {
+        plan: entitlement.plan,
+        hasAnalysis,
+        fullDetailsUnlocked: plus,
+        lockedSections: !plus && hasAnalysis ? ['FULL_SUMMARY', 'ALL_INSIGHTS', 'ACTIONS', 'TRANSCRIPT', 'VISIBLE_TEXT', 'RELATED'] : [],
+      },
+    };
+  }
+
   async createUserContent(userId: string, payload: any) {
     if (!payload?.skipEntitlementCheck) await this.entitlements.assertCanSave(userId);
     const rawText = `${payload?.text ?? ''}`.trim();

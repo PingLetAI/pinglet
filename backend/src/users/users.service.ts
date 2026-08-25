@@ -67,4 +67,26 @@ export class UsersService {
       },
     });
   }
+
+  async getCatalogPreferences(userId: string) {
+    const catalogs = await this.prisma.catalog.findMany({
+      where: { isActive: true },
+      orderBy: { name: 'asc' },
+      include: { userCatalogSettings: { where: { userId } } },
+    });
+    return catalogs.map(({ userCatalogSettings, ...catalog }) => ({
+      ...catalog,
+      enabled: userCatalogSettings[0]?.enabled ?? true,
+    }));
+  }
+
+  async patchCatalogPreference(userId: string, catalogId: string, enabled: boolean) {
+    await this.prisma.catalog.findFirstOrThrow({ where: { id: catalogId, isActive: true } });
+    await this.prisma.userCatalogPreference.upsert({
+      where: { userId_catalogId: { userId, catalogId } },
+      create: { userId, catalogId, enabled },
+      update: { enabled },
+    });
+    return { catalogId, enabled };
+  }
 }

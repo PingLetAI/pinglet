@@ -58,4 +58,11 @@ class PaywallViewModel @Inject constructor(
         val result = billing.launch(activity, product, basePlanId)
         if (result.responseCode != 0) _state.value = _state.value.copy(error = result.debugMessage)
     }
+
+    fun restore() = viewModelScope.launch {
+        _state.value = _state.value.copy(verifying = true, error = null)
+        runCatching { billing.restorePurchases() }
+            .onSuccess { found -> if (!found) _state.value = _state.value.copy(verifying = false, error = "No active PingLet subscription was found for this Google Play account.") }
+            .onFailure { _state.value = _state.value.copy(verifying = false, error = "Purchases could not be restored. Try again.") }
+    }
 }

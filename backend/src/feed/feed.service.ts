@@ -93,12 +93,17 @@ export class FeedService {
       take: Math.max(personalLimit, 1),
     });
 
+    const catalogPrefs = await this.prisma.userCatalogPreference.findMany({
+      where: { userId },
+      select: { catalogId: true, weight: true },
+    });
+
     const enabledCatalogPrefs = await this.prisma.userCatalogPreference.findMany({
       where: { userId, enabled: true },
       select: { catalogId: true, weight: true },
     });
 
-    const catalogFilter = enabledCatalogPrefs.length > 0
+    const catalogFilter = catalogPrefs.length > 0
       ? {
           catalog: {
             id: {

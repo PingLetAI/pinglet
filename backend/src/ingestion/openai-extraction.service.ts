@@ -11,6 +11,14 @@ export interface DerivedTakeaway {
   confidence: number;
 }
 
+export interface DerivedAnalysis {
+  summary: { short: string; comprehensive: string };
+  insights: Array<{ title: string; explanation: string; evidence: string }>;
+  actions: string[];
+  themes: string[];
+  takeaways: DerivedTakeaway[];
+}
+
 @Injectable()
 export class OpenAiExtractionService {
   private readonly client = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
@@ -62,22 +70,44 @@ export class OpenAiExtractionService {
     };
   }
 
-  async deriveTakeaways(sourceDocument: string): Promise<DerivedTakeaway[]> {
+  async deriveAnalysis(sourceDocument: string): Promise<DerivedAnalysis> {
     this.assertConfigured();
     const response = await this.client!.responses.create({
       model: this.extractionModel,
       store: false,
-      instructions: 'You extract faithful, useful memories from social posts. Never invent facts or wording. Engagement metrics and platform chrome are not content. Return concise standalone ideas that make sense on a Home Screen widget. Use type QUOTE only when text is a contiguous verbatim excerpt from the supplied source document. Preserve its exact words and word order; do not clean grammar, remove filler words, or improve phrasing. Otherwise paraphrase accurately and use type NOTE.',
+      instructions: 'You create a faithful, structured memory of a social post. Never invent facts or wording. Engagement metrics and platform chrome are not content. Distinguish what the source explicitly says from reasonable interpretation. Summaries must cover the whole supplied source rather than only its opening. Evidence must be a brief exact excerpt when possible. Actions must be practical suggestions supported by the source, not medical, legal, or financial directives. Themes must be concise lowercase topic labels. Widget takeaways must be standalone. Use type QUOTE only when text is a contiguous verbatim excerpt from the source document, preserving exact words and order; otherwise use NOTE.',
       input: sourceDocument.slice(0, 100_000),
       text: {
         format: {
           type: 'json_schema',
-          name: 'linger_takeaways',
+          name: 'pinglet_analysis',
           strict: true,
           schema: {
             type: 'object',
             additionalProperties: false,
             properties: {
+              summary: {
+                type: 'object', additionalProperties: false,
+                properties: {
+                  short: { type: 'string', minLength: 20, maxLength: 420 },
+                  comprehensive: { type: 'string', minLength: 40, maxLength: 2400 },
+                },
+                required: ['short', 'comprehensive'],
+              },
+              insights: {
+                type: 'array', minItems: 1, maxItems: 6,
+                items: {
+                  type: 'object', additionalProperties: false,
+                  properties: {
+                    title: { type: 'string', minLength: 3, maxLength: 100 },
+                    explanation: { type: 'string', minLength: 12, maxLength: 600 },
+                    evidence: { type: 'string', minLength: 1, maxLength: 320 },
+                  },
+                  required: ['title', 'explanation', 'evidence'],
+                },
+              },
+              actions: { type: 'array', minItems: 0, maxItems: 5, items: { type: 'string', minLength: 8, maxLength: 240 } },
+              themes: { type: 'array', minItems: 1, maxItems: 8, items: { type: 'string', minLength: 2, maxLength: 60 } },
               takeaways: {
                 type: 'array', minItems: 1, maxItems: 3,
                 items: {
@@ -91,13 +121,12 @@ export class OpenAiExtractionService {
                 },
               },
             },
-            required: ['takeaways'],
+            required: ['summary', 'insights', 'actions', 'themes', 'takeaways'],
           },
         },
       } as any,
     });
-    const parsed = JSON.parse(response.output_text) as { takeaways: DerivedTakeaway[] };
-    return parsed.takeaways;
+    return JSON.parse(response.output_text) as DerivedAnalysis;
   }
 
   private assertConfigured() {

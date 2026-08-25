@@ -85,8 +85,9 @@ class ContentRepository(
         seededItems
     }
 
-    suspend fun saveContent(text: String, type: String, categorySlug: String?): String {
-        val body = mapOf("text" to text, "type" to type, "categories" to listOfNotNull(categorySlug))
+    suspend fun saveContent(text: String, type: String, author: String?): String {
+        val body = mutableMapOf<String, Any>("text" to text, "type" to type)
+        author?.trim()?.takeIf { it.isNotBlank() }?.let { body["author"] = it }
         api.createContent(body)
         return UUID.randomUUID().toString()
     }

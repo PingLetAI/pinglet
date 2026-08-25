@@ -36,11 +36,11 @@ export class IngestionService {
             },
             include: { contentItem: true },
           });
-      if (existingForUser) return existingForUser;
+      if (existingForUser) return this.presentForUser(userId, existingForUser);
 
       await this.entitlements.assertCanSave(userId);
 
-      return this.prisma.$transaction(async (tx) => {
+      const reusedForUser = await this.prisma.$transaction(async (tx) => {
         await tx.userContent.upsert({
           where: { userId_contentItemId: { userId, contentItemId: reusable.contentItemId! } },
           create: {
@@ -67,6 +67,7 @@ export class IngestionService {
             ocrText: reusable.ocrText,
             sourceDocument: reusable.sourceDocument,
             takeaways: reusable.takeaways as any,
+            analysis: reusable.analysis as any,
             frameReferences: reusable.frameReferences as any,
             extractionConfidence: reusable.extractionConfidence,
             moderationStatus: 'APPROVED',
@@ -78,6 +79,7 @@ export class IngestionService {
           include: { contentItem: true },
         });
       });
+      return this.presentForUser(userId, reusedForUser);
     }
 
     await this.entitlements.assertCanStartOriginalImport(userId);
@@ -104,7 +106,7 @@ export class IngestionService {
       throw new BadRequestException('Media processing is temporarily unavailable');
     }
 
-    return ingestion;
+    return this.presentForUser(userId, ingestion);
   }
 
   async getForUser(userId: string, id: string) {
@@ -113,16 +115,41 @@ export class IngestionService {
       include: { contentItem: true },
     });
     if (!ingestion) throw new NotFoundException('Ingestion not found');
-    return ingestion;
+    return this.presentForUser(userId, ingestion);
   }
 
-  listForUser(userId: string) {
-    return this.prisma.ingestion.findMany({
+  async listForUser(userId: string) {
+    const rows = await this.prisma.ingestion.findMany({
       where: { userId },
       include: { contentItem: true },
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
+    const entitlement = await this.entitlements.getSummary(userId);
+    return rows.map((row) => this.present(row, entitlement.plan === 'PLUS'));
+  }
+
+  private async presentForUser(userId: string, row: any) {
+    const entitlement = await this.entitlements.getSummary(userId);
+    return this.present(row, entitlement.plan === 'PLUS');
+  }
+
+  private present(row: any, plus: boolean) {
+    const analysis = row.analysis as any;
+    return {
+      id: row.id, status: row.status, processingStage: row.processingStage,
+      sourceUrl: row.sourceUrl, sourcePlatform: row.sourcePlatform,
+      caption: plus ? row.caption : null,
+      transcript: plus ? row.transcript : null,
+      ocrText: plus ? row.ocrText : null,
+      takeaways: plus ? row.takeaways : Array.isArray(row.takeaways) ? row.takeaways.slice(0, 1) : row.takeaways,
+      analysis: plus ? analysis : analysis ? { summary: { short: analysis.summary?.short }, insights: analysis.insights?.slice(0, 1) } : null,
+      extractionConfidence: row.extractionConfidence,
+      moderationStatus: row.moderationStatus,
+      errorCode: row.errorCode, errorMessage: row.errorMessage,
+      contentItem: row.contentItem,
+      createdAt: row.createdAt, updatedAt: row.updatedAt,
+    };
   }
 
   async getAdminReadyRows(limit = 100) {

@@ -1,16 +1,18 @@
 package com.linger.app.ui.add
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.linger.app.ui.components.LingerCard
 import com.linger.app.ui.components.LingerPage
-import com.linger.app.ui.components.SectionLabel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddContentScreen(
     preFillText: String = "",
@@ -24,80 +26,53 @@ fun AddContentScreen(
     var author by remember { mutableStateOf("") }
     var type by remember { mutableStateOf("Thought") }
     val state by viewModel.state.collectAsState()
-    LaunchedEffect(preFillText) {
-        if (preFillText.isNotBlank()) text = preFillText
-        viewModel.refreshEntitlements()
-    }
-    LaunchedEffect(state.queuedIngestionId) {
-        state.queuedIngestionId?.let(onQueued)
-    }
-    LaunchedEffect(state.gate) {
-        when (state.gate) {
-            SaveGate.ACCOUNT -> {
-                viewModel.consumeGate()
-                onCreateAccount()
-            }
-            SaveGate.PLUS -> {
-                viewModel.consumeGate()
-                onUpgrade()
-            }
-            null -> Unit
-        }
-    }
-    val sourceUrl = remember(text) { Regex("https://(?:www\\.)?(?:instagram\\.com|tiktok\\.com|[^/]*\\.tiktok\\.com|facebook\\.com|[^/]*\\.facebook\\.com|fb\\.watch)/\\S+", RegexOption.IGNORE_CASE).find(text)?.value?.trimEnd('.', ',', ')') }
-    val platform = sourceUrl?.let {
-        when {
-            it.contains("instagram", true) -> "Instagram"
-            it.contains("tiktok", true) -> "TikTok"
-            else -> "Facebook"
-        }
-    }
+    LaunchedEffect(preFillText) { if (preFillText.isNotBlank()) text = preFillText; viewModel.refreshEntitlements() }
+    LaunchedEffect(state.queuedIngestionId) { state.queuedIngestionId?.let(onQueued) }
+    LaunchedEffect(state.gate) { when (state.gate) { SaveGate.ACCOUNT -> { viewModel.consumeGate(); onCreateAccount() }; SaveGate.PLUS -> { viewModel.consumeGate(); onUpgrade() }; null -> Unit } }
 
-    LingerPage("New save", if (sourceUrl != null) "Turn this post into a Pinglet." else "What should stick?", "Share a public link or write something you want to meet again.") {
-        state.entitlement?.takeIf { it.accountPromptRecommended }?.let { entitlement ->
-            LingerCard(color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = .72f)) {
-                Text("Keep your saves safe", style = MaterialTheme.typography.titleLarge)
-                Text("You have ${entitlement.saveCount} saves. Add your email before save 11 so this library can follow you.")
-                TextButton(onClick = onCreateAccount, contentPadding = PaddingValues(0.dp)) { Text("CREATE FREE ACCOUNT") }
+    val sourceUrl = remember(text) { Regex("https://(?:www\\.)?(?:instagram\\.com|tiktok\\.com|[^/]*\\.tiktok\\.com|facebook\\.com|[^/]*\\.facebook\\.com|fb\\.watch)/\\S+", RegexOption.IGNORE_CASE).find(text)?.value?.trimEnd('.', ',', ')') }
+    val platform = sourceUrl?.let { when { it.contains("instagram", true) -> "Instagram"; it.contains("tiktok", true) -> "TikTok"; else -> "Facebook" } }
+
+    LingerPage("New PingLet", if (sourceUrl != null) "Save this post." else "What should stay with you?", if (sourceUrl != null) "We will read its words, images, and speech in the background." else "Write it as you want to meet it again.", onBack) {
+        state.entitlement?.takeIf { it.accountPromptRecommended && it.isAnonymous }?.let {
+            Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = .62f)) {
+                Row(Modifier.fillMaxWidth().padding(start = 14.dp, end = 8.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("Connect an email to keep your library safe.", Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                    TextButton(onClick = onCreateAccount) { Text("CONNECT") }
+                }
             }
         }
         if (platform != null) {
-            LingerCard(color = MaterialTheme.colorScheme.secondaryContainer) {
-                Text("$platform link detected", style = MaterialTheme.typography.labelLarge)
-                Text("You can leave this screen. PingLet will preserve the source and process its words, images, and speech in the background.")
+            Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = .7f)) {
+                Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Rounded.Link, null); Spacer(Modifier.width(10.dp)); Column { Text("$platform post", style = MaterialTheme.typography.titleMedium); Text("Public source detected", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                }
             }
         }
         LingerCard {
-            SectionLabel(if (sourceUrl != null) "SHARED POST" else "THE WORDS")
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it },
-                modifier = Modifier.fillMaxWidth().heightIn(min = 160.dp),
-                placeholder = { Text("Paste an Instagram, TikTok, or Facebook link, or write a thought...") },
-                textStyle = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.fillMaxWidth().heightIn(min = if (sourceUrl == null) 150.dp else 112.dp),
+                placeholder = { Text("Write something worth keeping, or paste an Instagram, TikTok, or Facebook link...") },
+                textStyle = MaterialTheme.typography.bodyLarge,
+                label = { Text(if (sourceUrl == null) "Thought or social link" else "Shared link") },
             )
-        }
-        SectionLabel("WHAT KIND IS IT?")
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf("Thought", "Quote", "Reminder").forEach { option ->
-                FilterChip(type == option, { type = option }, { Text(option) })
+            if (sourceUrl == null) {
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    listOf("Thought", "Quote", "Reminder").forEachIndexed { index, option ->
+                        SegmentedButton(type == option, { type = option }, SegmentedButtonDefaults.itemShape(index, 3), label = { Text(option) }, icon = {})
+                    }
+                }
+                OutlinedTextField(author, { author = it }, Modifier.fillMaxWidth(), label = { Text("Author or source (optional)") }, singleLine = true)
             }
         }
-        if (sourceUrl == null) OutlinedTextField(author, { author = it }, Modifier.fillMaxWidth(), label = { Text("Author or source (optional)") })
         state.error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium) }
-        state.extractedText?.let {
-            LingerCard(color = MaterialTheme.colorScheme.tertiaryContainer) {
-                SectionLabel("EXTRACTED TAKEAWAY")
-                Text(it, style = MaterialTheme.typography.titleLarge)
-            }
-        }
         Button(
-            onClick = { viewModel.save(text, if (type == "Thought") "NOTE" else type, sourceUrl) },
+            onClick = { viewModel.save(text, if (type == "Thought") "NOTE" else type, sourceUrl, author) },
             enabled = text.isNotBlank() && !state.saving && !state.saved,
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-            shape = RoundedCornerShape(18.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary, contentColor = MaterialTheme.colorScheme.onSecondary),
-        ) { Text(when { state.saving -> "ADDING TO QUEUE..."; state.saved -> "QUEUED"; sourceUrl != null -> "PROCESS IN BACKGROUND"; else -> "SAVE TO MY ROTATION" }) }
-        TextButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) { Text("NOT NOW") }
+            modifier = Modifier.fillMaxWidth().height(54.dp),
+        ) { Text(when { state.saving -> "ADDING TO QUEUE..."; state.saved -> "QUEUED"; sourceUrl != null -> "SAVE AND PROCESS"; else -> "SAVE TO MY ROTATION" }) }
+        if (sourceUrl != null) Text("You can leave immediately after saving. Processing may take a few minutes.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

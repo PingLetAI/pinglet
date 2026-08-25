@@ -93,11 +93,55 @@ data class IngestedContentDto(
     val sourcePlatform: String?,
 )
 
+data class ContentDetailResponse(
+    val content: ContentDetailItemDto,
+    val overview: String? = null,
+    val insights: List<ContentInsightDto> = emptyList(),
+    val comprehensiveSummary: String? = null,
+    val actions: List<String> = emptyList(),
+    val themes: List<String> = emptyList(),
+    val takeaways: List<DerivedTakeawayDto> = emptyList(),
+    val transcript: String? = null,
+    val visibleText: String? = null,
+    val caption: String? = null,
+    val access: ContentDetailAccessDto,
+)
+
+data class ContentDetailItemDto(
+    val id: String,
+    val text: String,
+    val type: ContentType,
+    val author: String? = null,
+    val sourceUrl: String? = null,
+    val sourcePlatform: String? = null,
+    val favorite: Boolean = false,
+    val categories: List<String> = emptyList(),
+)
+
+data class ContentInsightDto(val title: String, val explanation: String, val evidence: String)
+
+data class ContentDetailAccessDto(
+    val plan: String,
+    val hasAnalysis: Boolean,
+    val fullDetailsUnlocked: Boolean,
+    val lockedSections: List<String> = emptyList(),
+)
+
 data class PreferenceResponse(
     val refreshMinutes: Int,
     val personalSystemMix: String,
     val theme: String,
 )
+
+data class CatalogResponse(
+    val id: String,
+    val slug: String,
+    val name: String,
+    val description: String? = null,
+    val enabled: Boolean = true,
+)
+
+data class CatalogPreferenceResponse(val catalogId: String, val enabled: Boolean)
 
 
 data class EventPayload(

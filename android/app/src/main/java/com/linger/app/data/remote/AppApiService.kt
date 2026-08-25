@@ -34,13 +34,22 @@ interface AppApiService {
     suspend fun getFeed(@Query("limit") limit: Int = 200): FeedResponse
 
     @GET("/api/v1/catalogs")
-    suspend fun getCatalogs(): List<Map<String, Any>>
+    suspend fun getCatalogs(): List<CatalogResponse>
+
+    @GET("/api/v1/me/catalogs")
+    suspend fun getCatalogPreferences(): List<CatalogResponse>
+
+    @PATCH("/api/v1/me/catalogs/{id}")
+    suspend fun patchCatalogPreference(@Path("id") id: String, @Body body: Map<String, Boolean>): CatalogPreferenceResponse
 
     @GET("/api/v1/catalogs/{id}/items")
     suspend fun getCatalogItems(@Path("id") id: String): List<Map<String, Any>>
 
     @GET("/api/v1/me/content")
     suspend fun getMyContent(): List<UserContentResponse>
+
+    @GET("/api/v1/me/content/{id}/detail")
+    suspend fun getContentDetail(@Path("id") id: String): ContentDetailResponse
 
     @POST("/api/v1/me/content")
     suspend fun createContent(@Body body: Map<String, Any>): UserContentResponse

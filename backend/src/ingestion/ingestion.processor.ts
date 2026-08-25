@@ -91,9 +91,17 @@ export class IngestionProcessor {
       }
 
       await this.stage(ingestionId, 'DERIVING_TAKEAWAYS');
-      const takeaways = (await this.openai.deriveTakeaways(sourceDocument))
+      const analysis = await this.openai.deriveAnalysis(sourceDocument);
+      const takeaways = analysis.takeaways
         .map((takeaway) => this.enforceQuoteFidelity(takeaway, sourceDocument));
-      const primary = takeaways[0];
+      analysis.takeaways = takeaways;
+      const verifiedQuote = takeaways.find((takeaway) => takeaway.type === 'QUOTE');
+      const originalDisplayText = verifiedQuote?.text || this.originalExcerpt(
+        transcript || caption || context || ocrRows.map((row) => row.text).filter(Boolean).join('\n'),
+      );
+      const primary = originalDisplayText
+        ? { text: originalDisplayText, type: 'QUOTE' as const }
+        : takeaways[0];
       const saved = await this.content.createUserContent(ingestion.userId, {
         text: primary.text,
         type: primary.type,
@@ -109,7 +117,7 @@ export class IngestionProcessor {
         where: { id: ingestionId },
         data: {
           status: 'READY', processingStage: 'READY', caption, transcript, ocrText, sourceDocument,
-          takeaways: takeaways as any, frameReferences: this.frameMetadata(allFrames) as any,
+          takeaways: takeaways as any, analysis: analysis as any, frameReferences: this.frameMetadata(allFrames) as any,
           extractionConfidence: confidence, moderationStatus: 'APPROVED', moderationResult: moderation as any,
           contentItemId: saved!.contentItemId, assetUrl: acquired.canonicalUrl, finishedAt: new Date(),
         },
@@ -173,6 +181,22 @@ export class IngestionProcessor {
       .replace(/\s+/g, ' ')
       .trim()
       .toLocaleLowerCase('en-US');
+  }
+
+  private originalExcerpt(value: string, maxLength = 320) {
+    const original = value.replace(/\s+/g, ' ').trim();
+    if (!original || original.length <= maxLength) return original;
+
+    const candidate = original.slice(0, maxLength + 1);
+    const sentenceEnd = Math.max(
+      candidate.lastIndexOf('. '),
+      candidate.lastIndexOf('! '),
+      candidate.lastIndexOf('? '),
+    );
+    if (sentenceEnd >= 48) return candidate.slice(0, sentenceEnd + 1).trim();
+
+    const wordEnd = candidate.lastIndexOf(' ');
+    return candidate.slice(0, wordEnd >= 48 ? wordEnd : maxLength).trim();
   }
 
   private errorCode(error: unknown) {

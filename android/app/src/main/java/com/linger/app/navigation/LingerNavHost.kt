@@ -40,7 +40,12 @@ private val navItems = listOf(
 private val topLevelRoutes = navItems.map { it.route }.toSet()
 
 @Composable
-fun LingerNavHost(navController: NavHostController, sharedText: DeepLink?, initialContentId: String? = null) {
+fun LingerNavHost(
+    navController: NavHostController,
+    sharedText: DeepLink?,
+    initialContentId: String? = null,
+    onExternalShareFinished: () -> Unit = {},
+) {
     val entry by navController.currentBackStackEntryAsState()
     val route = entry?.destination?.route ?: "home"
     Scaffold(
@@ -85,7 +90,9 @@ fun LingerNavHost(navController: NavHostController, sharedText: DeepLink?, initi
                 AddContentScreen(
                     preFillText = (sharedText as? DeepLink.AddContentText)?.text.orEmpty(),
                     onQueued = {
-                        if (!navController.popBackStack()) {
+                        if (sharedText != null) {
+                            onExternalShareFinished()
+                        } else if (!navController.popBackStack()) {
                             navController.navigate("home") {
                                 popUpTo("home") { inclusive = true }
                                 launchSingleTop = true
@@ -94,7 +101,10 @@ fun LingerNavHost(navController: NavHostController, sharedText: DeepLink?, initi
                     },
                     onCreateAccount = { navController.navigate("account") },
                     onUpgrade = { navController.navigate("paywall") },
-                    onBack = { navController.popBackStack() },
+                    onBack = {
+                        if (sharedText != null) onExternalShareFinished()
+                        else navController.popBackStack()
+                    },
                 )
             }
             composable("queue") { ProcessingQueueScreen(onBack = { navController.popBackStack() }) }
@@ -108,6 +118,7 @@ fun LingerNavHost(navController: NavHostController, sharedText: DeepLink?, initi
                 ContentDetailScreen(
                     contentId = backStackEntry.arguments?.getString("contentId").orEmpty(),
                     onBack = { navController.popBackStack() },
+                    onUpgrade = { navController.navigate("paywall") },
                 )
             }
             composable("discover") { DiscoverScreen() }
@@ -141,25 +152,25 @@ fun LingerNavHost(navController: NavHostController, sharedText: DeepLink?, initi
 @Composable
 private fun LingerBottomBar(route: String, onNavigate: (String) -> Unit, onAdd: () -> Unit) {
     Surface(
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
-        tonalElevation = 3.dp,
-        shadowElevation = 10.dp,
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+        tonalElevation = 1.dp,
+        shadowElevation = 0.dp,
     ) {
         Row(
-            Modifier.fillMaxWidth().navigationBarsPadding().height(76.dp).padding(horizontal = 8.dp),
+            Modifier.fillMaxWidth().navigationBarsPadding().height(68.dp).padding(horizontal = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             navItems.take(2).forEach { item -> NavDestination(item, route == item.route, onNavigate) }
             Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                 FilledIconButton(
                     onClick = onAdd,
-                    modifier = Modifier.size(52.dp),
+                    modifier = Modifier.size(48.dp),
                     colors = IconButtonDefaults.filledIconButtonColors(
                         containerColor = MaterialTheme.colorScheme.secondary,
                         contentColor = MaterialTheme.colorScheme.onSecondary,
                     ),
                 ) {
-                    Icon(Icons.Rounded.Add, contentDescription = "Add a thought", modifier = Modifier.size(28.dp))
+                    Icon(Icons.Rounded.Add, contentDescription = "Add a PingLet", modifier = Modifier.size(26.dp))
                 }
             }
             navItems.drop(2).forEach { item -> NavDestination(item, route == item.route, onNavigate) }
@@ -178,8 +189,8 @@ private fun RowScope.NavDestination(item: NavItem, selected: Boolean, onNavigate
         colors = NavigationBarItemDefaults.colors(
             selectedIconColor = MaterialTheme.colorScheme.primary,
             selectedTextColor = MaterialTheme.colorScheme.primary,
-            indicatorColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.22f),
-            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
+            indicatorColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.34f),
+            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
             unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
         ),
     )

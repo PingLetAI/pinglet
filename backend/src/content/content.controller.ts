@@ -15,6 +15,11 @@ export class ContentController {
     return this.service.listUserContent(req.user.sub);
   }
 
+  @Get(':id/detail')
+  detail(@Req() req: any, @Param('id') id: string) {
+    return this.service.getUserContentDetail(req.user.sub, id);
+  }
+
   @Post()
   create(@Req() req: any, @Body() body: any) {
     return this.service.createUserContent(req.user.sub, body);

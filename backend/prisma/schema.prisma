@@ -279,6 +279,7 @@ model Ingestion {
   ocrText              String?
   sourceDocument       String?
   takeaways            Json?
+  analysis             Json?
   frameReferences      Json?
   extractionConfidence Float?
   moderationStatus     String           @default("PENDING")
