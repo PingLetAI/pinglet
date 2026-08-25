@@ -32,7 +32,10 @@ class SettingsViewModel @Inject constructor(
     val personalSystemMix = dataStore.personalSystemMix().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "BALANCED")
 
     fun refresh() = viewModelScope.launch {
-        runCatching { session.withAuthRetry { api.getEntitlements() } }.onSuccess { _entitlement.value = it }
+        runCatching { session.withAuthRetry { api.getEntitlements() } }.onSuccess {
+            _entitlement.value = it
+            dataStore.setEntitlementPlan(it.plan)
+        }
     }
 
     fun setWidgetTextSize(value: String) = viewModelScope.launch {

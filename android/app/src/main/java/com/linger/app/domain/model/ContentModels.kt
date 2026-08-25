@@ -27,6 +27,7 @@ data class ContentItem(
     val author: String? = null,
     val sourceUrl: String? = null,
     val categories: List<String> = emptyList(),
+    val catalogIds: List<String> = emptyList(),
     val source: ContentSource,
     val favorite: Boolean = false,
     val updatedAt: String? = null,

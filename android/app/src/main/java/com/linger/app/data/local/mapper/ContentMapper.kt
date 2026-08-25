@@ -15,7 +15,8 @@ fun ContentEntity.toDomain(contentType: String = this.type): ContentItem = Conte
     },
     author = author,
     sourceUrl = sourceUrl,
-    categories = emptyList(),
+    categories = categoriesCsv.split(',').filter(String::isNotBlank),
+    catalogIds = catalogIdsCsv.split(',').filter(String::isNotBlank),
     source = if (source == "SYSTEM") ContentSource.SYSTEM else ContentSource.PERSONAL,
 )
 
@@ -30,4 +31,6 @@ fun ContentItem.toEntity(source: ContentSource): ContentEntity = ContentEntity(
     language = "en",
     sourceUrl = sourceUrl,
     ownerUserId = null,
+    categoriesCsv = categories.joinToString(","),
+    catalogIdsCsv = catalogIds.joinToString(","),
 )

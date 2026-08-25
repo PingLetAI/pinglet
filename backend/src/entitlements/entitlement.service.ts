@@ -11,7 +11,7 @@ import { PrismaService } from '../common/prisma/prisma.service';
 const LIMITS = {
   GUEST: { saves: 10, imports: 3 },
   FREE: { saves: 20, imports: 5 },
-  PLUS: { saves: null, imports: 30 },
+  PLUS: { saves: null, imports: 40 },
 } as const;
 
 @Injectable()
@@ -81,8 +81,8 @@ export class EntitlementService {
         code: 'SOCIAL_IMPORT_LIMIT',
         message:
           summary.plan === 'PLUS'
-            ? 'Your 30 monthly AI imports are used. Reused links remain available without consuming quota.'
-            : 'Your 5 monthly AI imports are used. Upgrade to Plus for 30 per month.',
+            ? 'Your 40 monthly AI imports are used. Reused links remain available without consuming quota.'
+            : 'Your 5 monthly AI imports are used. Upgrade to Plus for 40 per month.',
         entitlement: summary,
       },
       402,

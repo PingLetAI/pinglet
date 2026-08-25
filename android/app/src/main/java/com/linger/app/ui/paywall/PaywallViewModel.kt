@@ -8,6 +8,7 @@ import com.linger.app.billing.PlayBillingManager
 import com.linger.app.data.remote.AppApiService
 import com.linger.app.data.remote.GooglePlayPurchaseRequest
 import com.linger.app.data.repository.SessionManager
+import com.linger.app.data.local.DataStoreManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,6 +28,7 @@ class PaywallViewModel @Inject constructor(
     private val billing: PlayBillingManager,
     private val api: AppApiService,
     private val session: SessionManager,
+    private val dataStore: DataStoreManager,
 ) : ViewModel() {
     private val _state = MutableStateFlow(PaywallUiState())
     val state = _state.asStateFlow()
@@ -45,6 +47,7 @@ class PaywallViewModel @Inject constructor(
                     }
                 }.onSuccess {
                     billing.acknowledge(purchase)
+                    dataStore.setEntitlementPlan("PLUS")
                     _state.value = _state.value.copy(verifying = false, purchased = true)
                 }.onFailure {
                     _state.value = _state.value.copy(verifying = false, error = it.message ?: "Purchase verification failed.")

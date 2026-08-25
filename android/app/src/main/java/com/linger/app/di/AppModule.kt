@@ -12,6 +12,7 @@ import com.linger.app.data.repository.AuthRepositoryImpl
 import com.linger.app.data.repository.ContentRepository
 import com.linger.app.data.repository.FeedRepository
 import com.linger.app.data.local.DataStoreManager
+import com.linger.app.data.local.db.MIGRATION_1_2
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -30,7 +31,9 @@ object AppModule {
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): WidgetDatabase {
-        return Room.databaseBuilder(context, WidgetDatabase::class.java, "linger-db").build()
+        return Room.databaseBuilder(context, WidgetDatabase::class.java, "linger-db")
+            .addMigrations(MIGRATION_1_2)
+            .build()
     }
 
     @Provides

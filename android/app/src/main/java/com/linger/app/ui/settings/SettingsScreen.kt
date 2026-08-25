@@ -23,7 +23,7 @@ import com.linger.app.ui.components.StatusPill
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onCreateAccount: () -> Unit = {}, onUpgrade: () -> Unit = {}, onOpenQueue: () -> Unit = {}, viewModel: SettingsViewModel = hiltViewModel()) {
+fun SettingsScreen(onCreateAccount: () -> Unit = {}, onUpgrade: () -> Unit = {}, onOpenQueue: () -> Unit = {}, onOpenWidgetSettings: () -> Unit = {}, viewModel: SettingsViewModel = hiltViewModel()) {
     val entitlement by viewModel.entitlement.collectAsState()
     val textSize by viewModel.widgetTextSize.collectAsState()
     val opacity by viewModel.widgetOpacity.collectAsState()
@@ -54,17 +54,13 @@ fun SettingsScreen(onCreateAccount: () -> Unit = {}, onUpgrade: () -> Unit = {},
         }
 
         SectionLabel("HOME SCREEN WIDGET")
-        LingerCard(color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = .58f)) {
-            Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Rounded.Widgets, null); Spacer(Modifier.width(10.dp)); Text("Widget appearance", style = MaterialTheme.typography.titleMedium) }
-            Text("TEXT SIZE", style = MaterialTheme.typography.labelMedium)
-            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                listOf("SMALL", "MEDIUM", "LARGE").forEachIndexed { index, value -> SegmentedButton(textSize == value, { viewModel.setWidgetTextSize(value) }, SegmentedButtonDefaults.itemShape(index, 3), label = { Text(value.lowercase().replaceFirstChar(Char::uppercase)) }, icon = {}) }
+        SettingsGroup {
+            SettingsRow(Icons.Rounded.Widgets, "Manage Home Screen widgets", "Independent themes, content, schedules, and controls", onClick = onOpenWidgetSettings)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            Column(Modifier.padding(15.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                Text("Resize any widget directly from your Home Screen.", style = MaterialTheme.typography.bodyMedium)
+                Text("Basic readability and translucency remain available to everyone.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Text("TRANSLUCENCY", style = MaterialTheme.typography.labelMedium)
-            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                listOf(62 to "Light", 78 to "Blend", 90 to "Solid").forEachIndexed { index, value -> SegmentedButton(opacity == value.first, { viewModel.setWidgetOpacity(value.first) }, SegmentedButtonDefaults.itemShape(index, 3), label = { Text(value.second) }, icon = {}) }
-            }
-            Text("Long-press the widget to resize it. Text and spacing adapt automatically.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
         SectionLabel("ABOUT")

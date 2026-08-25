@@ -15,7 +15,7 @@ object DatabaseProvider {
                 context.applicationContext,
                 WidgetDatabase::class.java,
                 DB_NAME,
-            ).build().also { instance = it }
+            ).addMigrations(MIGRATION_1_2).build().also { instance = it }
         }
     }
 }

@@ -1,7 +1,19 @@
 import { Body, Controller, Delete, Param, Post, UseGuards, Patch } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { IsEmail, IsInt, IsOptional, Max, Min } from 'class-validator';
 import { AdminGuard } from '../common/auth/admin.guard';
 import { AdminService } from './admin.service';
+
+class GrantPlusDto {
+  @IsEmail()
+  email: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(3650)
+  durationDays?: number;
+}
 
 @ApiTags('admin')
 @Controller('admin')
@@ -40,5 +52,10 @@ export class AdminController {
   @Patch('catalogs/:id')
   patchCatalog(@Param('id') id: string, @Body() body: any) {
     return this.service.patchCatalog(id, body);
+  }
+
+  @Post('users/plus')
+  grantPlus(@Body() body: GrantPlusDto) {
+    return this.service.grantPlus(body.email, body.durationDays);
   }
 }

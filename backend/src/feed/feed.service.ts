@@ -8,6 +8,7 @@ export type FeedItem = {
   author: string | null;
   sourceUrl: string | null;
   categories: string[];
+  catalogIds: string[];
   source: 'PERSONAL' | 'SYSTEM';
   favorite: boolean;
   updatedAt: string;
@@ -160,6 +161,7 @@ export class FeedService {
         author: row.contentItem.author,
         sourceUrl: row.contentItem.sourceUrl,
         categories: row.contentItem.categories.map((cat) => cat.category.slug),
+        catalogIds: [row.catalogId],
         source: 'SYSTEM',
         favorite: row.contentItem.favorites.length > 0,
         updatedAt: row.contentItem.updatedAt.toISOString(),
@@ -176,6 +178,7 @@ export class FeedService {
         author: entry.contentItem.author,
         sourceUrl: entry.contentItem.sourceUrl,
         categories: entry.contentItem.categories.map((cat) => cat.category.slug),
+        catalogIds: [],
         source: 'PERSONAL',
         favorite: entry.favorite,
         updatedAt: entry.contentItem.updatedAt.toISOString(),

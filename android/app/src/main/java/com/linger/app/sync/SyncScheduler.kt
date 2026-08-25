@@ -20,6 +20,8 @@ import com.linger.app.data.remote.ApiConfig
 import com.linger.app.data.remote.RetrofitClient
 import com.linger.app.widget.AmbientWidget
 import com.linger.app.widget.rotation.RotationManager
+import com.linger.app.widget.WidgetRotationSelector
+import com.linger.app.widget.freeDefaults
 import com.linger.app.worker.SyncWorker
 import com.linger.app.worker.RotationWorker
 import androidx.glance.appwidget.GlanceAppWidgetManager
@@ -119,6 +121,7 @@ object SyncScheduler {
         val session = SessionManager(authRepository, dataStore)
         val feed = session.withAuthRetry {
             flushPendingFavorites(dao, api)
+            dataStore.setEntitlementPlan(api.getEntitlements().plan)
             contentRepository.syncFeed()
         }
         dataStore.mergeFeedFavoriteContentIds(
@@ -158,23 +161,50 @@ object SyncScheduler {
         val dataStore = DataStoreManager(context)
         val intervalMinutes = dataStore.refreshMinutes().firstOrNull() ?: DEFAULT_MINUTES.toInt()
         val dao = DatabaseProvider.database(context).contentDao()
-        val feedRepository = FeedRepository(dao)
-
         val now = System.currentTimeMillis()
-        val item = feedRepository.selectNextItem(now, intervalMinutes)
-
-        if (item != null) {
-            dataStore.setLastDisplayedWidgetState(
-                contentItemId = item.id,
-                text = item.text,
-                author = item.author,
-                sourceUrl = item.sourceUrl,
-                favorite = dataStore.isContentFavorite(item.id),
-                shownAt = now,
-                nextChangeAt = RotationManager.nextChangeAt(now, intervalMinutes),
+        val widget = AmbientWidget()
+        val ids = GlanceAppWidgetManager(context).getGlanceIds<AmbientWidget>(AmbientWidget::class.java)
+        val favoriteIds = dataStore.readFavoriteContentIds()
+        var first = true
+        for (id in ids) {
+            val key = id.toString()
+            val stored = dataStore.readWidgetProfile(key)
+            val effective = if (dataStore.readEntitlementPlan() == "PLUS") stored else stored.freeDefaults()
+            val item = WidgetRotationSelector.select(dao, effective, key, favoriteIds) ?: continue
+            val updated = stored.copy(
+                currentContentId = item.id, currentText = item.text, currentAuthor = item.author,
+                currentSourceUrl = item.sourceUrl, currentFavorite = item.id in favoriteIds,
+                shownAt = now, nextChangeAt = RotationManager.nextChangeAt(now, intervalMinutes),
             )
+            dataStore.setWidgetProfile(key, updated)
+            if (first) {
+                dataStore.setLastDisplayedWidgetState(item.id, item.text, item.author, item.sourceUrl, item.id in favoriteIds, now, updated.nextChangeAt)
+                first = false
+            }
+            widget.update(context, id)
         }
+        if (ids.isEmpty()) {
+            FeedRepository(dao).selectNextItem(now, intervalMinutes)?.let { item ->
+                dataStore.setLastDisplayedWidgetState(item.id, item.text, item.author, item.sourceUrl, item.id in favoriteIds, now, RotationManager.nextChangeAt(now, intervalMinutes))
+            }
+        }
+    }
 
+    suspend fun rotateWidget(context: Context, widgetKey: String) = syncMutex.withLock {
+        val dataStore = DataStoreManager(context)
+        val profile = dataStore.readWidgetProfile(widgetKey)
+        dataStore.setWidgetProfile(widgetKey, profile.copy(manualOffset = profile.manualOffset + 1))
+        val dao = DatabaseProvider.database(context).contentDao()
+        val effective = if (dataStore.readEntitlementPlan() == "PLUS") profile.copy(manualOffset = profile.manualOffset + 1) else profile.freeDefaults()
+        val item = WidgetRotationSelector.select(dao, effective, widgetKey, dataStore.readFavoriteContentIds()) ?: return@withLock
+        val now = System.currentTimeMillis()
+        val updated = profile.copy(
+            manualOffset = profile.manualOffset + 1,
+            currentContentId = item.id, currentText = item.text, currentAuthor = item.author,
+            currentSourceUrl = item.sourceUrl, currentFavorite = dataStore.isContentFavorite(item.id),
+            shownAt = now, nextChangeAt = RotationManager.nextChangeAt(now),
+        )
+        dataStore.setWidgetProfile(widgetKey, updated)
         updateWidgets(context)
     }
 

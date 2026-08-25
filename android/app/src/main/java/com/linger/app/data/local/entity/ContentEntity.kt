@@ -16,4 +16,6 @@ data class ContentEntity(
     val ownerUserId: String? = null,
     val status: String,
     val language: String,
+    val categoriesCsv: String = "",
+    val catalogIdsCsv: String = "",
 )

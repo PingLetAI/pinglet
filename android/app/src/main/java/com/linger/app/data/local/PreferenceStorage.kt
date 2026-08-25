@@ -10,6 +10,8 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import com.linger.app.widget.WidgetProfile
+import kotlinx.serialization.json.Json
 
 private val Context.dataStore by preferencesDataStore("linger_prefs")
 
@@ -35,6 +37,7 @@ class DataStoreManager(private val context: Context) {
         val favoriteContentIds = stringSetPreferencesKey("favorite_content_ids")
         val widgetTextSize = stringKey("widget_text_size")
         val widgetOpacity = intPreferencesKey("widget_opacity")
+        val entitlementPlan = stringKey("entitlement_plan")
         }
 
     fun installationId(): Flow<String> = prefsFlow.map { it[Keys.installationId] ?: "" }
@@ -53,6 +56,7 @@ class DataStoreManager(private val context: Context) {
     fun lastDisplayedFavorite(): Flow<Boolean> = prefsFlow.map { it[Keys.lastDisplayedFavorite] ?: false }
     fun widgetTextSize(): Flow<String> = prefsFlow.map { it[Keys.widgetTextSize] ?: "SMALL" }
     fun widgetOpacity(): Flow<Int> = prefsFlow.map { it[Keys.widgetOpacity] ?: 78 }
+    fun entitlementPlan(): Flow<String> = prefsFlow.map { it[Keys.entitlementPlan] ?: "GUEST" }
 
     suspend fun setInstallationId(value: String) {
         context.dataStore.edit { it[Keys.installationId] = value }
@@ -139,6 +143,35 @@ class DataStoreManager(private val context: Context) {
     suspend fun readLastDisplayedFavorite(): Boolean = lastDisplayedFavorite().firstOrNull() ?: false
     suspend fun readLastDisplayedSourceUrl(): String = prefsFlow.map { it[Keys.lastDisplayedSourceUrl] ?: "" }.firstOrNull() ?: ""
     suspend fun readFavoriteContentIds(): Set<String> = prefsFlow.map { it[Keys.favoriteContentIds] ?: emptySet() }.firstOrNull() ?: emptySet()
+    suspend fun readEntitlementPlan(): String = entitlementPlan().firstOrNull() ?: "GUEST"
+
+    suspend fun setEntitlementPlan(value: String) {
+        context.dataStore.edit { it[Keys.entitlementPlan] = value }
+    }
+
+    suspend fun readWidgetProfile(widgetKey: String): WidgetProfile {
+        val raw = prefsFlow.map { it[stringKey(widgetProfileKey(widgetKey))] }.firstOrNull()
+        if (!raw.isNullOrBlank()) {
+            runCatching { Json.decodeFromString(WidgetProfile.serializer(), raw) }.getOrNull()?.let { return it }
+        }
+        return WidgetProfile(
+            opacity = widgetOpacity().firstOrNull() ?: 78,
+            textScale = widgetTextSize().firstOrNull() ?: "SMALL",
+            currentContentId = readLastDisplayedContentId(),
+            currentText = readLastDisplayedContentText(),
+            currentAuthor = readLastDisplayedContentAuthor().ifBlank { null },
+            currentSourceUrl = readLastDisplayedSourceUrl().ifBlank { null },
+            currentFavorite = readLastDisplayedFavorite(),
+            shownAt = readLastDisplayedShownAt(),
+            nextChangeAt = readLastDisplayedNextChangeAt(),
+        )
+    }
+
+    suspend fun setWidgetProfile(widgetKey: String, profile: WidgetProfile) {
+        context.dataStore.edit { it[stringKey(widgetProfileKey(widgetKey))] = Json.encodeToString(WidgetProfile.serializer(), profile) }
+    }
+
+    private fun widgetProfileKey(widgetKey: String) = "widget_profile_${widgetKey.hashCode().toUInt().toString(16)}"
 
     suspend fun isContentFavorite(contentItemId: String): Boolean = contentItemId in readFavoriteContentIds()
 

@@ -16,7 +16,7 @@ import com.linger.app.data.local.entity.*
         DisplayHistoryEntity::class,
         UserContentEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = false,
 )
 abstract class WidgetDatabase : RoomDatabase() {

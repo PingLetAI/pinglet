@@ -29,6 +29,7 @@ import com.linger.app.ui.queue.ProcessingQueueScreen
 import com.linger.app.ui.settings.SettingsScreen
 import com.linger.app.ui.account.AccountScreen
 import com.linger.app.ui.paywall.PaywallScreen
+import com.linger.app.ui.widgetsettings.WidgetSettingsScreen
 
 private data class NavItem(val route: String, val icon: ImageVector, val label: String)
 private val navItems = listOf(
@@ -127,6 +128,13 @@ fun LingerNavHost(
                     onCreateAccount = { navController.navigate("account") },
                     onUpgrade = { navController.navigate("paywall") },
                     onOpenQueue = { navController.navigate("queue") },
+                    onOpenWidgetSettings = { navController.navigate("widget-settings") },
+                )
+            }
+            composable("widget-settings") {
+                WidgetSettingsScreen(
+                    onBack = { navController.popBackStack() },
+                    onUpgrade = { navController.navigate("paywall") },
                 )
             }
             composable("account") {

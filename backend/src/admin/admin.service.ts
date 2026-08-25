@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { parse } from 'csv-parse/sync';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { createHash } from 'crypto';
@@ -124,6 +124,37 @@ export class AdminService {
       where: { id },
       data: payload,
     });
+  }
+
+  async grantPlus(rawEmail: string, durationDays = 365) {
+    const email = rawEmail.trim().toLowerCase();
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) throw new NotFoundException('No PingLet account exists for that email address');
+
+    const now = new Date();
+    const currentExpiry = user.plusExpiresAt && user.plusExpiresAt > now ? user.plusExpiresAt : now;
+    const expiresAt = new Date(currentExpiry.getTime() + durationDays * 24 * 60 * 60 * 1000);
+    const purchaseToken = `admin:${user.id}:${now.getTime()}`;
+
+    await this.prisma.$transaction([
+      this.prisma.purchaseEntitlement.create({
+        data: {
+          userId: user.id,
+          provider: 'ADMIN',
+          productId: 'pinglet_plus_manual',
+          purchaseToken,
+          status: 'ACTIVE',
+          expiresAt,
+          rawData: { grantedAt: now.toISOString(), durationDays },
+        },
+      }),
+      this.prisma.user.update({
+        where: { id: user.id },
+        data: { plan: 'PLUS', plusExpiresAt: expiresAt },
+      }),
+    ]);
+
+    return { email: user.email, plan: 'PLUS', expiresAt, durationDays };
   }
 
   normalizeText(value: string) {
