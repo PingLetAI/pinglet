@@ -75,14 +75,18 @@ export class MediaRunnerService {
   }
 
   async extractVideo(videoPath: string, workspace: string, sequence: number, ingestionId: string) {
-    const audioPath = join(workspace, `audio-${sequence}.mp3`);
+    const audioPath = join(workspace, `audio-${sequence}.flac`);
     const framePattern = join(workspace, `frame-${sequence}-%03d.jpg`);
     let audio: string | null = null;
     let audioFailed = false;
     let framesFailed = false;
 
     try {
-      await exec('ffmpeg', ['-y', '-i', videoPath, '-t', '600', '-vn', '-ac', '1', '-ar', '16000', '-b:a', '64k', audioPath], { timeout: 180_000 });
+      await exec(
+        'ffmpeg',
+        ['-y', '-i', videoPath, '-t', '600', '-vn', '-ac', '1', '-ar', '16000', '-c:a', 'flac', audioPath],
+        { timeout: 180_000 },
+      );
       audio = audioPath;
     } catch (error) {
       audioFailed = true;

@@ -23,7 +23,8 @@ export class OpenAiExtractionService {
       file: createReadStream(audioPath),
       model: this.transcriptionModel,
       response_format: 'json',
-      prompt: 'Transcribe the speech verbatim in its original language. Preserve exact wording, sentence order, repetitions, filler words, names, numbers, and meaningful pauses. Do not summarize, rewrite, correct, censor, or add commentary. Exclude only non-speech audio.',
+      temperature: 0,
+      prompt: 'Produce a verbatim transcript in the original spoken language. Preserve exact wording, sentence order, repetitions, false starts, filler words, names, numbers, slang, grammar, and incomplete sentences. Do not summarize, paraphrase, translate, correct, censor, complete unfinished thoughts, or add commentary. Exclude only non-speech audio.',
     });
     return response.text?.trim() || '';
   }
@@ -66,7 +67,7 @@ export class OpenAiExtractionService {
     const response = await this.client!.responses.create({
       model: this.extractionModel,
       store: false,
-      instructions: 'You extract faithful, useful memories from social posts. Never invent facts or wording. Engagement metrics and platform chrome are not content. Return concise standalone ideas that make sense on a Home Screen widget. Preserve a direct quote only when it appears in the source; otherwise paraphrase accurately as a NOTE.',
+      instructions: 'You extract faithful, useful memories from social posts. Never invent facts or wording. Engagement metrics and platform chrome are not content. Return concise standalone ideas that make sense on a Home Screen widget. Use type QUOTE only when text is a contiguous verbatim excerpt from the supplied source document. Preserve its exact words and word order; do not clean grammar, remove filler words, or improve phrasing. Otherwise paraphrase accurately and use type NOTE.',
       input: sourceDocument.slice(0, 100_000),
       text: {
         format: {

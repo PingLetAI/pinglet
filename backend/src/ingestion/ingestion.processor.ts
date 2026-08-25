@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { ContentService } from '../content/content.service';
 import { MediaRunnerService, FrameReference } from './media-runner.service';
-import { OpenAiExtractionService } from './openai-extraction.service';
+import { DerivedTakeaway, OpenAiExtractionService } from './openai-extraction.service';
 
 class IngestionProcessingError extends Error {
   constructor(readonly ingestionCode: string, message: string) {
@@ -91,7 +91,8 @@ export class IngestionProcessor {
       }
 
       await this.stage(ingestionId, 'DERIVING_TAKEAWAYS');
-      const takeaways = await this.openai.deriveTakeaways(sourceDocument);
+      const takeaways = (await this.openai.deriveTakeaways(sourceDocument))
+        .map((takeaway) => this.enforceQuoteFidelity(takeaway, sourceDocument));
       const primary = takeaways[0];
       const saved = await this.content.createUserContent(ingestion.userId, {
         text: primary.text,
@@ -145,6 +146,33 @@ export class IngestionProcessor {
       .replace(/\b[\d,.]+[KMB]?\s+(likes?|shares?|comments?|views?|followers?)\b/gi, '')
       .replace(/\s+/g, ' ')
       .trim();
+  }
+
+  private enforceQuoteFidelity(takeaway: DerivedTakeaway, sourceDocument: string): DerivedTakeaway {
+    if (takeaway.type !== 'QUOTE') return takeaway;
+
+    const source = this.normalizeQuoteComparison(sourceDocument);
+    const quote = this.normalizeQuoteComparison(takeaway.text);
+    if (quote.length >= 12 && source.includes(quote)) return takeaway;
+
+    // A concise paraphrase can still be useful, but it must never be presented
+    // as wording spoken or written by the original creator.
+    return {
+      ...takeaway,
+      type: 'NOTE',
+      confidence: Math.min(takeaway.confidence, 0.75),
+    };
+  }
+
+  private normalizeQuoteComparison(value: string) {
+    return value
+      .normalize('NFKC')
+      .replace(/[\u2018\u2019]/g, "'")
+      .replace(/[\u201C\u201D]/g, '"')
+      .replace(/[\u2013\u2014]/g, '-')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLocaleLowerCase('en-US');
   }
 
   private errorCode(error: unknown) {
