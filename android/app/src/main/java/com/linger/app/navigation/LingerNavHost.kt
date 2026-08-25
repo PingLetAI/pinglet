@@ -84,7 +84,14 @@ fun LingerNavHost(navController: NavHostController, sharedText: DeepLink?, initi
             composable("add") {
                 AddContentScreen(
                     preFillText = (sharedText as? DeepLink.AddContentText)?.text.orEmpty(),
-                    onQueued = { navController.navigate("queue") { popUpTo("add") { inclusive = true } } },
+                    onQueued = {
+                        if (!navController.popBackStack()) {
+                            navController.navigate("home") {
+                                popUpTo("home") { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
+                    },
                     onCreateAccount = { navController.navigate("account") },
                     onUpgrade = { navController.navigate("paywall") },
                     onBack = { navController.popBackStack() },
