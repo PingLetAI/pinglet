@@ -4,6 +4,13 @@ import { ContentService } from '../content/content.service';
 import { MediaRunnerService, FrameReference } from './media-runner.service';
 import { OpenAiExtractionService } from './openai-extraction.service';
 
+class IngestionProcessingError extends Error {
+  constructor(readonly ingestionCode: string, message: string) {
+    super(message);
+    this.name = 'IngestionProcessingError';
+  }
+}
+
 @Injectable()
 export class IngestionProcessor {
   constructor(
@@ -24,11 +31,15 @@ export class IngestionProcessor {
       workspace = acquired.workspace;
       const allFrames: FrameReference[] = [...acquired.images];
       const transcripts: string[] = [];
+      let attemptedVideoExtraction = false;
+      let producedVideoMedia = false;
 
       for (const [index, video] of acquired.videos.entries()) {
+        attemptedVideoExtraction = true;
         await this.stage(ingestionId, 'EXTRACTING_AUDIO_AND_FRAMES');
-        const extracted = await this.media.extractVideo(video, acquired.workspace, index);
+        const extracted = await this.media.extractVideo(video, acquired.workspace, index, ingestionId);
         allFrames.push(...extracted.frames);
+        producedVideoMedia = producedVideoMedia || Boolean(extracted.audio) || extracted.frames.length > 0;
         if (extracted.audio) {
           await this.stage(ingestionId, 'TRANSCRIBING_SPEECH');
           const transcript = await this.openai.transcribe(extracted.audio);
@@ -52,7 +63,18 @@ export class IngestionProcessor {
         ocrText && `VISIBLE TEXT AND VISUAL CONTEXT:\n${ocrText}`,
         transcript && `FULL SPEECH TRANSCRIPT:\n${transcript}`,
       ].filter(Boolean).join('\n\n').slice(0, 150_000);
-      if (sourceDocument.length < 12) throw new Error('No meaningful text, image, or speech content could be extracted from this public post');
+      if (sourceDocument.length < 12) {
+        if (attemptedVideoExtraction && !producedVideoMedia) {
+          throw new IngestionProcessingError(
+            'VIDEO_MEDIA_UNUSABLE',
+            'Neither audio nor video frames could be extracted and no caption fallback was available',
+          );
+        }
+        throw new IngestionProcessingError(
+          'NO_USABLE_CONTENT',
+          'No meaningful caption, image text, visual context, or speech could be extracted',
+        );
+      }
 
       await this.stage(ingestionId, 'MODERATING');
       const moderation = await this.openai.moderate(sourceDocument);
@@ -126,6 +148,7 @@ export class IngestionProcessor {
   }
 
   private errorCode(error: unknown) {
+    if (error instanceof IngestionProcessingError) return error.ingestionCode;
     const message = error instanceof Error ? error.message : `${error}`;
     if (message.includes('OPENAI_API_KEY')) return 'OPENAI_NOT_CONFIGURED';
     if (message.includes('Public media unavailable')) return 'PUBLIC_MEDIA_UNAVAILABLE';
@@ -136,6 +159,12 @@ export class IngestionProcessor {
     if (errorCode === 'OPENAI_NOT_CONFIGURED') return 'AI processing is not configured yet.';
     if (errorCode === 'PUBLIC_MEDIA_UNAVAILABLE') {
       return 'This post is private, expired, region-restricted, or the platform did not permit public media access.';
+    }
+    if (errorCode === 'VIDEO_MEDIA_UNUSABLE') {
+      return 'The video was downloaded, but its audio and frames could not be decoded.';
+    }
+    if (errorCode === 'NO_USABLE_CONTENT') {
+      return 'No usable caption, visible text, or speech could be extracted from this post.';
     }
     return 'The post could not be processed. Please try again later.';
   }

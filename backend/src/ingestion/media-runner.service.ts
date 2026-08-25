@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { execFile } from 'child_process';
 import { mkdtemp, readdir, readFile, rm } from 'fs/promises';
 import { tmpdir } from 'os';
@@ -26,6 +26,8 @@ export interface AcquiredMedia {
 
 @Injectable()
 export class MediaRunnerService {
+  private readonly logger = new Logger(MediaRunnerService.name);
+
   async acquire(sourceUrl: string, ingestionId: string): Promise<AcquiredMedia> {
     this.assertSupportedPublicUrl(sourceUrl);
     const workspace = await mkdtemp(join(tmpdir(), `linger-${ingestionId}-`));
@@ -72,22 +74,36 @@ export class MediaRunnerService {
     }
   }
 
-  async extractVideo(videoPath: string, workspace: string, sequence: number) {
+  async extractVideo(videoPath: string, workspace: string, sequence: number, ingestionId: string) {
     const audioPath = join(workspace, `audio-${sequence}.mp3`);
     const framePattern = join(workspace, `frame-${sequence}-%03d.jpg`);
     let audio: string | null = null;
+    let audioFailed = false;
+    let framesFailed = false;
+
     try {
       await exec('ffmpeg', ['-y', '-i', videoPath, '-t', '600', '-vn', '-ac', '1', '-ar', '16000', '-b:a', '64k', audioPath], { timeout: 180_000 });
       audio = audioPath;
-    } catch {
-      audio = null;
+    } catch (error) {
+      audioFailed = true;
+      this.logMediaFailure(ingestionId, sequence, 'audio', error);
     }
-    await exec('ffmpeg', ['-y', '-i', videoPath, '-t', '600', '-vf', 'fps=1/5,scale=960:-2', '-frames:v', '12', framePattern], { timeout: 180_000 });
+
+    try {
+      await exec('ffmpeg', ['-y', '-i', videoPath, '-t', '600', '-vf', 'fps=1/5,scale=960:-2', '-frames:v', '12', framePattern], { timeout: 180_000 });
+    } catch (error) {
+      framesFailed = true;
+      this.logMediaFailure(ingestionId, sequence, 'frames', error);
+    }
+
+    // FFmpeg can leave useful frames before returning a non-zero exit code. Keep
+    // those frames so a failed video stream does not discard usable visual text.
     const frames = (await readdir(workspace))
       .filter((file) => file.startsWith(`frame-${sequence}-`) && file.endsWith('.jpg'))
       .sort()
       .map((file, index) => ({ path: join(workspace, file), timestampSeconds: index * 5, kind: 'VIDEO_FRAME' as const }));
-    return { audio, frames };
+
+    return { audio, frames, audioFailed, framesFailed };
   }
 
   async ocr(images: FrameReference[]) {
@@ -106,6 +122,27 @@ export class MediaRunnerService {
 
   async cleanup(workspace: string) {
     await rm(workspace, { recursive: true, force: true });
+  }
+
+  private logMediaFailure(ingestionId: string, sequence: number, stream: 'audio' | 'frames', error: unknown) {
+    this.logger.warn(
+      `ingestion=${ingestionId} video=${sequence} stream=${stream} ffmpeg_failed error=${this.sanitizeCommandError(error)}`,
+    );
+  }
+
+  private sanitizeCommandError(error: unknown) {
+    const commandError = error as { message?: string; stderr?: string; code?: string | number };
+    const raw = [commandError?.message, commandError?.stderr, commandError?.code]
+      .filter((value) => value !== undefined && value !== null)
+      .join(' | ');
+
+    return raw
+      .replace(/https?:\/\/\S+/gi, '[url]')
+      .replace(/\/tmp\/linger-[^\s'"\]]+/g, '[workspace]')
+      .replace(/(authorization|api[_-]?key|token|password)\s*[:=]\s*\S+/gi, '$1=[redacted]')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 1_500) || 'unknown ffmpeg failure';
   }
 
   private assertSupportedPublicUrl(value: string) {
