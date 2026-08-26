@@ -3,10 +3,12 @@ package com.linger.app.ui.discover
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.PauseCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.linger.app.ui.components.LingerCard
@@ -17,6 +19,7 @@ import com.linger.app.ui.components.SectionLabel
 fun CatalogDetailScreen(onBack: () -> Unit, viewModel: CatalogDetailViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsState()
     val catalog = state.catalog
+    val uriHandler = LocalUriHandler.current
     LingerLazyPage("Collection", catalog?.name ?: "Loading collection", catalog?.description, onBack) {
         if (state.loading) item { LinearProgressIndicator(Modifier.fillMaxWidth()) }
         state.error?.let { item { LingerCard { Text(it, color = MaterialTheme.colorScheme.error); TextButton(viewModel::refresh) { Text("TRY AGAIN") } } } }
@@ -39,6 +42,13 @@ fun CatalogDetailScreen(onBack: () -> Unit, viewModel: CatalogDetailViewModel = 
                     Text((index + 1).toString().padStart(2, '0'), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.tertiary)
                     Text(item.text, style = MaterialTheme.typography.bodyLarge)
                     item.author?.takeIf(String::isNotBlank)?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    item.sourceUrl?.takeIf(String::isNotBlank)?.let { sourceUrl ->
+                        TextButton(onClick = { runCatching { uriHandler.openUri(sourceUrl) } }) {
+                            Icon(Icons.Rounded.OpenInNew, null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("VIEW ORIGINAL SOURCE")
+                        }
+                    }
                 }
             }
         }

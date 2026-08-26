@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { ContentService } from '../content/content.service';
 import { MediaRunnerService, FrameReference } from './media-runner.service';
@@ -13,6 +13,8 @@ class IngestionProcessingError extends Error {
 
 @Injectable()
 export class IngestionProcessor {
+  private readonly logger = new Logger(IngestionProcessor.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly content: ContentService,
@@ -113,6 +115,19 @@ export class IngestionProcessor {
         skipEntitlementCheck: true,
       });
       const confidence = takeaways.reduce((total, row) => total + row.confidence, 0) / takeaways.length;
+      await this.stage(ingestionId, 'CLASSIFYING_CATALOGS');
+      try {
+        await this.assignToCatalogs(
+          saved!.contentItemId,
+          acquired.canonicalUrl,
+          sourceDocument,
+          analysis,
+          confidence,
+        );
+      } catch (error) {
+        const message = error instanceof Error ? error.message : `${error}`;
+        this.logger.warn(`Catalog classification skipped for ingestion ${ingestionId}: ${message.slice(0, 500)}`);
+      }
       await this.prisma.ingestion.update({
         where: { id: ingestionId },
         data: {
@@ -140,6 +155,57 @@ export class IngestionProcessor {
 
   private stage(id: string, processingStage: string, extra: Record<string, unknown> = {}) {
     return this.prisma.ingestion.update({ where: { id }, data: { processingStage, ...extra } });
+  }
+
+  private async assignToCatalogs(
+    contentItemId: string,
+    sourceUrl: string,
+    sourceDocument: string,
+    analysis: Awaited<ReturnType<OpenAiExtractionService['deriveAnalysis']>>,
+    extractionConfidence: number,
+  ) {
+    if (process.env.CATALOG_AUTO_PROMOTION_ENABLED === 'false') return;
+    if (!/^https?:\/\//i.test(sourceUrl)) return;
+
+    const extractionThreshold = this.numericEnv('CATALOG_EXTRACTION_MIN_CONFIDENCE', 0.82);
+    if (!Number.isFinite(extractionConfidence) || extractionConfidence < extractionThreshold) return;
+
+    const catalogs = await this.prisma.catalog.findMany({
+      where: { isActive: true },
+      select: { id: true, slug: true, name: true, description: true },
+    });
+    if (catalogs.length === 0) return;
+
+    const matches = await this.openai.classifyCatalogs(sourceDocument, analysis, catalogs);
+    const minimumConfidence = this.numericEnv('CATALOG_MATCH_MIN_CONFIDENCE', 0.9);
+    const maximumAssignments = Math.max(1, Math.min(3, Math.floor(this.numericEnv('CATALOG_MATCH_MAX_ASSIGNMENTS', 3))));
+    const catalogBySlug = new Map(catalogs.map((catalog) => [catalog.slug, catalog]));
+    const accepted = matches
+      .filter((match) => Number.isFinite(match.confidence) && match.confidence >= minimumConfidence)
+      .filter((match) => catalogBySlug.has(match.slug))
+      .sort((left, right) => right.confidence - left.confidence)
+      .slice(0, maximumAssignments);
+    if (accepted.length === 0) return;
+
+    await this.prisma.$transaction([
+      this.prisma.contentItem.update({
+        where: { id: contentItemId },
+        data: { visibility: 'COMMUNITY', sourceUrl },
+      }),
+      this.prisma.catalogItem.createMany({
+        data: accepted.map((match) => ({
+          catalogId: catalogBySlug.get(match.slug)!.id,
+          contentItemId,
+          priority: match.confidence,
+        })),
+        skipDuplicates: true,
+      }),
+    ]);
+  }
+
+  private numericEnv(name: string, fallback: number) {
+    const value = Number(process.env[name]);
+    return Number.isFinite(value) ? value : fallback;
   }
 
   private frameMetadata(frames: FrameReference[]) {

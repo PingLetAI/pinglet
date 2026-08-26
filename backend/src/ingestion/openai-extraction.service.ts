@@ -19,6 +19,18 @@ export interface DerivedAnalysis {
   takeaways: DerivedTakeaway[];
 }
 
+export interface CatalogDefinition {
+  slug: string;
+  name: string;
+  description: string | null;
+}
+
+export interface CatalogMatch {
+  slug: string;
+  confidence: number;
+  reason: string;
+}
+
 @Injectable()
 export class OpenAiExtractionService {
   private readonly client = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
@@ -127,6 +139,67 @@ export class OpenAiExtractionService {
       } as any,
     });
     return JSON.parse(response.output_text) as DerivedAnalysis;
+  }
+
+  async classifyCatalogs(
+    sourceDocument: string,
+    analysis: DerivedAnalysis,
+    catalogs: CatalogDefinition[],
+  ): Promise<CatalogMatch[]> {
+    this.assertConfigured();
+    if (catalogs.length === 0) return [];
+
+    const response = await this.client!.responses.create({
+      model: this.extractionModel,
+      store: false,
+      instructions: [
+        'Classify a moderated public social post into the supplied PingLet catalogs.',
+        'Return a match only when the central meaning strongly and specifically fits the catalog.',
+        'Do not match from a passing word, creator identity, engagement metadata, or a weak broad association.',
+        'Confidence must measure semantic fit to the whole source: 0.90 means clear and unambiguous; use lower values when uncertain.',
+        'Use only catalog slugs supplied in the input. Return no matches when none strongly fit.',
+        'Never infer sensitive personal attributes about the user who saved the post.',
+      ].join(' '),
+      input: JSON.stringify({
+        catalogs,
+        source: sourceDocument.slice(0, 40_000),
+        summary: analysis.summary,
+        themes: analysis.themes,
+        takeaways: analysis.takeaways,
+      }),
+      text: {
+        format: {
+          type: 'json_schema',
+          name: 'pinglet_catalog_matches',
+          strict: true,
+          schema: {
+            type: 'object',
+            additionalProperties: false,
+            properties: {
+              matches: {
+                type: 'array',
+                minItems: 0,
+                maxItems: 3,
+                items: {
+                  type: 'object',
+                  additionalProperties: false,
+                  properties: {
+                    slug: { type: 'string', minLength: 1, maxLength: 100 },
+                    confidence: { type: 'number', minimum: 0, maximum: 1 },
+                    reason: { type: 'string', minLength: 8, maxLength: 240 },
+                  },
+                  required: ['slug', 'confidence', 'reason'],
+                },
+              },
+            },
+            required: ['matches'],
+          },
+        },
+      } as any,
+    });
+
+    const parsed = JSON.parse(response.output_text) as { matches: CatalogMatch[] };
+    return parsed.matches;
   }
 
   private assertConfigured() {

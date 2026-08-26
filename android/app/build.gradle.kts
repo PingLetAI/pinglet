@@ -17,7 +17,7 @@ android {
             ?: System.getenv("PINGLET_API_BASE_URL_DEBUG")
             ?: (project.findProperty("LINGER_API_BASE_URL_DEBUG") as String?)
             ?: System.getenv("LINGER_API_BASE_URL_DEBUG")
-            ?: "http://10.0.2.2:3000"
+            ?: "https://api.pinglet.ai"
     val releaseApiBaseUrl =
         (project.findProperty("PINGLET_API_BASE_URL_RELEASE") as String?)
             ?: System.getenv("PINGLET_API_BASE_URL_RELEASE")
