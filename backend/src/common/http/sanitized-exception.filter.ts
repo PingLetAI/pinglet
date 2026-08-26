@@ -12,7 +12,9 @@ export class SanitizedExceptionFilter implements ExceptionFilter {
     const requestId = randomUUID();
     const status = error instanceof HttpException ? error.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
     const raw = error instanceof HttpException ? error.getResponse() : null;
-    const safeClientError = status < 500 ? this.clientPayload(raw, error) : { message: 'Internal server error' };
+    const safeClientError = error instanceof HttpException && status < 500
+      ? this.clientPayload(raw, error)
+      : { message: 'Internal server error' };
 
     if (status >= 500) {
       const name = error instanceof Error ? error.name : 'UnknownError';

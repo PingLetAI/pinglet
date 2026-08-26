@@ -1,4 +1,6 @@
 #!/bin/bash
+set -euo pipefail
+
 DOCKER_COMPOSE_BIN="/usr/bin/docker compose"
 COMPOSE_FILE="docker-compose.prod.yml"
 
