@@ -18,6 +18,11 @@ class CatalogPreferencePatchDto {
   enabled!: boolean;
 }
 
+class ExploreReportDto {
+  @IsIn(['UNSAFE', 'MISLEADING_SPAM', 'PRIVACY_RIGHTS', 'OTHER'])
+  reason!: 'UNSAFE' | 'MISLEADING_SPAM' | 'PRIVACY_RIGHTS' | 'OTHER';
+}
+
 @ApiTags('users')
 @ApiBearerAuth()
 @Controller('me')
@@ -63,5 +68,15 @@ export class UsersController {
   @Patch('catalogs/:catalogId')
   patchCatalogPreference(@Req() req: any, @Param('catalogId') catalogId: string, @Body() dto: CatalogPreferencePatchDto) {
     return this.users.patchCatalogPreference(req.user.sub, catalogId, dto.enabled);
+  }
+
+  @Post('catalogs/items/:contentItemId/report')
+  reportExploreItem(@Req() req: any, @Param('contentItemId') contentItemId: string, @Body() dto: ExploreReportDto) {
+    return this.users.reportExploreItem(req.user.sub, contentItemId, dto.reason);
+  }
+
+  @Post('catalogs/items/:contentItemId/hide-source')
+  hideExploreSource(@Req() req: any, @Param('contentItemId') contentItemId: string) {
+    return this.users.hideExploreSource(req.user.sub, contentItemId);
   }
 }

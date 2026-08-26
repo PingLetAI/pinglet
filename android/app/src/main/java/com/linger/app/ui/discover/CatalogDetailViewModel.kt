@@ -12,7 +12,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class CatalogDetailUiState(val loading: Boolean = true, val catalog: CatalogDetailResponse? = null, val updating: Boolean = false, val error: String? = null)
+data class CatalogDetailUiState(
+    val loading: Boolean = true,
+    val catalog: CatalogDetailResponse? = null,
+    val updating: Boolean = false,
+    val actingOnItemId: String? = null,
+    val notice: String? = null,
+    val error: String? = null,
+)
 
 @HiltViewModel
 class CatalogDetailViewModel @Inject constructor(
@@ -41,6 +48,35 @@ class CatalogDetailViewModel @Inject constructor(
             runCatching { session.withAuthRetry { api.patchCatalogPreference(id, mapOf("enabled" to target)) } }
                 .onSuccess { _state.value = _state.value.copy(updating = false) }
                 .onFailure { _state.value = _state.value.copy(catalog = catalog, updating = false, error = "Collection preference could not be updated.") }
+        }
+    }
+
+    fun report(contentItemId: String, reason: String) = actOnItem(contentItemId, "Report received. This PingLet is now hidden.") {
+        api.reportExploreItem(contentItemId, mapOf("reason" to reason))
+    }
+
+    fun hideSource(contentItemId: String) = actOnItem(contentItemId, "This source is now hidden from Explore.") {
+        api.hideExploreSource(contentItemId)
+    }
+
+    private fun actOnItem(contentItemId: String, successMessage: String, request: suspend () -> com.linger.app.data.remote.ExploreActionResponse) {
+        if (_state.value.actingOnItemId != null) return
+        _state.value = _state.value.copy(actingOnItemId = contentItemId, error = null, notice = null)
+        viewModelScope.launch {
+            runCatching { session.withAuthRetry { request() } }
+                .onSuccess { response ->
+                    val hidden = response.hiddenContentIds.toSet()
+                    val catalog = _state.value.catalog
+                    val items = catalog?.items?.filterNot { it.id in hidden }.orEmpty()
+                    _state.value = _state.value.copy(
+                        catalog = catalog?.copy(items = items, itemCount = items.size),
+                        actingOnItemId = null,
+                        notice = successMessage,
+                    )
+                }
+                .onFailure {
+                    _state.value = _state.value.copy(actingOnItemId = null, error = "That action could not be completed. Try again.")
+                }
         }
     }
 }

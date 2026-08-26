@@ -12,6 +12,8 @@ export interface DerivedTakeaway {
 }
 
 export interface DerivedAnalysis {
+  sourceLanguage: string;
+  sourceLanguageConfidence: number;
   summary: { short: string; comprehensive: string };
   insights: Array<{ title: string; explanation: string; evidence: string }>;
   actions: string[];
@@ -87,7 +89,7 @@ export class OpenAiExtractionService {
     const response = await this.client!.responses.create({
       model: this.extractionModel,
       store: false,
-      instructions: 'You create a faithful, structured memory of a social post. Never invent facts or wording. Engagement metrics and platform chrome are not content. Distinguish what the source explicitly says from reasonable interpretation. Summaries must cover the whole supplied source rather than only its opening. Evidence must be a brief exact excerpt when possible. Actions must be practical suggestions supported by the source, not medical, legal, or financial directives. Themes must be concise lowercase topic labels. Widget takeaways must be standalone. Use type QUOTE only when text is a contiguous verbatim excerpt from the source document, preserving exact words and order; otherwise use NOTE.',
+      instructions: 'You create a faithful, structured memory of a social post. Never invent facts or wording. Engagement metrics and platform chrome are not content. Identify the predominant language of the source content using a lowercase ISO 639-1 code and report confidence in that identification. Do not treat platform chrome, usernames, or isolated translated words as the source language. Distinguish what the source explicitly says from reasonable interpretation. Summaries must cover the whole supplied source rather than only its opening. Evidence must be a brief exact excerpt when possible. Actions must be practical suggestions supported by the source, not medical, legal, or financial directives. Themes must be concise lowercase topic labels. Widget takeaways must be standalone. Use type QUOTE only when text is a contiguous verbatim excerpt from the source document, preserving exact words and order; otherwise use NOTE.',
       input: sourceDocument.slice(0, 100_000),
       text: {
         format: {
@@ -98,6 +100,8 @@ export class OpenAiExtractionService {
             type: 'object',
             additionalProperties: false,
             properties: {
+              sourceLanguage: { type: 'string', pattern: '^[a-z]{2}$' },
+              sourceLanguageConfidence: { type: 'number', minimum: 0, maximum: 1 },
               summary: {
                 type: 'object', additionalProperties: false,
                 properties: {
@@ -133,7 +137,7 @@ export class OpenAiExtractionService {
                 },
               },
             },
-            required: ['summary', 'insights', 'actions', 'themes', 'takeaways'],
+            required: ['sourceLanguage', 'sourceLanguageConfidence', 'summary', 'insights', 'actions', 'themes', 'takeaways'],
           },
         },
       } as any,
@@ -158,10 +162,13 @@ export class OpenAiExtractionService {
         'Do not match from a passing word, creator identity, engagement metadata, or a weak broad association.',
         'Confidence must measure semantic fit to the whole source: 0.90 means clear and unambiguous; use lower values when uncertain.',
         'Use only catalog slugs supplied in the input. Return no matches when none strongly fit.',
+        'Return no matches unless the predominant source language is English.',
         'Never infer sensitive personal attributes about the user who saved the post.',
       ].join(' '),
       input: JSON.stringify({
         catalogs,
+        sourceLanguage: analysis.sourceLanguage,
+        sourceLanguageConfidence: analysis.sourceLanguageConfidence,
         source: sourceDocument.slice(0, 40_000),
         summary: analysis.summary,
         themes: analysis.themes,

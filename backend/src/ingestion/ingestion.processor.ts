@@ -170,6 +170,13 @@ export class IngestionProcessor {
     if (process.env.CATALOG_AUTO_PROMOTION_ENABLED === 'false') return;
     if (!/^https?:\/\//i.test(sourceUrl)) return;
 
+    const languageConfidenceThreshold = this.numericEnv('CATALOG_ENGLISH_MIN_CONFIDENCE', 0.9);
+    if (
+      analysis.sourceLanguage?.trim().toLowerCase() !== 'en' ||
+      !Number.isFinite(analysis.sourceLanguageConfidence) ||
+      analysis.sourceLanguageConfidence < languageConfidenceThreshold
+    ) return;
+
     const extractionThreshold = this.numericEnv('CATALOG_EXTRACTION_MIN_CONFIDENCE', 0.82);
     if (!Number.isFinite(extractionConfidence) || extractionConfidence < extractionThreshold) return;
 

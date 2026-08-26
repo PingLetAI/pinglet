@@ -122,6 +122,8 @@ model User {
   events        Event[]
   pendingActions PendingAction[]
   purchases     PurchaseEntitlement[]
+  contentReports ContentReport[]
+  blockedExploreSources BlockedExploreSource[]
 }
 
 model PurchaseEntitlement {
@@ -191,6 +193,7 @@ model ContentItem {
   favorites      Favorite[]
   queues         QueueItem[]
   ingestions     Ingestion[]
+  reports        ContentReport[]
 }
 
 model Category {
@@ -235,6 +238,31 @@ model CatalogItem {
   contentItem  ContentItem  @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
 
   @@id([catalogId, contentItemId])
+}
+
+model ContentReport {
+  id            String      @id @default(uuid())
+  reporter      User        @relation(fields: [reporterUserId], references: [id], onDelete: Cascade)
+  reporterUserId String
+  contentItem   ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+  contentItemId String
+  reason        String
+  status        String      @default("PENDING")
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([reporterUserId, contentItemId])
+  @@index([status, createdAt])
+}
+
+model BlockedExploreSource {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  sourceKey String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, sourceKey])
 }
 
 model UserContent {

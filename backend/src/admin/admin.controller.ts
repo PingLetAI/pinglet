@@ -1,6 +1,6 @@
-import { Body, Controller, Delete, Param, Post, UseGuards, Patch } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, UseGuards, Patch } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
-import { IsEmail, IsInt, IsOptional, Max, Min } from 'class-validator';
+import { IsEmail, IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
 import { AdminGuard } from '../common/auth/admin.guard';
 import { AdminService } from './admin.service';
 
@@ -13,6 +13,11 @@ class GrantPlusDto {
   @Min(1)
   @Max(3650)
   durationDays?: number;
+}
+
+class ResolveReportDto {
+  @IsIn(['DISMISS', 'REMOVE'])
+  action!: 'DISMISS' | 'REMOVE';
 }
 
 @ApiTags('admin')
@@ -57,5 +62,15 @@ export class AdminController {
   @Post('users/plus')
   grantPlus(@Body() body: GrantPlusDto) {
     return this.service.grantPlus(body.email, body.durationDays);
+  }
+
+  @Get('reports')
+  listReports() {
+    return this.service.listReports();
+  }
+
+  @Patch('reports/:id')
+  resolveReport(@Param('id') id: string, @Body() body: ResolveReportDto) {
+    return this.service.resolveReport(id, body.action);
   }
 }

@@ -63,6 +63,12 @@ interface AppApiService {
     @GET("/api/v1/me/catalogs/{id}/items")
     suspend fun getMyCatalogDetail(@Path("id") id: String): CatalogDetailResponse
 
+    @POST("/api/v1/me/catalogs/items/{contentItemId}/report")
+    suspend fun reportExploreItem(@Path("contentItemId") contentItemId: String, @Body body: Map<String, String>): ExploreActionResponse
+
+    @POST("/api/v1/me/catalogs/items/{contentItemId}/hide-source")
+    suspend fun hideExploreSource(@Path("contentItemId") contentItemId: String): ExploreActionResponse
+
     @GET("/api/v1/me/content")
     suspend fun getMyContent(): List<UserContentResponse>
 

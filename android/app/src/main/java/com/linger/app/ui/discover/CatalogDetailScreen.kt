@@ -2,9 +2,7 @@ package com.linger.app.ui.discover
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.OpenInNew
-import androidx.compose.material.icons.rounded.PauseCircle
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -20,9 +18,12 @@ fun CatalogDetailScreen(onBack: () -> Unit, viewModel: CatalogDetailViewModel = 
     val state by viewModel.state.collectAsState()
     val catalog = state.catalog
     val uriHandler = LocalUriHandler.current
+    var menuItemId by remember { mutableStateOf<String?>(null) }
+    var reportItemId by remember { mutableStateOf<String?>(null) }
     LingerLazyPage("Collection", catalog?.name ?: "Loading collection", catalog?.description, onBack) {
         if (state.loading) item { LinearProgressIndicator(Modifier.fillMaxWidth()) }
         state.error?.let { item { LingerCard { Text(it, color = MaterialTheme.colorScheme.error); TextButton(viewModel::refresh) { Text("TRY AGAIN") } } } }
+        state.notice?.let { notice -> item { Text(notice, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary) } }
         catalog?.let { current ->
             item {
                 LingerCard(color = MaterialTheme.colorScheme.secondaryContainer) {
@@ -39,7 +40,28 @@ fun CatalogDetailScreen(onBack: () -> Unit, viewModel: CatalogDetailViewModel = 
             items(current.items.size, key = { current.items[it].id }) { index ->
                 val item = current.items[index]
                 LingerCard {
-                    Text((index + 1).toString().padStart(2, '0'), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.tertiary)
+                    Row(Modifier.fillMaxWidth()) {
+                        Text((index + 1).toString().padStart(2, '0'), Modifier.weight(1f), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.tertiary)
+                        Box {
+                            IconButton(
+                                onClick = { menuItemId = item.id },
+                                enabled = state.actingOnItemId == null,
+                                modifier = Modifier.size(32.dp),
+                            ) { Icon(Icons.Rounded.MoreVert, "More options") }
+                            DropdownMenu(expanded = menuItemId == item.id, onDismissRequest = { menuItemId = null }) {
+                                DropdownMenuItem(
+                                    text = { Text("Report this PingLet") },
+                                    leadingIcon = { Icon(Icons.Rounded.Flag, null) },
+                                    onClick = { menuItemId = null; reportItemId = item.id },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Hide this source") },
+                                    leadingIcon = { Icon(Icons.Rounded.VisibilityOff, null) },
+                                    onClick = { menuItemId = null; viewModel.hideSource(item.id) },
+                                )
+                            }
+                        }
+                    }
                     Text(item.text, style = MaterialTheme.typography.bodyLarge)
                     item.author?.takeIf(String::isNotBlank)?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     item.sourceUrl?.takeIf(String::isNotBlank)?.let { sourceUrl ->
@@ -52,5 +74,29 @@ fun CatalogDetailScreen(onBack: () -> Unit, viewModel: CatalogDetailViewModel = 
                 }
             }
         }
+    }
+
+    reportItemId?.let { contentItemId ->
+        AlertDialog(
+            onDismissRequest = { reportItemId = null },
+            title = { Text("Report this PingLet") },
+            text = {
+                Column {
+                    listOf(
+                        "UNSAFE" to "Inappropriate or unsafe",
+                        "MISLEADING_SPAM" to "Misleading or spam",
+                        "PRIVACY_RIGHTS" to "Privacy or rights concern",
+                        "OTHER" to "Other",
+                    ).forEach { (reason, label) ->
+                        TextButton(
+                            onClick = { reportItemId = null; viewModel.report(contentItemId, reason) },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { Text(label, Modifier.fillMaxWidth()) }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = { TextButton(onClick = { reportItemId = null }) { Text("CANCEL") } },
+        )
     }
 }

@@ -178,6 +178,11 @@ data class CatalogDetailResponse(
 
 data class CatalogPreferenceResponse(val catalogId: String, val enabled: Boolean)
 
+data class ExploreActionResponse(
+    val success: Boolean,
+    val hiddenContentIds: List<String> = emptyList(),
+)
+
 
 data class EventPayload(
     val type: String,

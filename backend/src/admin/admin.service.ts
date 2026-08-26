@@ -157,6 +157,33 @@ export class AdminService {
     return { email: user.email, plan: 'PLUS', expiresAt, durationDays };
   }
 
+  async listReports() {
+    return this.prisma.contentReport.findMany({
+      where: { status: 'PENDING' },
+      orderBy: { createdAt: 'asc' },
+      include: {
+        reporter: { select: { id: true, email: true } },
+        contentItem: { select: { id: true, text: true, author: true, sourceUrl: true, sourcePlatform: true } },
+      },
+      take: 200,
+    });
+  }
+
+  async resolveReport(id: string, action: 'DISMISS' | 'REMOVE') {
+    const report = await this.prisma.contentReport.findUnique({ where: { id } });
+    if (!report) throw new NotFoundException('Report not found');
+    if (action === 'DISMISS') {
+      await this.prisma.contentReport.update({ where: { id }, data: { status: 'DISMISSED' } });
+      return { id, status: 'DISMISSED' };
+    }
+    await this.prisma.$transaction([
+      this.prisma.catalogItem.deleteMany({ where: { contentItemId: report.contentItemId } }),
+      this.prisma.contentItem.update({ where: { id: report.contentItemId }, data: { visibility: 'PRIVATE' } }),
+      this.prisma.contentReport.updateMany({ where: { contentItemId: report.contentItemId }, data: { status: 'REMOVED' } }),
+    ]);
+    return { id, contentItemId: report.contentItemId, status: 'REMOVED' };
+  }
+
   normalizeText(value: string) {
     return value
       .normalize('NFKC')

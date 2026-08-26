@@ -91,6 +91,7 @@ export class UsersService {
   }
 
   async getCatalogPreferences(userId: string) {
+    const exclusions = await this.getExploreExclusions(userId);
     const catalogs = await this.prisma.catalog.findMany({
       where: { isActive: true },
       orderBy: { name: 'asc' },
@@ -108,7 +109,7 @@ export class UsersService {
       ...catalog,
       enabled: userCatalogSettings[0]?.enabled ?? true,
       itemCount: _count.items,
-      previewItems: items.map(({ contentItem }) => ({
+      previewItems: items.filter(({ contentItem }) => this.isExploreVisible(contentItem, exclusions)).map(({ contentItem }) => ({
         id: contentItem.id, text: contentItem.text, type: contentItem.type,
         author: contentItem.author, sourceUrl: contentItem.sourceUrl,
       })),
@@ -116,6 +117,7 @@ export class UsersService {
   }
 
   async getCatalogDetail(userId: string, catalogId: string) {
+    const exclusions = await this.getExploreExclusions(userId);
     const catalog = await this.prisma.catalog.findFirst({
       where: { id: catalogId, isActive: true },
       include: {
@@ -129,11 +131,12 @@ export class UsersService {
       },
     });
     if (!catalog) throw new NotFoundException('Collection not found');
+    const visibleItems = catalog.items.filter(({ contentItem }) => this.isExploreVisible(contentItem, exclusions));
     return {
       id: catalog.id, slug: catalog.slug, name: catalog.name,
       description: catalog.description, enabled: catalog.userCatalogSettings[0]?.enabled ?? true,
-      itemCount: catalog._count.items,
-      items: catalog.items.map(({ contentItem }) => ({
+      itemCount: visibleItems.length,
+      items: visibleItems.map(({ contentItem }) => ({
         id: contentItem.id, text: contentItem.text, type: contentItem.type,
         author: contentItem.author, sourceUrl: contentItem.sourceUrl,
       })),
@@ -148,5 +151,63 @@ export class UsersService {
       update: { enabled },
     });
     return { catalogId, enabled };
+  }
+
+  async reportExploreItem(userId: string, contentItemId: string, reason: string) {
+    await this.requireExploreItem(contentItemId);
+    await this.prisma.contentReport.upsert({
+      where: { reporterUserId_contentItemId: { reporterUserId: userId, contentItemId } },
+      create: { reporterUserId: userId, contentItemId, reason },
+      update: { reason, status: 'PENDING' },
+    });
+    return { success: true, hiddenContentIds: [contentItemId] };
+  }
+
+  async hideExploreSource(userId: string, contentItemId: string) {
+    const item = await this.requireExploreItem(contentItemId);
+    const sourceKey = this.exploreSourceKey(item);
+    await this.prisma.blockedExploreSource.upsert({
+      where: { userId_sourceKey: { userId, sourceKey } },
+      create: { userId, sourceKey },
+      update: {},
+    });
+    const candidates = item.author?.trim()
+      ? await this.prisma.contentItem.findMany({
+          where: {
+            visibility: 'COMMUNITY',
+            sourcePlatform: item.sourcePlatform,
+            author: { equals: item.author, mode: 'insensitive' },
+          },
+          select: { id: true },
+        })
+      : [{ id: item.id }];
+    return { success: true, hiddenContentIds: candidates.map((candidate) => candidate.id) };
+  }
+
+  private requireExploreItem(contentItemId: string) {
+    return this.prisma.contentItem.findFirstOrThrow({
+      where: { id: contentItemId, visibility: 'COMMUNITY', status: 'ACTIVE', catalogItems: { some: {} } },
+    });
+  }
+
+  private async getExploreExclusions(userId: string) {
+    const [reports, blocks] = await Promise.all([
+      this.prisma.contentReport.findMany({ where: { reporterUserId: userId }, select: { contentItemId: true } }),
+      this.prisma.blockedExploreSource.findMany({ where: { userId }, select: { sourceKey: true } }),
+    ]);
+    return {
+      contentIds: new Set(reports.map((report) => report.contentItemId)),
+      sourceKeys: new Set(blocks.map((block) => block.sourceKey)),
+    };
+  }
+
+  private isExploreVisible(item: { id: string; author: string | null; sourcePlatform: string | null; sourceUrl: string | null }, exclusions: { contentIds: Set<string>; sourceKeys: Set<string> }) {
+    return !exclusions.contentIds.has(item.id) && !exclusions.sourceKeys.has(this.exploreSourceKey(item));
+  }
+
+  private exploreSourceKey(item: { id: string; author: string | null; sourcePlatform: string | null; sourceUrl: string | null }) {
+    const author = item.author?.trim().toLowerCase();
+    if (author) return `${item.sourcePlatform || 'SOURCE'}:${author}`;
+    return `CONTENT:${item.id}`;
   }
 }
