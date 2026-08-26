@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Body, UseGuards, Req, Param } from '@nestjs/common';
+import { Controller, Get, Patch, Post, Body, UseGuards, Req, Param } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../common/auth/jwt-auth.guard';
@@ -33,6 +33,16 @@ export class UsersController {
   @Get('preferences')
   getPreferences(@Req() req: any) {
     return this.users.getPreferences(req.user.sub);
+  }
+
+  @Get('terms')
+  getTermsStatus(@Req() req: any) {
+    return this.users.getTermsStatus(req.user.sub);
+  }
+
+  @Post('terms/accept')
+  acceptTerms(@Req() req: any) {
+    return this.users.acceptCurrentTerms(req.user.sub);
   }
 
   @Patch('preferences')

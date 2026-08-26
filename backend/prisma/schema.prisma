@@ -107,6 +107,8 @@ model User {
   plusExpiresAt DateTime?
   plusTrialStartedAt DateTime?
   plusTrialEndsAt DateTime?
+  termsAcceptedVersion String?
+  termsAcceptedAt DateTime?
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
 

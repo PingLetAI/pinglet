@@ -25,7 +25,12 @@ data class AddContentUiState(
     val error: String? = null,
     val entitlement: EntitlementResponse? = null,
     val gate: SaveGate? = null,
+    val termsAccepted: Boolean? = null,
+    val showTermsPrompt: Boolean = false,
+    val acceptingTerms: Boolean = false,
 )
+
+private data class PendingSave(val text: String, val type: String, val url: String, val author: String?)
 
 @HiltViewModel
 class AddContentViewModel @Inject constructor(
@@ -33,10 +38,21 @@ class AddContentViewModel @Inject constructor(
     private val sessionManager: SessionManager,
     private val api: AppApiService,
 ) : ViewModel() {
+    private var pendingSave: PendingSave? = null
     private val _state = MutableStateFlow(AddContentUiState())
     val state: StateFlow<AddContentUiState> = _state.asStateFlow()
 
-    init { refreshEntitlements() }
+    init {
+        refreshEntitlements()
+        refreshTermsStatus()
+    }
+
+    private fun refreshTermsStatus() {
+        viewModelScope.launch {
+            runCatching { sessionManager.withAuthRetry { api.getTermsStatus() } }
+                .onSuccess { response -> _state.value = _state.value.copy(termsAccepted = response.accepted) }
+        }
+    }
 
     fun refreshEntitlements() {
         viewModelScope.launch {
@@ -61,6 +77,44 @@ class AddContentViewModel @Inject constructor(
 
     fun save(text: String, type: String, url: String?, author: String? = null) {
         if (_state.value.saving) return
+        if (url != null && _state.value.termsAccepted != true) {
+            pendingSave = PendingSave(text, type, url, author)
+            _state.value = _state.value.copy(showTermsPrompt = true, error = null)
+            return
+        }
+        performSave(text, type, url, author)
+    }
+
+    fun dismissTermsPrompt() {
+        pendingSave = null
+        _state.value = _state.value.copy(showTermsPrompt = false, acceptingTerms = false)
+    }
+
+    fun acceptTermsAndContinue() {
+        if (_state.value.acceptingTerms) return
+        viewModelScope.launch {
+            _state.value = _state.value.copy(acceptingTerms = true, error = null)
+            runCatching { sessionManager.withAuthRetry { api.acceptTerms() } }
+                .onSuccess {
+                    val pending = pendingSave
+                    pendingSave = null
+                    _state.value = _state.value.copy(
+                        termsAccepted = true,
+                        showTermsPrompt = false,
+                        acceptingTerms = false,
+                    )
+                    pending?.let { performSave(it.text, it.type, it.url, it.author) }
+                }
+                .onFailure {
+                    _state.value = _state.value.copy(
+                        acceptingTerms = false,
+                        error = "Could not record your agreement. Check your connection and try again.",
+                    )
+                }
+        }
+    }
+
+    private fun performSave(text: String, type: String, url: String?, author: String?) {
         viewModelScope.launch {
             _state.value = _state.value.copy(saving = true, saved = false, error = null, gate = null)
             runCatching {
@@ -69,6 +123,16 @@ class AddContentViewModel @Inject constructor(
                 _state.value = _state.value.copy(saving = false, saved = true, queuedIngestionId = queuedId)
             }.onFailure { error ->
                 val apiError = parseApiError(error)
+                if (apiError.first == "TERMS_ACCEPTANCE_REQUIRED" && url != null) {
+                    pendingSave = PendingSave(text, type, url, author)
+                    _state.value = _state.value.copy(
+                        saving = false,
+                        termsAccepted = false,
+                        showTermsPrompt = true,
+                        error = null,
+                    )
+                    return@onFailure
+                }
                 val gate = when (apiError.first) {
                     "ACCOUNT_REQUIRED" -> SaveGate.ACCOUNT
                     "UPGRADE_REQUIRED", "SOCIAL_IMPORT_LIMIT" -> SaveGate.PLUS

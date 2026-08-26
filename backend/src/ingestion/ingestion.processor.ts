@@ -123,6 +123,7 @@ export class IngestionProcessor {
           sourceDocument,
           analysis,
           confidence,
+          ingestion.type === 'URL',
         );
       } catch (error) {
         const message = error instanceof Error ? error.message : `${error}`;
@@ -163,7 +164,9 @@ export class IngestionProcessor {
     sourceDocument: string,
     analysis: Awaited<ReturnType<OpenAiExtractionService['deriveAnalysis']>>,
     extractionConfidence: number,
+    publicLinkEligible: boolean,
   ) {
+    if (!publicLinkEligible) return;
     if (process.env.CATALOG_AUTO_PROMOTION_ENABLED === 'false') return;
     if (!/^https?:\/\//i.test(sourceUrl)) return;
 

@@ -147,6 +147,7 @@ function LegalPage({ type }: { type: "privacy" | "terms" }) {
             <LegalSection title="Your content and permissions">
               <p>You retain ownership of content you create. You grant TinkerPal LLC a limited, non-exclusive license to host, process, reproduce, and transform submitted material as necessary to operate, secure, and improve the service.</p>
               <p>Eligible excerpts or derived takeaways from public-link submissions may be displayed in source-linked Explore catalogs after moderation and high-confidence classification. Directly entered personal text is not eligible unless you separately choose to publish it through a future sharing feature.</p>
+              <p>Before submitting your first public link, you must accept these terms. PingLet may analyze that public link and make eligible AI-extracted material, topics, source attribution, and source links available through Explore. Personal text entered directly in PingLet, account information, favorites, and private notes remain private.</p>
               <p>You must have the right to submit material and must not use PingLet to infringe copyright, privacy, publicity, contractual, or other rights. Saving a link does not transfer ownership of the original post to you or PingLet. Creators and rights holders may request review or removal.</p>
             </LegalSection>
             <LegalSection title="Acceptable use">

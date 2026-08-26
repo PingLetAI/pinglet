@@ -36,6 +36,12 @@ interface AppApiService {
     @GET("/api/v1/me/preferences")
     suspend fun getPreferences(): PreferenceResponse
 
+    @GET("/api/v1/me/terms")
+    suspend fun getTermsStatus(): TermsStatusResponse
+
+    @POST("/api/v1/me/terms/accept")
+    suspend fun acceptTerms(): TermsStatusResponse
+
     @PATCH("/api/v1/me/preferences")
     suspend fun patchPreferences(@Body body: Map<String, String>): PreferenceResponse
 

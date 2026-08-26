@@ -1,7 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { IngestionQueueService } from './ingestion-queue.service';
 import { EntitlementService } from '../entitlements/entitlement.service';
+import { CURRENT_TERMS_VERSION } from '../common/legal/terms.constants';
 
 @Injectable()
 export class IngestionService {
@@ -13,6 +14,16 @@ export class IngestionService {
 
   async createUrlIngestion(userId: string, rawUrl: string, contextText?: string) {
     const url = this.parseSupportedUrl(rawUrl);
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { termsAcceptedVersion: true },
+    });
+    if (user?.termsAcceptedVersion !== CURRENT_TERMS_VERSION) {
+      throw new ForbiddenException({
+        code: 'TERMS_ACCEPTANCE_REQUIRED',
+        message: 'Accept the current Terms of Use before submitting a public link.',
+      });
+    }
     const normalizedUrl = url.toString();
     const reusable = await this.prisma.ingestion.findFirst({
       where: {

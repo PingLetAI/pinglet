@@ -138,6 +138,22 @@ export class EmailOtpService implements OnModuleDestroy {
   private async mergeAnonymousAccount(sourceUserId: string, targetUserId: string, deviceId: string) {
     const db = this.prisma as any;
     await db.$transaction(async (tx: any) => {
+      const [sourceUser, targetUser] = await Promise.all([
+        tx.user.findUnique({ where: { id: sourceUserId } }),
+        tx.user.findUnique({ where: { id: targetUserId } }),
+      ]);
+      if (
+        sourceUser?.termsAcceptedAt &&
+        (!targetUser?.termsAcceptedAt || sourceUser.termsAcceptedAt > targetUser.termsAcceptedAt)
+      ) {
+        await tx.user.update({
+          where: { id: targetUserId },
+          data: {
+            termsAcceptedVersion: sourceUser.termsAcceptedVersion,
+            termsAcceptedAt: sourceUser.termsAcceptedAt,
+          },
+        });
+      }
       const sourceContents = await tx.userContent.findMany({ where: { userId: sourceUserId } });
       for (const item of sourceContents) {
         const existing = await tx.userContent.findUnique({ where: { userId_contentItemId: { userId: targetUserId, contentItemId: item.contentItemId } } });

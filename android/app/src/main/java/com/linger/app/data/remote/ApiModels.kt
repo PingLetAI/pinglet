@@ -142,6 +142,12 @@ data class PreferenceResponse(
     val theme: String,
 )
 
+data class TermsStatusResponse(
+    val currentVersion: String,
+    val accepted: Boolean,
+    val acceptedAt: String? = null,
+)
+
 data class CatalogResponse(
     val id: String,
     val slug: String,

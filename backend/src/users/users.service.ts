@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { CURRENT_TERMS_VERSION } from '../common/legal/terms.constants';
 
 type PersonalSystemMix = 'MOSTLY_MINE' | 'BALANCED' | 'MORE_DISCOVERY';
 
@@ -46,6 +47,27 @@ export class UsersService {
     return this.prisma.userPreference.create({
       data: { userId },
     });
+  }
+
+  async getTermsStatus(userId: string) {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { termsAcceptedVersion: true, termsAcceptedAt: true },
+    });
+    return {
+      currentVersion: CURRENT_TERMS_VERSION,
+      accepted: user.termsAcceptedVersion === CURRENT_TERMS_VERSION,
+      acceptedAt: user.termsAcceptedAt,
+    };
+  }
+
+  async acceptCurrentTerms(userId: string) {
+    const acceptedAt = new Date();
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { termsAcceptedVersion: CURRENT_TERMS_VERSION, termsAcceptedAt: acceptedAt },
+    });
+    return { currentVersion: CURRENT_TERMS_VERSION, accepted: true, acceptedAt };
   }
 
   async patchPreferences(

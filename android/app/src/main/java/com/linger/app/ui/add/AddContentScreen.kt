@@ -7,6 +7,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.linger.app.ui.components.LingerCard
@@ -27,12 +28,36 @@ fun AddContentScreen(
     var author by remember { mutableStateOf("") }
     var type by remember { mutableStateOf("Thought") }
     val state by viewModel.state.collectAsState()
+    val uriHandler = LocalUriHandler.current
     LaunchedEffect(preFillText) { if (preFillText.isNotBlank()) text = preFillText; viewModel.refreshEntitlements() }
     LaunchedEffect(state.queuedIngestionId) { state.queuedIngestionId?.let(onQueued) }
     LaunchedEffect(state.gate) { when (state.gate) { SaveGate.ACCOUNT -> { viewModel.consumeGate(); onCreateAccount() }; SaveGate.PLUS -> { viewModel.consumeGate(); when { state.entitlement?.trialEligible == true -> onTryPlus(); state.entitlement?.paidPlansEnabled == true -> onUpgrade(); else -> viewModel.showSubscriptionsPending() } }; null -> Unit } }
 
     val sourceUrl = remember(text) { Regex("https://(?:www\\.)?(?:instagram\\.com|tiktok\\.com|[^/]*\\.tiktok\\.com|facebook\\.com|[^/]*\\.facebook\\.com|fb\\.watch)/\\S+", RegexOption.IGNORE_CASE).find(text)?.value?.trimEnd('.', ',', ')') }
     val platform = sourceUrl?.let { when { it.contains("instagram", true) -> "Instagram"; it.contains("tiktok", true) -> "TikTok"; else -> "Facebook" } }
+
+    if (state.showTermsPrompt) {
+        AlertDialog(
+            onDismissRequest = viewModel::dismissTermsPrompt,
+            title = { Text("Sharing content with PingLet") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("By continuing, you agree to our Terms of Use. Only submit content you are permitted to share. PingLet may analyze public links and use eligible AI-derived excerpts, topics, source attribution, and links in public Explore catalogs. Your personal notes, account information, and full saved details remain private.")
+                    Text("Do not submit illegal, sexually explicit, hateful, violent, abusive, misleading, privacy-invasive, or rights-infringing content. Content may be filtered, removed, or reported.")
+                    TextButton(onClick = { uriHandler.openUri("https://pinglet.ai/terms") }) {
+                        Text("READ TERMS OF USE")
+                    }
+                    state.error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+                }
+            },
+            confirmButton = {
+                Button(onClick = viewModel::acceptTermsAndContinue, enabled = !state.acceptingTerms) {
+                    Text(if (state.acceptingTerms) "SAVING..." else "AGREE AND CONTINUE")
+                }
+            },
+            dismissButton = { TextButton(onClick = viewModel::dismissTermsPrompt) { Text("NOT NOW") } },
+        )
+    }
 
     LingerPage("New PingLet", if (sourceUrl != null) "Save this post." else "What should stay with you?", if (sourceUrl != null) "We will read its words, images, and speech in the background." else "Write it as you want to meet it again.", onBack) {
         state.entitlement?.takeIf { it.accountPromptRecommended && it.isAnonymous }?.let {
