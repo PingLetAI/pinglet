@@ -15,7 +15,7 @@ services:
     command: >
       sh -c "npm run prisma:deploy && node dist/main"
     healthcheck:
-      test: ['CMD-SHELL', 'wget -qO- http://localhost:3000/api/docs || exit 1']
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:$${APP_PORT:-3000}/api/v1/health/ready || exit 1']
       interval: 30s
       timeout: 5s
       retries: 3
@@ -35,6 +35,12 @@ services:
       redis:
         condition: service_healthy
     command: node dist/worker
+    healthcheck:
+      test: ['CMD', 'node', '-e', 'const s=require("fs").statSync("/tmp/pinglet-worker-heartbeat");process.exit(Date.now()-s.mtimeMs<60000?0:1)']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
 
   postgres:
     image: postgres:16-alpine

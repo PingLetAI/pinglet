@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
 import { JwtAuthGuard } from '../common/auth/jwt-auth.guard';
 import { IngestionService } from './ingestion.service';
+import { RateLimit } from '../common/security/rate-limit.decorator';
 
 class IngestionCreateDto {
   @IsUrl({ protocols: ['https'], require_protocol: true })
@@ -22,6 +23,7 @@ export class IngestionController {
   constructor(private readonly service: IngestionService) {}
 
   @Post()
+  @RateLimit(60, 3600, 'ingestion-create')
   @HttpCode(202)
   create(@Req() req: any, @Body() body: IngestionCreateDto) {
     return this.service.createUrlIngestion(req.user.sub, body.url, body.contextText);

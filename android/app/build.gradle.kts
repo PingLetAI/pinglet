@@ -10,7 +10,7 @@ plugins {
 
 android {
     namespace = "com.linger.app"
-    compileSdk = 35
+    compileSdk = 36
 
     val debugApiBaseUrl =
         (project.findProperty("PINGLET_API_BASE_URL_DEBUG") as String?)
@@ -61,7 +61,7 @@ android {
     defaultConfig {
         applicationId = "ai.pinglet.app"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 3
         versionName = "0.1.2"
     }

@@ -13,6 +13,8 @@ import { AdminModule } from './admin/admin.module';
 import { QueueModule } from './queue/queue.module';
 import { SyncModule } from './sync/sync.module';
 import { EntitlementModule } from './entitlements/entitlement.module';
+import { HealthModule } from './health/health.module';
+import { SecurityModule } from './common/security/security.module';
 
 @Module({
   imports: [
@@ -34,6 +36,8 @@ import { EntitlementModule } from './entitlements/entitlement.module';
     QueueModule,
     SyncModule,
     EntitlementModule,
+    SecurityModule,
+    HealthModule,
   ],
 })
 export class AppModule {}

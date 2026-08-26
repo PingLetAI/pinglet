@@ -3,6 +3,7 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { IsEmail, IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
 import { AdminGuard } from '../common/auth/admin.guard';
 import { AdminService } from './admin.service';
+import { RateLimit } from '../common/security/rate-limit.decorator';
 
 class GrantPlusDto {
   @IsEmail()
@@ -23,6 +24,7 @@ class ResolveReportDto {
 @ApiTags('admin')
 @Controller('admin')
 @UseGuards(AdminGuard)
+@RateLimit(120, 60, 'admin')
 export class AdminController {
   constructor(private readonly service: AdminService) {}
 

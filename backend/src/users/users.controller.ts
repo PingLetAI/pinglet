@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../common/auth/jwt-auth.guard';
 import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { RateLimit } from '../common/security/rate-limit.decorator';
 
 class PreferencePatchDto {
   @IsOptional() @IsInt() @Min(15) @Max(1440)
@@ -71,11 +72,13 @@ export class UsersController {
   }
 
   @Post('catalogs/items/:contentItemId/report')
+  @RateLimit(30, 3600, 'explore-report')
   reportExploreItem(@Req() req: any, @Param('contentItemId') contentItemId: string, @Body() dto: ExploreReportDto) {
     return this.users.reportExploreItem(req.user.sub, contentItemId, dto.reason);
   }
 
   @Post('catalogs/items/:contentItemId/hide-source')
+  @RateLimit(60, 3600, 'explore-hide-source')
   hideExploreSource(@Req() req: any, @Param('contentItemId') contentItemId: string) {
     return this.users.hideExploreSource(req.user.sub, contentItemId);
   }
