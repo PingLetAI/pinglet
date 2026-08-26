@@ -1,4 +1,4 @@
-import { Body, Controller, Post, HttpCode, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Post, HttpCode, Req, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { IsEmail, IsNotEmpty, IsOptional, IsString, Length } from 'class-validator';
 import { JwtAuthGuard } from '../common/auth/jwt-auth.guard';
@@ -41,6 +41,8 @@ class VerifyEmailOtpDto {
   @IsString() @Length(6, 6) code!: string;
 }
 
+class DeleteAccountDto extends VerifyEmailOtpDto {}
+
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
@@ -73,6 +75,19 @@ export class AuthController {
   @Post('email/verify')
   @UseGuards(JwtAuthGuard)
   verifyEmailOtp(@Req() req: any, @Body() body: VerifyEmailOtpDto) {
-    return this.emailOtp.verify(req.user.sub, body.email, body.code);
+    return this.emailOtp.verify(req.user.sub, req.user.deviceId, req.user.installationId, body.email, body.code);
+  }
+
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
+  logout(@Req() req: any) {
+    return this.service.logout(req.user.sub, req.user.deviceId, req.user.installationId);
+  }
+
+  @Delete('account')
+  @UseGuards(JwtAuthGuard)
+  deleteAccount(@Req() req: any, @Body() body: DeleteAccountDto) {
+    return this.emailOtp.deleteAccount(req.user.sub, body.email, body.code);
   }
 }

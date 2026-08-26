@@ -23,17 +23,22 @@ import com.linger.app.ui.components.StatusPill
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onCreateAccount: () -> Unit = {}, onTryPlus: () -> Unit = {}, onUpgrade: () -> Unit = {}, onOpenQueue: () -> Unit = {}, onOpenWidgetSettings: () -> Unit = {}, entitlementRefreshKey: Long = 0L, viewModel: SettingsViewModel = hiltViewModel()) {
+fun SettingsScreen(onCreateAccount: () -> Unit = {}, onTryPlus: () -> Unit = {}, onUpgrade: () -> Unit = {}, onOpenQueue: () -> Unit = {}, onOpenWidgetSettings: () -> Unit = {}, onAccountReset: () -> Unit = {}, entitlementRefreshKey: Long = 0L, viewModel: SettingsViewModel = hiltViewModel()) {
     val entitlement by viewModel.entitlement.collectAsState()
+    val accountAction by viewModel.accountAction.collectAsState()
     val textSize by viewModel.widgetTextSize.collectAsState()
     val opacity by viewModel.widgetOpacity.collectAsState()
     val mix by viewModel.personalSystemMix.collectAsState()
     val context = LocalContext.current
+    var showSignOut by remember { mutableStateOf(false) }
+    var showDelete by remember { mutableStateOf(false) }
+    var deletionCode by remember { mutableStateOf("") }
     LaunchedEffect(Unit) { viewModel.refresh() }
     LaunchedEffect(entitlementRefreshKey) { if (entitlementRefreshKey > 0L) viewModel.refresh() }
+    LaunchedEffect(accountAction.sessionReset) { if (accountAction.sessionReset) onAccountReset() }
 
     LingerPage("Settings", "Make PingLet yours.", "Account, rotation, and widget preferences.") {
-        AccountSummary(entitlement, onCreateAccount, onTryPlus, onUpgrade) {
+        AccountSummary(entitlement, onCreateAccount, onTryPlus, onUpgrade, { showSignOut = true }, { showDelete = true }) {
             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/account/subscriptions?package=${BuildConfig.APPLICATION_ID}")))
         }
 
@@ -74,10 +79,45 @@ fun SettingsScreen(onCreateAccount: () -> Unit = {}, onTryPlus: () -> Unit = {},
         }
         Text("Rotation can shift slightly while Android is conserving battery.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
+
+    if (showSignOut) AlertDialog(
+        onDismissRequest = { if (!accountAction.loading) showSignOut = false },
+        icon = { Icon(Icons.Rounded.Logout, null) },
+        title = { Text("Sign out on this device?") },
+        text = { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("Your PingLets remain in your account. This device will return to a new guest profile and clear its account-specific cache.")
+            accountAction.error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+        } },
+        confirmButton = { Button(onClick = { viewModel.signOut() }, enabled = !accountAction.loading) { Text(if (accountAction.loading) "SIGNING OUT..." else "SIGN OUT") } },
+        dismissButton = { TextButton(onClick = { showSignOut = false }) { Text("CANCEL") } },
+    )
+    if (showDelete) AlertDialog(
+        onDismissRequest = { if (!accountAction.loading) { showDelete = false; viewModel.clearAccountAction() } },
+        icon = { Icon(Icons.Rounded.DeleteForever, null, tint = MaterialTheme.colorScheme.error) },
+        title = { Text("Delete account and data?") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("This permanently deletes your PingLet account, personal saves, imports, favorites, devices, and account history. This cannot be undone.")
+                if (accountAction.deletionCodeSent) {
+                    Text("Enter the six-digit code sent to ${entitlement?.email} to confirm deletion.", style = MaterialTheme.typography.bodySmall)
+                    OutlinedTextField(deletionCode, { deletionCode = it.filter(Char::isDigit).take(6) }, label = { Text("Verification code") }, singleLine = true)
+                } else Text("We will send a fresh verification code to ${entitlement?.email} before deleting anything.", style = MaterialTheme.typography.bodySmall)
+                accountAction.error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { if (accountAction.deletionCodeSent) viewModel.deleteAccount(deletionCode) else viewModel.requestDeletionCode() },
+                enabled = !accountAction.loading && (!accountAction.deletionCodeSent || deletionCode.length == 6),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+            ) { Text(if (accountAction.loading) "PLEASE WAIT..." else if (accountAction.deletionCodeSent) "DELETE PERMANENTLY" else "SEND VERIFICATION CODE") }
+        },
+        dismissButton = { TextButton(onClick = { showDelete = false; viewModel.clearAccountAction() }) { Text("CANCEL") } },
+    )
 }
 
 @Composable
-private fun AccountSummary(entitlement: EntitlementResponse?, onCreateAccount: () -> Unit, onTryPlus: () -> Unit, onUpgrade: () -> Unit, onManageSubscription: () -> Unit) {
+private fun AccountSummary(entitlement: EntitlementResponse?, onCreateAccount: () -> Unit, onTryPlus: () -> Unit, onUpgrade: () -> Unit, onSignOut: () -> Unit, onDeleteAccount: () -> Unit, onManageSubscription: () -> Unit) {
     val plan = entitlement?.plan ?: "GUEST"
     SectionLabel("ACCOUNT")
     LingerCard {
@@ -100,14 +140,23 @@ private fun AccountSummary(entitlement: EntitlementResponse?, onCreateAccount: (
         if (entitlement?.trialStatus == "ACTIVE") Text("${entitlement.trialDaysRemaining} days of Plus remaining. Your account returns to Free automatically; you will not be charged.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         when {
             entitlement?.isAnonymous != false -> Button(onCreateAccount, Modifier.fillMaxWidth()) { Text("CONNECT EMAIL") }
-            entitlement.trialStatus == "ACTIVE" -> Button(onUpgrade, Modifier.fillMaxWidth()) { Text("KEEP PINGLET PLUS") }
+            entitlement.trialStatus == "ACTIVE" && entitlement.paidPlansEnabled -> Button(onUpgrade, Modifier.fillMaxWidth()) { Text("KEEP PINGLET PLUS") }
+            entitlement.trialStatus == "ACTIVE" -> Text("Paid plans are coming soon. Your trial still ends automatically with no charge.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             plan != "PLUS" && entitlement.trialEligible -> {
                 Button(onTryPlus, Modifier.fillMaxWidth()) { Text("TRY PINGLET PLUS - 7 DAYS FREE") }
-                TextButton(onUpgrade, Modifier.fillMaxWidth()) { Text("VIEW PAID PLANS") }
+                if (entitlement.paidPlansEnabled) TextButton(onUpgrade, Modifier.fillMaxWidth()) { Text("VIEW PAID PLANS") }
             }
-            plan != "PLUS" -> Button(onUpgrade, Modifier.fillMaxWidth()) { Text("EXPLORE PINGLET PLUS") }
+            plan != "PLUS" && entitlement.paidPlansEnabled -> Button(onUpgrade, Modifier.fillMaxWidth()) { Text("EXPLORE PINGLET PLUS") }
+            plan != "PLUS" -> Text("PingLet Plus subscriptions are coming soon.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             entitlement.entitlementSource == "GOOGLE_PLAY" -> OutlinedButton(onManageSubscription, Modifier.fillMaxWidth()) { Text("MANAGE SUBSCRIPTION") }
-            else -> OutlinedButton(onUpgrade, Modifier.fillMaxWidth()) { Text("VIEW PLUS PLANS") }
+            entitlement.paidPlansEnabled -> OutlinedButton(onUpgrade, Modifier.fillMaxWidth()) { Text("VIEW PLUS PLANS") }
+        }
+        if (entitlement?.isAnonymous == false) {
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                TextButton(onClick = onSignOut) { Icon(Icons.Rounded.Logout, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("SIGN OUT") }
+                TextButton(onClick = onDeleteAccount, colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)) { Text("DELETE ACCOUNT") }
+            }
         }
     }
 }

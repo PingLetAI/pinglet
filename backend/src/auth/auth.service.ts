@@ -39,42 +39,35 @@ export class AuthService {
       appVersion,
     });
 
+    return this.issueSession(user.id, device.id, installationId);
+  }
+
+  async issueSession(userId: string, deviceId: string, installationId?: string) {
     const accessExpires = Number(this.config.get('JWT_EXPIRATION', 900));
     const refreshExpires = Number(this.config.get('JWT_REFRESH_EXPIRATION', 1209600));
-
-    await this.prisma.refreshToken.deleteMany({
-      where: {
-        userId: user.id,
-        deviceId: device.id,
-        expiresAt: { lt: new Date() },
-      },
-    });
-
-    const accessToken = await this.jwt.signAsync({
-      sub: user.id,
-      deviceId: device.id,
-      installationId,
-      type: 'access',
-    }, { expiresIn: accessExpires });
-
-    const refreshTokenValue = randomUUID();
+    await this.prisma.refreshToken.deleteMany({ where: { deviceId } });
+    const accessToken = await this.jwt.signAsync({ sub: userId, deviceId, installationId, type: 'access' }, { expiresIn: accessExpires });
+    const refreshToken = randomUUID();
     await this.prisma.refreshToken.create({
-      data: {
-        token: refreshTokenValue,
-        userId: user.id,
-        deviceId: device.id,
-        expiresAt: new Date(Date.now() + refreshExpires * 1000),
-      },
+      data: { token: refreshToken, userId, deviceId, expiresAt: new Date(Date.now() + refreshExpires * 1000) },
     });
+    return { userId, accessToken, refreshToken, expiresIn: accessExpires, tokenType: 'Bearer', deviceId };
+  }
 
-    return {
-      userId: user.id,
-      accessToken,
-      refreshToken: refreshTokenValue,
-      expiresIn: accessExpires,
-      tokenType: 'Bearer',
-      deviceId: device.id,
-    };
+  async logout(userId: string, deviceId?: string, installationId?: string) {
+    if (deviceId) {
+      await this.prisma.$transaction([
+        this.prisma.refreshToken.updateMany({
+          where: { userId, deviceId, revokedAt: null },
+          data: { revokedAt: new Date() },
+        }),
+        this.prisma.user.updateMany({
+          where: { id: userId, installationId: installationId || '__none__' },
+          data: { installationId: null },
+        }),
+      ]);
+    }
+    return { signedOut: true };
   }
 
   async refreshAccess(refreshTokenValue: string) {

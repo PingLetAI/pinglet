@@ -15,6 +15,12 @@ interface AppApiService {
     @POST("/api/v1/auth/email/verify")
     suspend fun verifyEmailOtp(@Body request: EmailOtpVerifyRequest): EmailOtpVerifyResponse
 
+    @POST("/api/v1/auth/logout")
+    suspend fun logout(): Map<String, Boolean>
+
+    @HTTP(method = "DELETE", path = "/api/v1/auth/account", hasBody = true)
+    suspend fun deleteAccount(@Body request: DeleteAccountRequest): Map<String, Boolean>
+
     @GET("/api/v1/me")
     suspend fun me(): Map<String, Any>
 

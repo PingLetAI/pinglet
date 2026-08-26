@@ -42,6 +42,7 @@ class DataStoreManager(private val context: Context) {
         val entitlementPlan = stringKey("entitlement_plan")
         val entitlementSource = stringKey("entitlement_source")
         val entitlementExpiresAt = longKey("entitlement_expires_at")
+        val paidPlansEnabled = booleanPreferencesKey("paid_plans_enabled")
         }
 
     fun installationId(): Flow<String> = prefsFlow.map { it[Keys.installationId] ?: "" }
@@ -161,6 +162,7 @@ class DataStoreManager(private val context: Context) {
             it[Keys.entitlementPlan] = summary.plan
             it[Keys.entitlementSource] = summary.entitlementSource
             it[Keys.entitlementExpiresAt] = expiresAt
+            it[Keys.paidPlansEnabled] = summary.paidPlansEnabled
         }
     }
 
@@ -174,6 +176,33 @@ class DataStoreManager(private val context: Context) {
         val plan = readEntitlementPlan()
         val expiresAt = readEntitlementExpiresAt()
         return plan == "PLUS" && (expiresAt <= 0L || expiresAt > nowMillis)
+    }
+
+    suspend fun readPaidPlansEnabled(): Boolean =
+        prefsFlow.map { it[Keys.paidPlansEnabled] ?: false }.firstOrNull() ?: false
+
+    suspend fun clearAccountData() {
+        context.dataStore.edit { preferences ->
+            preferences.remove(Keys.accessToken)
+            preferences.remove(Keys.refreshToken)
+            preferences.remove(Keys.userId)
+            preferences.remove(Keys.forcedSlot)
+            preferences.remove(Keys.lastDisplayedContentId)
+            preferences.remove(Keys.lastDisplayedContentText)
+            preferences.remove(Keys.lastDisplayedContentAuthor)
+            preferences.remove(Keys.lastDisplayedShownAt)
+            preferences.remove(Keys.lastDisplayedNextChangeAt)
+            preferences.remove(Keys.lastDisplayedFavorite)
+            preferences.remove(Keys.lastDisplayedSourceUrl)
+            preferences.remove(Keys.favoriteContentIds)
+            preferences.remove(Keys.entitlementPlan)
+            preferences.remove(Keys.entitlementSource)
+            preferences.remove(Keys.entitlementExpiresAt)
+            preferences.remove(Keys.paidPlansEnabled)
+            preferences.asMap().keys
+                .filter { it.name.startsWith("widget_profile_") }
+                .forEach { preferences.remove(it) }
+        }
     }
 
     suspend fun readWidgetProfile(widgetKey: String): WidgetProfile {

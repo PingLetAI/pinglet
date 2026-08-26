@@ -180,9 +180,10 @@ private fun PremiumUnlockCard(access: com.linger.app.data.remote.ContentDetailAc
         when {
             access.isAnonymous -> Button(onClick = onCreateAccount, modifier = Modifier.fillMaxWidth()) { Text("CREATE ACCOUNT TO TRY PLUS") }
             access.trialEligible -> Button(onClick = onTryPlus, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Rounded.LockOpen, null); Spacer(Modifier.width(8.dp)); Text("TRY PLUS FREE - 7 DAYS") }
-            else -> Button(onClick = onUpgrade, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Rounded.LockOpen, null); Spacer(Modifier.width(8.dp)); Text("UNLOCK WITH PINGLET PLUS") }
+            access.paidPlansEnabled -> Button(onClick = onUpgrade, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Rounded.LockOpen, null); Spacer(Modifier.width(8.dp)); Text("UNLOCK WITH PINGLET PLUS") }
+            else -> Text("PingLet Plus subscriptions are coming soon.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        if (!access.isAnonymous && access.trialEligible) TextButton(onClick = onUpgrade, modifier = Modifier.fillMaxWidth()) { Text("VIEW PAID PLANS") }
+        if (!access.isAnonymous && access.trialEligible && access.paidPlansEnabled) TextButton(onClick = onUpgrade, modifier = Modifier.fillMaxWidth()) { Text("VIEW PAID PLANS") }
     }
 }
 

@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  ConflictException,
   HttpException,
   Injectable,
   Logger,
@@ -13,6 +12,7 @@ import Redis from 'ioredis';
 import * as nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { AuthService } from './auth.service';
 
 @Injectable()
 export class EmailOtpService implements OnModuleDestroy {
@@ -20,7 +20,7 @@ export class EmailOtpService implements OnModuleDestroy {
   private readonly redis: Redis;
   private readonly mailer?: Transporter;
 
-  constructor(private readonly prisma: PrismaService, private readonly config: ConfigService) {
+  constructor(private readonly prisma: PrismaService, private readonly config: ConfigService, private readonly auth: AuthService) {
     this.redis = new Redis(this.config.get<string>('REDIS_URL') || 'redis://localhost:6379');
     const user = this.config.get<string>('SMTP_USER');
     const password = this.config.get<string>('SMTP_PASSWORD');
@@ -43,11 +43,14 @@ export class EmailOtpService implements OnModuleDestroy {
     const cooldownKey = `email-otp-cooldown:${userId}:${email}`;
     const acquired = await this.redis.set(cooldownKey, '1', 'EX', 60, 'NX');
     if (!acquired) throw new HttpException('Wait one minute before requesting another code.', 429);
-    const code = randomInt(100000, 1000000).toString();
+    const reviewEmail = this.config.get<string>('PLAY_REVIEW_EMAIL')?.trim().toLowerCase();
+    const reviewCode = this.config.get<string>('PLAY_REVIEW_OTP')?.trim();
+    const isReviewer = email === reviewEmail && /^\d{6}$/.test(reviewCode || '');
+    const code = isReviewer ? reviewCode! : randomInt(100000, 1000000).toString();
     const payload = JSON.stringify({ hash: this.hash(userId, email, code), attempts: 0 });
     const otpKey = `email-otp:${userId}:${email}`;
     try {
-      await this.send(email, code);
+      if (!isReviewer) await this.send(email, code);
       await this.redis.set(otpKey, payload, 'EX', 600);
     } catch (error) {
       await this.redis.del(cooldownKey, otpKey);
@@ -58,9 +61,66 @@ export class EmailOtpService implements OnModuleDestroy {
     return response;
   }
 
-  async verify(userId: string, rawEmail: string, code: string) {
+  async verify(userId: string, deviceId: string, installationId: string, rawEmail: string, code: string) {
     const db = this.prisma as any;
     const email = rawEmail.trim().toLowerCase();
+    await this.consumeCode(userId, email, code);
+    const current = await db.user.findUnique({ where: { id: userId } });
+    if (!current) throw new BadRequestException('This session is no longer available.');
+    const owner = await db.user.findUnique({ where: { email } });
+    let accountId = userId;
+    if (owner && owner.id !== userId) {
+      if (current.isAnonymous) await this.mergeAnonymousAccount(userId, owner.id, deviceId);
+      else {
+        await db.$transaction([
+          db.refreshToken.deleteMany({ where: { deviceId } }),
+          db.device.update({ where: { id: deviceId }, data: { userId: owner.id } }),
+        ]);
+      }
+      accountId = owner.id;
+    } else {
+      await db.user.update({
+        where: { id: userId },
+        data: { email, emailVerifiedAt: new Date(), isAnonymous: false, plan: current.plan === 'GUEST' ? 'FREE' : current.plan },
+      });
+    }
+    const account = await db.user.findUniqueOrThrow({ where: { id: accountId } });
+    const session = await this.auth.issueSession(accountId, deviceId, installationId);
+    return { verified: true, email, plan: account.plan, ...session };
+  }
+
+  async deleteAccount(userId: string, rawEmail: string, code: string) {
+    const db = this.prisma as any;
+    const email = rawEmail.trim().toLowerCase();
+    const user = await db.user.findUnique({ where: { id: userId } });
+    if (!user || user.isAnonymous || !user.email || user.email.toLowerCase() !== email) {
+      throw new BadRequestException('Enter the verified email address for this account.');
+    }
+    await this.consumeCode(userId, email, code);
+    await db.$transaction(async (tx: any) => {
+      const owned = await tx.contentItem.findMany({ where: { ownerUserId: userId }, select: { id: true } });
+      const ownedIds = owned.map((item: { id: string }) => item.id);
+      await tx.contentItem.updateMany({ where: { ownerUserId: userId }, data: { ownerUserId: null } });
+      await tx.user.delete({ where: { id: userId } });
+      if (ownedIds.length) {
+        await tx.contentItem.deleteMany({
+          where: { id: { in: ownedIds }, visibility: 'PRIVATE', userContents: { none: {} }, ingestions: { none: {} } },
+        });
+      }
+    });
+    return { deleted: true };
+  }
+
+  onModuleDestroy() {
+    this.redis.disconnect();
+  }
+
+  private hash(userId: string, email: string, code: string) {
+    const secret = this.config.get<string>('OTP_SECRET') || this.config.get<string>('JWT_SECRET') || 'linger-dev-otp';
+    return createHash('sha256').update(`${secret}:${userId}:${email}:${code}`).digest('hex');
+  }
+
+  private async consumeCode(userId: string, email: string, code: string) {
     const key = `email-otp:${userId}:${email}`;
     const stored = await this.redis.get(key);
     if (!stored) throw new BadRequestException({ code: 'OTP_EXPIRED', message: 'That code expired. Request a new one.' });
@@ -72,23 +132,38 @@ export class EmailOtpService implements OnModuleDestroy {
       await this.redis.set(key, JSON.stringify({ ...payload, attempts: payload.attempts + 1 }), 'KEEPTTL');
       throw new BadRequestException({ code: 'OTP_INVALID', message: 'That code is incorrect.' });
     }
-    const owner = await db.user.findUnique({ where: { email } });
-    if (owner && owner.id !== userId) throw new ConflictException('That email is already linked to another account.');
-    await db.user.update({
-      where: { id: userId },
-      data: { email, emailVerifiedAt: new Date(), isAnonymous: false, plan: 'FREE' },
-    });
     await this.redis.del(key);
-    return { verified: true, email, plan: 'FREE' };
   }
 
-  onModuleDestroy() {
-    this.redis.disconnect();
-  }
-
-  private hash(userId: string, email: string, code: string) {
-    const secret = this.config.get<string>('OTP_SECRET') || this.config.get<string>('JWT_SECRET') || 'linger-dev-otp';
-    return createHash('sha256').update(`${secret}:${userId}:${email}:${code}`).digest('hex');
+  private async mergeAnonymousAccount(sourceUserId: string, targetUserId: string, deviceId: string) {
+    const db = this.prisma as any;
+    await db.$transaction(async (tx: any) => {
+      const sourceContents = await tx.userContent.findMany({ where: { userId: sourceUserId } });
+      for (const item of sourceContents) {
+        const existing = await tx.userContent.findUnique({ where: { userId_contentItemId: { userId: targetUserId, contentItemId: item.contentItemId } } });
+        await tx.userContent.upsert({
+          where: { userId_contentItemId: { userId: targetUserId, contentItemId: item.contentItemId } },
+          create: { userId: targetUserId, contentItemId: item.contentItemId, favorite: item.favorite, archived: item.archived, priority: item.priority },
+          update: { favorite: Boolean(existing?.favorite || item.favorite), archived: Boolean(existing?.archived && item.archived), priority: Math.max(existing?.priority || 0, item.priority) },
+        });
+      }
+      const favorites = await tx.favorite.findMany({ where: { userId: sourceUserId }, select: { contentItemId: true } });
+      for (const favorite of favorites) {
+        await tx.favorite.upsert({ where: { userId_contentItemId: { userId: targetUserId, contentItemId: favorite.contentItemId } }, create: { userId: targetUserId, contentItemId: favorite.contentItemId }, update: {} });
+      }
+      const catalogPrefs = await tx.userCatalogPreference.findMany({ where: { userId: sourceUserId } });
+      for (const preference of catalogPrefs) {
+        await tx.userCatalogPreference.upsert({ where: { userId_catalogId: { userId: targetUserId, catalogId: preference.catalogId } }, create: { userId: targetUserId, catalogId: preference.catalogId, enabled: preference.enabled, weight: preference.weight }, update: {} });
+      }
+      await tx.ingestion.updateMany({ where: { userId: sourceUserId }, data: { userId: targetUserId } });
+      await tx.event.updateMany({ where: { userId: sourceUserId }, data: { userId: targetUserId } });
+      await tx.pendingAction.updateMany({ where: { userId: sourceUserId }, data: { userId: targetUserId } });
+      await tx.purchaseEntitlement.updateMany({ where: { userId: sourceUserId }, data: { userId: targetUserId } });
+      await tx.contentItem.updateMany({ where: { ownerUserId: sourceUserId }, data: { ownerUserId: targetUserId } });
+      await tx.refreshToken.deleteMany({ where: { deviceId } });
+      await tx.device.update({ where: { id: deviceId }, data: { userId: targetUserId } });
+      await tx.user.delete({ where: { id: sourceUserId } });
+    });
   }
 
   private async send(email: string, code: string) {

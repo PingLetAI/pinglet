@@ -25,16 +25,16 @@ fun AccountScreen(onBack: () -> Unit, onVerified: () -> Unit, viewModel: Account
         }
     }
 
-    LingerPage("Account", if (state.verified) "You are all set." else if (state.codeSent) "Check your inbox." else "Keep your library with you.", if (state.codeSent) "We sent a six-digit code to ${state.email}." else "No password. Verify your email and your current saves stay exactly where they are.", onBack) {
+    LingerPage("Account", if (state.verified) "You are signed in." else if (state.codeSent) "Check your inbox." else "Keep your library with you.", if (state.codeSent) "We sent a six-digit code to ${state.email}." else "No password. A new email secures your current saves; an existing email signs you back into the account you own.", onBack) {
         if (state.verified) {
             Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.secondaryContainer) { Text("Email verified", Modifier.fillMaxWidth().padding(24.dp), textAlign = TextAlign.Center, style = MaterialTheme.typography.headlineSmall) }
         } else if (!state.codeSent) {
             OutlinedTextField(email, { email = it }, Modifier.fillMaxWidth(), label = { Text("Email address") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email))
-            Button({ viewModel.requestCode(email) }, Modifier.fillMaxWidth().height(54.dp), enabled = email.contains('@') && !state.loading) { Text(if (state.loading) "SENDING..." else "SEND VERIFICATION CODE") }
+            Button({ viewModel.requestCode(email) }, Modifier.fillMaxWidth().height(54.dp), enabled = email.contains('@') && !state.loading) { Text(if (state.loading) "SENDING..." else "EMAIL ME A SIGN-IN CODE") }
         } else {
             OutlinedTextField(code, { code = it.filter(Char::isDigit).take(6) }, Modifier.fillMaxWidth(), label = { Text("Verification code") }, singleLine = true, textStyle = MaterialTheme.typography.headlineMedium.copy(textAlign = TextAlign.Center), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword))
             state.devCode?.let { Text("Development code: $it", style = MaterialTheme.typography.labelMedium) }
-            Button({ viewModel.verify(code) }, Modifier.fillMaxWidth().height(54.dp), enabled = code.length == 6 && !state.loading) { Text(if (state.loading) "VERIFYING..." else "VERIFY EMAIL") }
+            Button({ viewModel.verify(code) }, Modifier.fillMaxWidth().height(54.dp), enabled = code.length == 6 && !state.loading) { Text(if (state.loading) "SIGNING IN..." else "VERIFY AND CONTINUE") }
             TextButton({ viewModel.requestCode(state.email) }, Modifier.fillMaxWidth(), enabled = !state.loading && resendIn == 0) { Text(if (resendIn > 0) "SEND AGAIN IN ${resendIn}S" else "SEND A NEW CODE") }
         }
         state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }

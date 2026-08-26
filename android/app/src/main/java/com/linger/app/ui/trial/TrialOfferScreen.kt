@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -109,11 +108,11 @@ fun TrialOfferScreen(
                 }
                 else -> {
                     Text("This account has already used its free Plus trial. You can keep using Free or choose a paid plan.", style = MaterialTheme.typography.bodyLarge)
-                    Button(onClick = onViewPlans, modifier = Modifier.fillMaxWidth()) { Text("VIEW PLUS PLANS") }
+                    if (state.entitlement?.paidPlansEnabled == true) Button(onClick = onViewPlans, modifier = Modifier.fillMaxWidth()) { Text("VIEW PLUS PLANS") }
                     TextButton(onClick = onContinueFree, modifier = Modifier.fillMaxWidth()) { Text("CONTINUE WITH FREE") }
                 }
             }
-            if (state.entitlement?.trialEligible == true) TextButton(onClick = onViewPlans, modifier = Modifier.fillMaxWidth()) { Text("VIEW PAID PLANS") }
+            if (state.entitlement?.trialEligible == true && state.entitlement?.paidPlansEnabled == true) TextButton(onClick = onViewPlans, modifier = Modifier.fillMaxWidth()) { Text("VIEW PAID PLANS") }
             Spacer(Modifier.height(16.dp))
         }
     }

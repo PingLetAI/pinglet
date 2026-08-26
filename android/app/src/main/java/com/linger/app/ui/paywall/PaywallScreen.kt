@@ -31,6 +31,15 @@ fun PaywallScreen(onBack: () -> Unit, onPurchased: () -> Unit, viewModel: Paywal
     fun price(plan: String, fallback: String) = offers.firstOrNull { it.basePlanId == plan }?.pricingPhases?.pricingPhaseList?.lastOrNull()?.formattedPrice ?: fallback
 
     LingerPage("PingLet Plus", "Keep everything worth remembering.", "More room for the ideas, words, and stories you want to carry forward.", onBack) {
+        if (!state.loading && !state.billingEnabled) {
+            LingerCard(color = MaterialTheme.colorScheme.secondaryContainer) {
+                Icon(Icons.Rounded.WorkspacePremium, null)
+                Text("Subscriptions are coming soon", style = MaterialTheme.typography.titleLarge)
+                Text("The seven-day PingLet Plus trial remains free, requires no payment method, and never starts an automatic subscription.", style = MaterialTheme.typography.bodyMedium)
+            }
+            TextButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) { Text("GO BACK") }
+            return@LingerPage
+        }
         LingerCard(dark = true) {
             Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Rounded.WorkspacePremium, null, tint = MaterialTheme.colorScheme.secondary); Spacer(Modifier.width(9.dp)); Text("PINGLET PLUS", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.secondary) }
             Benefit("Complete AI breakdowns", "Full transcripts, visible text and comprehensive summaries")

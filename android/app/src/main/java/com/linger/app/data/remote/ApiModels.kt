@@ -133,6 +133,7 @@ data class ContentDetailAccessDto(
     val trialEligible: Boolean = false,
     val trialEndsAt: String? = null,
     val trialDaysRemaining: Int = 0,
+    val paidPlansEnabled: Boolean = false,
 )
 
 data class PreferenceResponse(
@@ -200,6 +201,7 @@ data class EntitlementResponse(
     val trialStartedAt: String? = null,
     val trialEndsAt: String? = null,
     val trialDaysRemaining: Int = 0,
+    val paidPlansEnabled: Boolean = false,
 )
 
 data class EmailOtpRequest(val email: String)
@@ -209,5 +211,13 @@ data class EmailOtpResponse(
     val expiresInSeconds: Int,
     val devCode: String? = null,
 )
-data class EmailOtpVerifyResponse(val verified: Boolean, val email: String, val plan: String)
+data class EmailOtpVerifyResponse(
+    val verified: Boolean,
+    val email: String,
+    val plan: String,
+    val accessToken: String? = null,
+    val refreshToken: String? = null,
+    val userId: String? = null,
+)
+data class DeleteAccountRequest(val email: String, val code: String)
 data class GooglePlayPurchaseRequest(val purchaseToken: String, val productId: String)

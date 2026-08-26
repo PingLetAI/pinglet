@@ -15,7 +15,12 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 data class WidgetSettingsUiState(
@@ -25,6 +30,8 @@ data class WidgetSettingsUiState(
     val profiles: Map<String, WidgetProfile> = emptyMap(),
     val catalogs: List<CatalogResponse> = emptyList(),
     val isPlus: Boolean = false,
+    val paidPlansEnabled: Boolean = false,
+    val trialEligible: Boolean = false,
 )
 
 @HiltViewModel
@@ -36,6 +43,8 @@ class WidgetSettingsViewModel @Inject constructor(
 ) : ViewModel() {
     private val _state = MutableStateFlow(WidgetSettingsUiState())
     val state = _state.asStateFlow()
+    private val widgetUpdateMutex = Mutex()
+    private var widgetUpdateRevision = 0L
 
     init { refresh() }
 
@@ -45,7 +54,7 @@ class WidgetSettingsViewModel @Inject constructor(
         val entitlement = runCatching { session.withAuthRetry { api.getEntitlements() } }.getOrNull()
         entitlement?.let { store.setEntitlement(it) }
         val catalogs = runCatching { session.withAuthRetry { api.getCatalogPreferences() } }.getOrDefault(emptyList())
-        _state.value = WidgetSettingsUiState(false, keys, keys.firstOrNull(), profiles, catalogs, entitlement?.plan == "PLUS" || store.isPlusAccessActive())
+        _state.value = WidgetSettingsUiState(false, keys, keys.firstOrNull(), profiles, catalogs, entitlement?.plan == "PLUS" || store.isPlusAccessActive(), entitlement?.paidPlansEnabled ?: false, entitlement?.trialEligible ?: false)
     }
 
     fun select(key: String) { _state.value = _state.value.copy(selectedKey = key) }
@@ -56,9 +65,25 @@ class WidgetSettingsViewModel @Inject constructor(
         if (premium && !current.isPlus) return
         val profile = transform(current.profiles[key] ?: WidgetProfile())
         _state.value = current.copy(profiles = current.profiles + (key to profile))
-        viewModelScope.launch {
-            store.setWidgetProfile(key, profile)
-            AmbientWidget().updateAll(context)
+        val revision = ++widgetUpdateRevision
+        viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            // Once a user selects a value, finish publishing it even if navigating
+            // away clears this ViewModel before Glance has produced RemoteViews.
+            withContext(NonCancellable) {
+                widgetUpdateMutex.withLock {
+                    if (revision != widgetUpdateRevision) return@withLock
+                    val latestProfile = _state.value.profiles[key] ?: profile
+                    store.setWidgetProfile(key, latestProfile)
+                    val glanceId = GlanceAppWidgetManager(context)
+                        .getGlanceIds<AmbientWidget>(AmbientWidget::class.java)
+                        .firstOrNull { it.toString() == key }
+                    if (glanceId != null) {
+                        AmbientWidget().update(context, glanceId)
+                    } else {
+                        AmbientWidget().updateAll(context)
+                    }
+                }
+            }
         }
     }
 }

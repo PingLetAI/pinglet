@@ -19,6 +19,7 @@ fun AddContentScreen(
     viewModel: AddContentViewModel = hiltViewModel(),
     onQueued: (String) -> Unit = {},
     onCreateAccount: () -> Unit = {},
+    onTryPlus: () -> Unit = {},
     onUpgrade: () -> Unit = {},
     onBack: () -> Unit = {},
 ) {
@@ -28,7 +29,7 @@ fun AddContentScreen(
     val state by viewModel.state.collectAsState()
     LaunchedEffect(preFillText) { if (preFillText.isNotBlank()) text = preFillText; viewModel.refreshEntitlements() }
     LaunchedEffect(state.queuedIngestionId) { state.queuedIngestionId?.let(onQueued) }
-    LaunchedEffect(state.gate) { when (state.gate) { SaveGate.ACCOUNT -> { viewModel.consumeGate(); onCreateAccount() }; SaveGate.PLUS -> { viewModel.consumeGate(); onUpgrade() }; null -> Unit } }
+    LaunchedEffect(state.gate) { when (state.gate) { SaveGate.ACCOUNT -> { viewModel.consumeGate(); onCreateAccount() }; SaveGate.PLUS -> { viewModel.consumeGate(); when { state.entitlement?.trialEligible == true -> onTryPlus(); state.entitlement?.paidPlansEnabled == true -> onUpgrade(); else -> viewModel.showSubscriptionsPending() } }; null -> Unit } }
 
     val sourceUrl = remember(text) { Regex("https://(?:www\\.)?(?:instagram\\.com|tiktok\\.com|[^/]*\\.tiktok\\.com|facebook\\.com|[^/]*\\.facebook\\.com|fb\\.watch)/\\S+", RegexOption.IGNORE_CASE).find(text)?.value?.trimEnd('.', ',', ')') }
     val platform = sourceUrl?.let { when { it.contains("instagram", true) -> "Instagram"; it.contains("tiktok", true) -> "TikTok"; else -> "Facebook" } }

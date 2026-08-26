@@ -23,6 +23,11 @@ class SessionManager @Inject constructor(
         }
     }
 
+    suspend fun startAnonymousSession() {
+        RetrofitClient.setAuthToken(null)
+        ensureSession()
+    }
+
     private suspend fun ensureSession(forceRefresh: Boolean = false) {
         if (!forceRefresh) {
             dataStore.readAccessToken().takeIf { it.isNotBlank() }?.let {

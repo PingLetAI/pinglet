@@ -57,7 +57,14 @@ export class EntitlementService {
       trialStartedAt: user.plusTrialStartedAt,
       trialEndsAt: user.plusTrialEndsAt,
       trialDaysRemaining: entitlement.trialDaysRemaining,
+      paidPlansEnabled: this.booleanConfig('GOOGLE_PLAY_BILLING_ENABLED', false),
     };
+  }
+
+  private booleanConfig(key: string, fallback: boolean) {
+    const value = this.config.get<string>(key);
+    if (value === undefined) return fallback;
+    return value.trim().toLowerCase() === 'true';
   }
 
   async startTrial(userId: string) {

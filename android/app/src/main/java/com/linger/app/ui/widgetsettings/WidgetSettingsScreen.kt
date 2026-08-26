@@ -16,7 +16,7 @@ import com.linger.app.ui.components.SectionLabel
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun WidgetSettingsScreen(onBack: () -> Unit, onUpgrade: () -> Unit, viewModel: WidgetSettingsViewModel = hiltViewModel()) {
+fun WidgetSettingsScreen(onBack: () -> Unit, onTryPlus: () -> Unit, onUpgrade: () -> Unit, viewModel: WidgetSettingsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsState()
     val profile = state.selectedKey?.let(state.profiles::get)
     LingerPage("Widgets", "A different rhythm for every space.", "Configure each installed Home Screen widget independently.", onBack) {
@@ -36,7 +36,11 @@ fun WidgetSettingsScreen(onBack: () -> Unit, onUpgrade: () -> Unit, viewModel: W
             if (!state.isPlus) LingerCard(color = MaterialTheme.colorScheme.secondaryContainer) {
                 Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Rounded.AutoAwesome, null); Spacer(Modifier.width(9.dp)); Text("Make every widget your own", style = MaterialTheme.typography.titleLarge) }
                 Text("Plus unlocks themes, independent content profiles, schedules, typography, spacing, and manual rotation.", style = MaterialTheme.typography.bodyMedium)
-                Button(onUpgrade, Modifier.fillMaxWidth()) { Text("EXPLORE PINGLET PLUS") }
+                when {
+                    state.trialEligible -> Button(onTryPlus, Modifier.fillMaxWidth()) { Text("TRY PINGLET PLUS - 7 DAYS FREE") }
+                    state.paidPlansEnabled -> Button(onUpgrade, Modifier.fillMaxWidth()) { Text("EXPLORE PINGLET PLUS") }
+                    else -> Text("PingLet Plus subscriptions are coming soon.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
 
             SectionLabel("FREE CONTROLS")

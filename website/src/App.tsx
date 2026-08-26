@@ -66,6 +66,7 @@ function SiteFooter() {
       <a href="mailto:hello@pinglet.ai" className="hover:text-paper">Contact</a>
       <a href="/privacy" className="hover:text-paper">Privacy</a>
       <a href="/terms" className="hover:text-paper">Terms</a>
+      <a href="/delete-account" className="hover:text-paper">Delete account</a>
       <a href={X_URL} target="_blank" rel="noreferrer" className="hover:text-paper">X</a>
       <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className="hover:text-paper">Instagram</a>
     </div>
@@ -122,8 +123,9 @@ function LegalPage({ type }: { type: "privacy" | "terms" }) {
               <p>We do not sell your personal information. We may share information with service providers acting for us, when you direct us to share it, to protect users or the service, to comply with legal obligations, or as part of a merger, financing, acquisition, or sale of assets subject to appropriate safeguards.</p>
             </LegalSection>
             <LegalSection title="Storage and retention">
-              <p>Widget content is cached locally so rotation can continue offline. Account and saved-content records are retained while your account is active and as reasonably needed to provide the service. Processing workspaces are temporary; derived records such as transcripts and OCR may remain associated with your saved item.</p>
-              <p>You may request account and personal-content deletion by emailing <a className="font-semibold underline" href="mailto:hello@pinglet.ai">hello@pinglet.ai</a>. We may retain limited records where required for security, fraud prevention, billing, dispute resolution, or law.</p>
+              <p>Widget content is cached locally so rotation can continue offline. Account and saved-content records are retained while your account is active. Temporary media-processing workspaces are removed after processing under our operational retention schedule; derived records such as transcripts and OCR remain associated with your saved item until that item or account is deleted.</p>
+              <p>You can permanently delete your account and associated personal data from Settings in the PingLet Android app. If you no longer have the app, submit a request at <a className="font-semibold underline" href="/delete-account">pinglet.ai/delete-account</a>. Private saves, imports, favorites, devices, sessions, and account history are deleted. Public-source excerpts already admitted to shared catalogs may be retained without your account identifier so other users' libraries and source-linked catalogs are not broken.</p>
+              <p>Deletion requests submitted outside the app require ownership verification. We may retain narrowly limited records where required for security, fraud prevention, completed billing transactions, dispute resolution, or law, and will disclose the reason when applicable.</p>
             </LegalSection>
             <LegalSection title="Security and choices">
               <p>We use technical and organizational safeguards intended to protect information, but no network or storage system can be guaranteed completely secure. Keep account and device access protected.</p>
@@ -245,6 +247,44 @@ function DownloadPage() {
   </main>;
 }
 
+function DeleteAccountPage() {
+  useEffect(() => { document.title = "Delete your PingLet account · PingLet"; }, []);
+  const requestHref = "mailto:hello@pinglet.ai?subject=PingLet%20account%20deletion%20request&body=Please%20delete%20the%20PingLet%20account%20registered%20to%20this%20email.%20I%20understand%20this%20is%20permanent.";
+  return <div className="min-h-screen bg-paper">
+    <header className="border-b border-ink/10 bg-paper/95"><div className="mx-auto flex h-20 max-w-6xl items-center justify-between px-5 sm:px-8"><Logo /><a href="/" className="text-sm font-semibold text-ink/55 hover:text-ink">Back to PingLet</a></div></header>
+    <main className="page-atmosphere px-5 py-16 sm:px-8 sm:py-24">
+      <article className="mx-auto max-w-4xl rounded-[2.5rem] border border-ink/10 bg-paper/90 p-6 shadow-soft backdrop-blur sm:p-10 lg:p-14">
+        <p className="eyebrow text-clay">Account control</p>
+        <h1 className="balance mt-4 text-4xl font-semibold tracking-[-.05em] sm:text-6xl">Delete your PingLet account.</h1>
+        <p className="mt-6 max-w-2xl text-lg leading-relaxed text-ink/65">Account deletion is permanent. Your personal PingLets and account data cannot be restored afterward.</p>
+        <div className="mt-12 grid gap-4 md:grid-cols-2">
+          <section className="rounded-[1.8rem] border border-ink/10 bg-mint/55 p-6 sm:p-8">
+            <p className="eyebrow text-sage">If you have the app</p>
+            <h2 className="mt-3 text-2xl font-semibold">Delete immediately in Settings</h2>
+            <p className="mt-4 leading-relaxed text-ink/62">Open PingLet, go to <strong>Settings → Account → Delete account</strong>, request the verification code, and confirm deletion. A fresh code sent to your verified email protects the account from unauthorized deletion.</p>
+          </section>
+          <section className="rounded-[1.8rem] border border-ink/10 bg-blush/55 p-6 sm:p-8">
+            <p className="eyebrow text-clay">Without the app</p>
+            <h2 className="mt-3 text-2xl font-semibold">Send a deletion request</h2>
+            <p className="mt-4 leading-relaxed text-ink/62">Email us from the address registered to your PingLet account. We will verify ownership and confirm when deletion is complete.</p>
+            <a href={requestHref} className="mt-6 inline-flex rounded-full bg-ink px-5 py-3 text-sm font-semibold text-paper transition hover:bg-sage">REQUEST ACCOUNT DELETION</a>
+          </section>
+        </div>
+        <LegalSection title="Data deleted">
+          <p>Your account identity, email association, personal saves, imports, favorites, device records, sessions, preferences, entitlement history, and account-linked activity are deleted.</p>
+        </LegalSection>
+        <LegalSection title="Limited retention">
+          <p>Source-linked excerpts already included in shared catalogs may remain without your account identifier. Narrow records may also be retained when required for fraud prevention, billing disputes, security, or law. These exceptions do not keep your account active.</p>
+        </LegalSection>
+        <LegalSection title="Questions">
+          <p>Contact <a className="font-semibold underline" href="mailto:hello@pinglet.ai">hello@pinglet.ai</a>. Never send an OTP, password, payment credential, or government identification by email.</p>
+        </LegalSection>
+      </article>
+    </main>
+    <SiteFooter />
+  </div>;
+}
+
 function WidgetPreview() {
   return <div className="relative mx-auto w-full max-w-[470px]">
     <div className="pulse-ring absolute inset-8 rounded-[3rem] border border-gold/40" />
@@ -270,6 +310,7 @@ function App() {
   if (path === "/download") return <DownloadPage />;
   if (path === "/privacy") return <LegalPage type="privacy" />;
   if (path === "/terms") return <LegalPage type="terms" />;
+  if (path === "/delete-account") return <DeleteAccountPage />;
   return <div id="top" className="overflow-hidden">
     <header className="glass fixed inset-x-0 top-0 z-50 border-b border-ink/8">
       <div className="mx-auto flex h-18 max-w-7xl items-center px-5 sm:px-8">

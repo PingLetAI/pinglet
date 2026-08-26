@@ -88,6 +88,7 @@ export class ContentService {
         trialEligible: entitlement.trialEligible,
         trialEndsAt: entitlement.trialEndsAt,
         trialDaysRemaining: entitlement.trialDaysRemaining,
+        paidPlansEnabled: entitlement.paidPlansEnabled,
         hasAnalysis,
         fullDetailsUnlocked: plus,
         lockedSections: !plus && hasAnalysis ? ['FULL_SUMMARY', 'ALL_INSIGHTS', 'ACTIONS', 'TRANSCRIPT', 'VISIBLE_TEXT', 'RELATED'] : [],

@@ -105,6 +105,7 @@ fun LingerNavHost(
                         }
                     },
                     onCreateAccount = { navController.navigate("account") },
+                    onTryPlus = { navController.navigate("trial-offer/SAVE_LIMIT") },
                     onUpgrade = { navController.navigate("paywall") },
                     onBack = {
                         if (sharedText != null) onExternalShareFinished()
@@ -148,12 +149,18 @@ fun LingerNavHost(
                     onUpgrade = { navController.navigate("paywall") },
                     onOpenQueue = { navController.navigate("queue") },
                     onOpenWidgetSettings = { navController.navigate("widget-settings") },
+                    onAccountReset = {
+                        navController.navigate("home") {
+                            popUpTo("home") { inclusive = true }
+                        }
+                    },
                     entitlementRefreshKey = it.savedStateHandle["entitlement_changed"] ?: 0L,
                 )
             }
             composable("widget-settings") {
                 WidgetSettingsScreen(
                     onBack = { navController.popBackStack() },
+                    onTryPlus = { navController.navigate("trial-offer/WIDGET_SETTINGS") },
                     onUpgrade = { navController.navigate("paywall") },
                 )
             }
@@ -204,28 +211,31 @@ fun LingerNavHost(
 @Composable
 private fun LingerBottomBar(route: String, onNavigate: (String) -> Unit, onAdd: () -> Unit) {
     Surface(
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+        color = MaterialTheme.colorScheme.background.copy(alpha = 0.98f),
         tonalElevation = 1.dp,
         shadowElevation = 0.dp,
     ) {
-        Row(
-            Modifier.fillMaxWidth().navigationBarsPadding().height(68.dp).padding(horizontal = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            navItems.take(2).forEach { item -> NavDestination(item, route == item.route, onNavigate) }
-            Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                FilledIconButton(
-                    onClick = onAdd,
-                    modifier = Modifier.size(48.dp),
-                    colors = IconButtonDefaults.filledIconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.secondary,
-                        contentColor = MaterialTheme.colorScheme.onSecondary,
-                    ),
-                ) {
-                    Icon(Icons.Rounded.Add, contentDescription = "Add a PingLet", modifier = Modifier.size(26.dp))
+        Column {
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .5f))
+            Row(
+                Modifier.fillMaxWidth().navigationBarsPadding().height(68.dp).padding(horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                navItems.take(2).forEach { item -> NavDestination(item, route == item.route, onNavigate) }
+                Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    FilledIconButton(
+                        onClick = onAdd,
+                        modifier = Modifier.size(48.dp),
+                        colors = IconButtonDefaults.filledIconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.secondary,
+                            contentColor = MaterialTheme.colorScheme.onSecondary,
+                        ),
+                    ) {
+                        Icon(Icons.Rounded.Add, contentDescription = "Add a PingLet", modifier = Modifier.size(26.dp))
+                    }
                 }
+                navItems.drop(2).forEach { item -> NavDestination(item, route == item.route, onNavigate) }
             }
-            navItems.drop(2).forEach { item -> NavDestination(item, route == item.route, onNavigate) }
         }
     }
 }

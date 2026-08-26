@@ -55,6 +55,10 @@ class AddContentViewModel @Inject constructor(
         _state.value = _state.value.copy(gate = null)
     }
 
+    fun showSubscriptionsPending() {
+        _state.value = _state.value.copy(error = "You have reached the current limit. PingLet Plus subscriptions are coming soon.", gate = null)
+    }
+
     fun save(text: String, type: String, url: String?, author: String? = null) {
         if (_state.value.saving) return
         viewModelScope.launch {

@@ -23,6 +23,7 @@ data class PaywallUiState(
     val product: ProductDetails? = null,
     val verifying: Boolean = false,
     val purchased: Boolean = false,
+    val billingEnabled: Boolean = false,
     val error: String? = null,
 )
 
@@ -38,8 +39,14 @@ class PaywallViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            _state.value = runCatching { billing.queryPlus().firstOrNull() }
-                .fold({ PaywallUiState(loading = false, product = it) }, { PaywallUiState(loading = false, error = "Google Play billing is unavailable in this build.") })
+            val entitlement = runCatching { session.withAuthRetry { api.getEntitlements() } }.getOrNull()
+            entitlement?.let { dataStore.setEntitlement(it) }
+            if (entitlement?.paidPlansEnabled != true) {
+                _state.value = PaywallUiState(loading = false, billingEnabled = false)
+            } else {
+                _state.value = runCatching { billing.queryPlus().firstOrNull() }
+                    .fold({ PaywallUiState(loading = false, product = it, billingEnabled = true) }, { PaywallUiState(loading = false, billingEnabled = true, error = "Google Play billing is temporarily unavailable.") })
+            }
         }
         viewModelScope.launch {
             billing.purchases.collect { purchase ->
@@ -61,6 +68,7 @@ class PaywallViewModel @Inject constructor(
     }
 
     fun buy(activity: Activity, basePlanId: String) {
+        if (!_state.value.billingEnabled) return
         val product = _state.value.product ?: return
         track("PURCHASE_STARTED", basePlanId)
         val result = billing.launch(activity, product, basePlanId)
@@ -68,6 +76,7 @@ class PaywallViewModel @Inject constructor(
     }
 
     fun restore() = viewModelScope.launch {
+        if (!_state.value.billingEnabled) return@launch
         _state.value = _state.value.copy(verifying = true, error = null)
         runCatching { billing.restorePurchases() }
             .onSuccess { found -> if (!found) _state.value = _state.value.copy(verifying = false, error = "No active PingLet subscription was found for this Google Play account.") }
