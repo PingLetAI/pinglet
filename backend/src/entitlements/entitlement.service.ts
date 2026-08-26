@@ -9,9 +9,9 @@ import { GoogleAuth } from 'google-auth-library';
 import { PrismaService } from '../common/prisma/prisma.service';
 
 const LIMITS = {
-  GUEST: { saves: 10, imports: 3 },
-  FREE: { saves: 20, imports: 5 },
-  PLUS: { saves: null, imports: 40 },
+  GUEST: { saves: 10, imports: 5 },
+  FREE: { saves: 30, imports: 10 },
+  PLUS: { saves: null, imports: 50 },
 } as const;
 
 @Injectable()
@@ -59,7 +59,7 @@ export class EntitlementService {
     throw new HttpException(
       {
         code: 'UPGRADE_REQUIRED',
-        message: 'You have reached the 20-save Free limit. Upgrade to Plus for unlimited saves.',
+        message: 'You have reached the 30-save Free limit. Upgrade to Plus for unlimited saves.',
         entitlement: summary,
       },
       402,
@@ -81,8 +81,8 @@ export class EntitlementService {
         code: 'SOCIAL_IMPORT_LIMIT',
         message:
           summary.plan === 'PLUS'
-            ? 'Your 40 monthly AI imports are used. Reused links remain available without consuming quota.'
-            : 'Your 5 monthly AI imports are used. Upgrade to Plus for 40 per month.',
+            ? 'Your 50 monthly AI imports are used. Reused links remain available without consuming quota.'
+            : 'Your 10 monthly AI imports are used. Upgrade to Plus for 50 per month.',
         entitlement: summary,
       },
       402,

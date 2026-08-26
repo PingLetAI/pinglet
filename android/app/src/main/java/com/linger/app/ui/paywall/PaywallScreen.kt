@@ -34,7 +34,7 @@ fun PaywallScreen(onBack: () -> Unit, onPurchased: () -> Unit, viewModel: Paywal
         LingerCard(dark = true) {
             Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Rounded.WorkspacePremium, null, tint = MaterialTheme.colorScheme.secondary); Spacer(Modifier.width(9.dp)); Text("PINGLET PLUS", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.secondary) }
             Benefit("Unlimited personal saves")
-            Benefit("40 original social imports each month")
+            Benefit("50 original social imports each month")
             Benefit("Duplicate links never consume processing quota")
             Benefit("Independent premium widget profiles")
         }
