@@ -63,6 +63,7 @@ fun LingerLazyPage(
     title: String,
     subtitle: String? = null,
     onBack: (() -> Unit)? = null,
+    headerAction: (@Composable () -> Unit)? = null,
     content: LazyListScope.() -> Unit,
 ) {
     PageBackground {
@@ -71,7 +72,7 @@ fun LingerLazyPage(
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item { PageHeader(eyebrow, title, subtitle, onBack) }
+            item { PageHeader(eyebrow, title, subtitle, onBack, headerAction) }
             item { Spacer(Modifier.height(2.dp)) }
             content()
             item { Spacer(Modifier.height(20.dp)) }
@@ -92,7 +93,7 @@ private fun PageBackground(content: @Composable BoxScope.() -> Unit) {
 }
 
 @Composable
-private fun PageHeader(eyebrow: String, title: String, subtitle: String?, onBack: (() -> Unit)?) {
+private fun PageHeader(eyebrow: String, title: String, subtitle: String?, onBack: (() -> Unit)?, action: (@Composable () -> Unit)? = null) {
     Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             onBack?.let { navigateBack ->
@@ -102,7 +103,10 @@ private fun PageHeader(eyebrow: String, title: String, subtitle: String?, onBack
             }
             Text(eyebrow.uppercase(), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.tertiary)
         }
-        Text(title, style = MaterialTheme.typography.displaySmall)
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(title, Modifier.weight(1f), style = MaterialTheme.typography.displaySmall)
+            action?.invoke()
+        }
         subtitle?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
     }
 }

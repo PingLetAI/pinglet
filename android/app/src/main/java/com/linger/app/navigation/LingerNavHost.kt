@@ -21,6 +21,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.linger.app.domain.model.DeepLink
 import com.linger.app.ui.add.AddContentScreen
 import com.linger.app.ui.discover.DiscoverScreen
+import com.linger.app.ui.discover.CatalogDetailScreen
+import com.linger.app.ui.discover.CatalogPreferencesScreen
 import com.linger.app.ui.detail.ContentDetailScreen
 import com.linger.app.ui.home.HomeScreen
 import com.linger.app.ui.home.UpcomingScreen
@@ -122,7 +124,18 @@ fun LingerNavHost(
                     onUpgrade = { navController.navigate("paywall") },
                 )
             }
-            composable("discover") { DiscoverScreen() }
+        composable("discover") {
+            DiscoverScreen(
+                onOpenCatalog = { catalogId -> navController.navigate("catalog/$catalogId") },
+                onOpenPreferences = { navController.navigate("catalog-preferences") },
+            )
+        }
+        composable("catalog/{catalogId}") {
+            CatalogDetailScreen(onBack = { navController.popBackStack() })
+        }
+        composable("catalog-preferences") {
+            CatalogPreferencesScreen(onBack = { navController.popBackStack() })
+        }
             composable("settings") {
                 SettingsScreen(
                     onCreateAccount = { navController.navigate("account") },

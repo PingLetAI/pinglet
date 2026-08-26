@@ -45,6 +45,9 @@ interface AppApiService {
     @GET("/api/v1/catalogs/{id}/items")
     suspend fun getCatalogItems(@Path("id") id: String): List<Map<String, Any>>
 
+    @GET("/api/v1/me/catalogs/{id}/items")
+    suspend fun getMyCatalogDetail(@Path("id") id: String): CatalogDetailResponse
+
     @GET("/api/v1/me/content")
     suspend fun getMyContent(): List<UserContentResponse>
 

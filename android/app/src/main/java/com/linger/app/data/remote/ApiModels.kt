@@ -140,6 +140,26 @@ data class CatalogResponse(
     val name: String,
     val description: String? = null,
     val enabled: Boolean = true,
+    val itemCount: Int = 0,
+    val previewItems: List<CatalogItemResponse> = emptyList(),
+)
+
+data class CatalogItemResponse(
+    val id: String,
+    val text: String,
+    val type: String,
+    val author: String? = null,
+    val sourceUrl: String? = null,
+)
+
+data class CatalogDetailResponse(
+    val id: String,
+    val slug: String,
+    val name: String,
+    val description: String? = null,
+    val enabled: Boolean,
+    val itemCount: Int,
+    val items: List<CatalogItemResponse>,
 )
 
 data class CatalogPreferenceResponse(val catalogId: String, val enabled: Boolean)

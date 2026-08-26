@@ -12,6 +12,8 @@ const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=ai.pinglet
 const APP_STORE_URL = import.meta.env.VITE_APP_STORE_URL as string | undefined;
 const PUBLIC_SITE_URL = (import.meta.env.VITE_PUBLIC_SITE_URL as string | undefined) || "https://pinglet.ai";
 const DOWNLOAD_URL = `${PUBLIC_SITE_URL.replace(/\/$/, "")}/download`;
+const X_URL = "https://x.com/pingletAI";
+const INSTAGRAM_URL = "https://www.instagram.com/PingLet.AI";
 
 const steps = [
   { number: "01", title: "Share what resonates", body: "Send a public TikTok, Instagram, or Facebook post to PingLet, or write your own thought." },
@@ -44,10 +46,130 @@ function Icon({ name, className = "h-6 w-6" }: { name: string; className?: strin
 }
 
 function Logo({ light = false }: { light?: boolean }) {
-  return <a href="#top" className="flex items-center gap-3" aria-label="PingLet home">
+  return <a href="/" className="flex items-center gap-3" aria-label="PingLet home">
     <img src="/favicon.svg" alt="" className="h-9 w-9" />
     <span className={`text-xl font-bold tracking-[-.04em] ${light ? "text-paper" : "text-ink"}`}>PingLet</span>
   </a>;
+}
+
+function SiteFooter() {
+  return <footer className="bg-ink py-10 text-paper"><div className="mx-auto flex max-w-7xl flex-col gap-8 px-5 sm:px-8 md:flex-row md:items-center">
+    <Logo light />
+    <p className="text-sm text-paper/45 md:ml-4">Save what sticks.</p>
+    <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-paper/55 md:ml-auto">
+      <a href="mailto:hello@pinglet.ai" className="hover:text-paper">Contact</a>
+      <a href="/privacy" className="hover:text-paper">Privacy</a>
+      <a href="/terms" className="hover:text-paper">Terms</a>
+      <a href={X_URL} target="_blank" rel="noreferrer" className="hover:text-paper">X</a>
+      <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className="hover:text-paper">Instagram</a>
+    </div>
+    <p className="text-xs text-paper/35">© {new Date().getFullYear()} PingLet</p>
+  </div></footer>;
+}
+
+function LegalSection({ title, children }: { title: string; children: ReactNode }) {
+  return <section className="border-t border-ink/12 py-8 sm:grid sm:grid-cols-[14rem_1fr] sm:gap-10">
+    <h2 className="text-xl font-semibold tracking-[-.025em]">{title}</h2>
+    <div className="mt-4 space-y-4 leading-relaxed text-ink/68 sm:mt-0">{children}</div>
+  </section>;
+}
+
+function LegalPage({ type }: { type: "privacy" | "terms" }) {
+  const privacy = type === "privacy";
+  useEffect(() => {
+    document.title = `${privacy ? "Privacy Policy" : "Terms of Service"} · PingLet`;
+  }, [privacy]);
+
+  return <div className="min-h-screen bg-paper">
+    <header className="border-b border-ink/10 bg-paper/95"><div className="mx-auto flex h-20 max-w-6xl items-center justify-between px-5 sm:px-8"><Logo /><a href="/" className="text-sm font-semibold text-ink/55 hover:text-ink">Back to PingLet</a></div></header>
+    <main className="page-atmosphere px-5 py-16 sm:px-8 sm:py-24">
+      <article className="mx-auto max-w-5xl rounded-[2.5rem] border border-ink/10 bg-paper/90 p-6 shadow-soft backdrop-blur sm:p-10 lg:p-14">
+        <p className="eyebrow text-clay">Legal</p>
+        <h1 className="mt-4 text-4xl font-semibold tracking-[-.05em] sm:text-6xl">{privacy ? "Privacy Policy" : "Terms of Service"}</h1>
+        <p className="mt-5 text-sm text-ink/48">Last updated August 25, 2026</p>
+        <p className="mt-8 max-w-3xl text-lg leading-relaxed text-ink/68">{privacy
+          ? "PingLet is designed to keep what matters to you while collecting only the information needed to capture, process, sync, and resurface it."
+          : "These terms govern your use of the PingLet applications, website, widgets, and related services operated by TinkerPal LLC."}</p>
+
+        <div className="mt-12">
+          {privacy ? <>
+            <LegalSection title="Information we collect">
+              <p><strong>Account information.</strong> We collect your email address, verification status, account identifiers, plan, and subscription entitlement. You may initially use PingLet with an anonymous installation-based account.</p>
+              <p><strong>Content you choose to save.</strong> This includes notes, quotes, reminders, public social-post URLs, optional context, source information, favorites, collections, and widget preferences.</p>
+              <p><strong>Processed media information.</strong> When you submit a supported public link, we may process its available caption, audio transcript, visible text, sampled video frames, OCR results, summaries, themes, and derived takeaways.</p>
+              <p><strong>Device and usage information.</strong> We may collect installation ID, device platform, app version, locale, timezone, sync timestamps, content interactions, processing status, and diagnostic information. Google Play provides purchase status and entitlement information; PingLet does not receive your full payment-card details.</p>
+            </LegalSection>
+            <LegalSection title="How we use information">
+              <p>We use information to authenticate accounts, process saves, operate background ingestion, personalize and rotate widget content, preserve source links, synchronize devices, provide support, enforce limits, verify subscriptions, prevent abuse, improve reliability, and comply with law.</p>
+              <p>AI-generated summaries and insights are produced from material you intentionally submit. We do not use your private library to create public posts or advertising profiles.</p>
+            </LegalSection>
+            <LegalSection title="Service providers">
+              <p>We use vendors that help operate PingLet, including cloud hosting and database providers, OpenAI for transcription, moderation, vision, and structured analysis, Zoho for account email, and Google Play for Android distribution and billing.</p>
+              <p>Submitted source links may be requested from the original social platform. Those platforms process requests under their own privacy policies. Vendors receive only information reasonably necessary to provide their services.</p>
+            </LegalSection>
+            <LegalSection title="How information is shared">
+              <p>We do not sell your personal information. We may share information with service providers acting for us, when you direct us to share it, to protect users or the service, to comply with legal obligations, or as part of a merger, financing, acquisition, or sale of assets subject to appropriate safeguards.</p>
+            </LegalSection>
+            <LegalSection title="Storage and retention">
+              <p>Widget content is cached locally so rotation can continue offline. Account and saved-content records are retained while your account is active and as reasonably needed to provide the service. Processing workspaces are temporary; derived records such as transcripts and OCR may remain associated with your saved item.</p>
+              <p>You may request account and personal-content deletion by emailing <a className="font-semibold underline" href="mailto:hello@pinglet.ai">hello@pinglet.ai</a>. We may retain limited records where required for security, fraud prevention, billing, dispute resolution, or law.</p>
+            </LegalSection>
+            <LegalSection title="Security and choices">
+              <p>We use technical and organizational safeguards intended to protect information, but no network or storage system can be guaranteed completely secure. Keep account and device access protected.</p>
+              <p>You can manage favorites, catalog preferences, widget profiles, subscriptions, and saved items in the app. Depending on where you live, you may have rights to access, correct, delete, or receive a copy of personal information.</p>
+            </LegalSection>
+            <LegalSection title="Children and international use">
+              <p>PingLet is not directed to children under 13, and we do not knowingly collect personal information from children under 13. If local law requires a higher minimum age, that requirement applies.</p>
+              <p>Information may be processed in countries other than where you live. We use appropriate measures for international processing where required.</p>
+            </LegalSection>
+            <LegalSection title="Website and policy changes">
+              <p>The current website does not use advertising cookies. Hosting providers may process standard request logs needed for security and delivery. If analytics or advertising technologies are introduced, this policy will be updated as required.</p>
+              <p>We may update this policy as PingLet evolves. Material changes will be communicated through the service or website, and the date above will be revised.</p>
+            </LegalSection>
+          </> : <>
+            <LegalSection title="Using PingLet">
+              <p>You must be at least 13 and legally able to agree to these terms. If local law requires parental consent or a higher age, you must satisfy those requirements. You are responsible for activity associated with your account and device.</p>
+              <p>PingLet lets you save personal text and submit supported public links for private extraction, organization, and resurfacing. Source availability, background timing, and platform access are not guaranteed.</p>
+            </LegalSection>
+            <LegalSection title="Your content and permissions">
+              <p>You retain ownership of content you create. You grant TinkerPal LLC a limited, non-exclusive license to host, process, reproduce, and transform submitted material only as necessary to operate, secure, and improve the service for you.</p>
+              <p>You must have the right to submit material and must not use PingLet to infringe copyright, privacy, publicity, contractual, or other rights. Saving a link does not transfer ownership of the original post to you or PingLet.</p>
+            </LegalSection>
+            <LegalSection title="Acceptable use">
+              <p>You may not use PingLet to access private or restricted media without permission, bypass platform protections, distribute malware, harass others, exploit children, automate abusive requests, reverse engineer protected parts of the service, interfere with infrastructure, or submit unlawful content.</p>
+              <p>We may reject, remove, or stop processing material that violates these terms, our safety requirements, source-platform restrictions, or applicable law.</p>
+            </LegalSection>
+            <LegalSection title="AI and source services">
+              <p>Transcripts, OCR, summaries, classifications, and takeaways can contain errors. Review important material against the original source. PingLet does not provide medical, legal, financial, or other professional advice.</p>
+              <p>Third-party services such as Instagram, TikTok, Facebook, Google Play, and linked websites are governed by their own terms. We are not responsible for their content, availability, policy changes, or actions.</p>
+            </LegalSection>
+            <LegalSection title="Subscriptions and billing">
+              <p>Paid Android subscriptions are processed by Google Play and renew automatically unless canceled through your Play account before renewal. Prices, taxes, trial terms, and billing periods are shown by Google Play before purchase.</p>
+              <p>Refunds and billing disputes are handled under Google Play policies and applicable law. Canceling stops future renewal but does not normally end access before the current paid period expires.</p>
+            </LegalSection>
+            <LegalSection title="Service changes and termination">
+              <p>We may modify, suspend, or discontinue features, limits, integrations, or supported sources. Android controls background execution, so widget rotation times are approximate.</p>
+              <p>You may stop using PingLet at any time. We may restrict or terminate access for material violations, abuse, security risk, legal requirements, or nonpayment. Provisions that logically survive termination will remain effective.</p>
+            </LegalSection>
+            <LegalSection title="Disclaimers and liability">
+              <p>To the fullest extent permitted by law, PingLet is provided “as is” and “as available” without warranties of uninterrupted operation, accuracy, fitness for a particular purpose, or non-infringement.</p>
+              <p>To the fullest extent permitted by law, TinkerPal LLC will not be liable for indirect, incidental, special, consequential, exemplary, or lost-profit damages. Our aggregate liability relating to the service will not exceed the greater of amounts you paid to PingLet during the preceding 12 months or US $50. Some jurisdictions do not allow certain limitations, so they may not apply to you.</p>
+            </LegalSection>
+            <LegalSection title="Governing terms">
+              <p>These terms are governed by the laws of the State of Ohio, excluding conflict-of-law principles, except where mandatory consumer law provides otherwise. Before filing a claim, contact us and allow 30 days to attempt an informal resolution.</p>
+              <p>If any provision is unenforceable, the remaining provisions remain effective. These terms and referenced policies form the agreement between you and TinkerPal LLC regarding PingLet.</p>
+            </LegalSection>
+          </>}
+          <LegalSection title="Contact">
+            <p>TinkerPal LLC · Cleveland, Ohio, United States</p>
+            <p>Questions, privacy requests, or legal notices: <a className="font-semibold underline" href="mailto:hello@pinglet.ai">hello@pinglet.ai</a>.</p>
+            <div className="flex gap-5 pt-2"><a href={X_URL} target="_blank" rel="noreferrer" className="font-semibold underline">X</a><a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className="font-semibold underline">Instagram</a></div>
+          </LegalSection>
+        </div>
+      </article>
+    </main>
+    <SiteFooter />
+  </div>;
 }
 
 function Button({ children, href, secondary = false, light = false }: { children: ReactNode; href: string; secondary?: boolean; light?: boolean }) {
@@ -131,7 +253,10 @@ function WidgetPreview() {
 }
 
 function App() {
-  if (window.location.pathname.replace(/\/$/, "") === "/download") return <DownloadPage />;
+  const path = window.location.pathname.replace(/\/$/, "") || "/";
+  if (path === "/download") return <DownloadPage />;
+  if (path === "/privacy") return <LegalPage type="privacy" />;
+  if (path === "/terms") return <LegalPage type="terms" />;
   return <div id="top" className="overflow-hidden">
     <header className="glass fixed inset-x-0 top-0 z-50 border-b border-ink/8">
       <div className="mx-auto flex h-18 max-w-7xl items-center px-5 sm:px-8">
@@ -202,7 +327,7 @@ function App() {
       <section id="download" className="bg-gold px-5 py-20 sm:px-8 sm:py-28"><div className="mx-auto max-w-6xl"><div className="grid gap-12 lg:grid-cols-[.8fr_1.2fr] lg:items-center"><div className="text-center lg:text-left"><img src="/favicon.svg" alt="" className="mx-auto h-16 w-16 lg:mx-0" /><h2 className="balance mt-7 text-4xl font-semibold tracking-[-.05em] sm:text-5xl">Keep the things that move you moving.</h2><p className="mt-5 text-lg text-ink/65">Download PingLet and build a calmer memory for what you discover.</p></div><div className="rounded-[2rem] bg-paper/92 p-6 shadow-soft sm:p-8"><DownloadChoices compact /></div></div></div></section>
     </main>
 
-    <footer className="bg-ink py-10 text-paper"><div className="mx-auto flex max-w-7xl flex-col gap-8 px-5 sm:px-8 md:flex-row md:items-center"><Logo light /><p className="text-sm text-paper/45 md:ml-4">Save what sticks.</p><div className="flex flex-wrap gap-6 text-sm text-paper/55 md:ml-auto"><a href="mailto:hello@pinglet.ai" className="hover:text-paper">Contact</a><a href="#" className="hover:text-paper">Privacy</a><a href="#" className="hover:text-paper">Terms</a></div><p className="text-xs text-paper/35">© {new Date().getFullYear()} PingLet</p></div></footer>
+    <SiteFooter />
   </div>;
 }
 

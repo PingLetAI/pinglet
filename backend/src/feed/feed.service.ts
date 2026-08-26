@@ -96,7 +96,7 @@ export class FeedService {
 
     const catalogPrefs = await this.prisma.userCatalogPreference.findMany({
       where: { userId },
-      select: { catalogId: true, weight: true },
+      select: { catalogId: true, weight: true, enabled: true },
     });
 
     const enabledCatalogPrefs = await this.prisma.userCatalogPreference.findMany({
@@ -104,17 +104,13 @@ export class FeedService {
       select: { catalogId: true, weight: true },
     });
 
-    const catalogFilter = catalogPrefs.length > 0
-      ? {
-          catalog: {
-            id: {
-              in: enabledCatalogPrefs.map((item) => item.catalogId),
-            },
-          },
-        }
-      : {
-          catalog: { isActive: true },
-        };
+    const disabledCatalogIds = catalogPrefs.filter((item) => !item.enabled).map((item) => item.catalogId);
+    const catalogFilter = {
+      catalog: {
+        isActive: true,
+        id: { notIn: disabledCatalogIds },
+      },
+    };
 
     const weightByCatalog = new Map<string, number>(
       enabledCatalogPrefs.map((row) => [row.catalogId, Number(row.weight || 1)]),

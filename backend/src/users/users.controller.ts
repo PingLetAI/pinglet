@@ -45,6 +45,11 @@ export class UsersController {
     return this.users.getCatalogPreferences(req.user.sub);
   }
 
+  @Get('catalogs/:catalogId/items')
+  getCatalogDetail(@Req() req: any, @Param('catalogId') catalogId: string) {
+    return this.users.getCatalogDetail(req.user.sub, catalogId);
+  }
+
   @Patch('catalogs/:catalogId')
   patchCatalogPreference(@Req() req: any, @Param('catalogId') catalogId: string, @Body() dto: CatalogPreferencePatchDto) {
     return this.users.patchCatalogPreference(req.user.sub, catalogId, dto.enabled);

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 
 type PersonalSystemMix = 'MOSTLY_MINE' | 'BALANCED' | 'MORE_DISCOVERY';
@@ -72,12 +72,50 @@ export class UsersService {
     const catalogs = await this.prisma.catalog.findMany({
       where: { isActive: true },
       orderBy: { name: 'asc' },
-      include: { userCatalogSettings: { where: { userId } } },
+      include: {
+        userCatalogSettings: { where: { userId } },
+        _count: { select: { items: true } },
+        items: {
+          orderBy: { priority: 'desc' },
+          take: 2,
+          include: { contentItem: true },
+        },
+      },
     });
-    return catalogs.map(({ userCatalogSettings, ...catalog }) => ({
+    return catalogs.map(({ userCatalogSettings, items, _count, ...catalog }) => ({
       ...catalog,
       enabled: userCatalogSettings[0]?.enabled ?? true,
+      itemCount: _count.items,
+      previewItems: items.map(({ contentItem }) => ({
+        id: contentItem.id, text: contentItem.text, type: contentItem.type,
+        author: contentItem.author, sourceUrl: contentItem.sourceUrl,
+      })),
     }));
+  }
+
+  async getCatalogDetail(userId: string, catalogId: string) {
+    const catalog = await this.prisma.catalog.findFirst({
+      where: { id: catalogId, isActive: true },
+      include: {
+        userCatalogSettings: { where: { userId } },
+        _count: { select: { items: true } },
+        items: {
+          orderBy: { priority: 'desc' },
+          take: 100,
+          include: { contentItem: true },
+        },
+      },
+    });
+    if (!catalog) throw new NotFoundException('Collection not found');
+    return {
+      id: catalog.id, slug: catalog.slug, name: catalog.name,
+      description: catalog.description, enabled: catalog.userCatalogSettings[0]?.enabled ?? true,
+      itemCount: catalog._count.items,
+      items: catalog.items.map(({ contentItem }) => ({
+        id: contentItem.id, text: contentItem.text, type: contentItem.type,
+        author: contentItem.author, sourceUrl: contentItem.sourceUrl,
+      })),
+    };
   }
 
   async patchCatalogPreference(userId: string, catalogId: string, enabled: boolean) {

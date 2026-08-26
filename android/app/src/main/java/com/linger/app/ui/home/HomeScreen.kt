@@ -3,10 +3,9 @@ package com.linger.app.ui.home
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowForward
+import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -36,16 +35,19 @@ fun HomeScreen(onOpenContent: (String) -> Unit, onOpenUpcoming: () -> Unit) {
         while (isActive) {
             val store = DataStoreManager(context)
             val dao = DatabaseProvider.database(context).contentDao()
-            val queued = dao.queue(200).mapNotNull { queued -> dao.contentById(queued.contentItemId)?.let { HomeItem(it.id, it.text) } }
+            val currentId = store.readLastDisplayedContentId()
+            val queued = dao.queue(200)
+                .mapNotNull { queued -> dao.contentById(queued.contentItemId)?.let { HomeItem(it.id, it.text) } }
+                .filterNot { it.id == currentId }
             val nextAt = store.readLastDisplayedNextChangeAt()
             state = HomeState(
-                currentId = store.readLastDisplayedContentId(),
+                currentId = currentId,
                 message = store.readLastDisplayedContentText().ifBlank { state.message },
                 author = store.readLastDisplayedContentAuthor().ifBlank { null },
                 remaining = max(0L, (nextAt - System.currentTimeMillis()) / 60_000),
                 interval = store.refreshMinutes().firstOrNull() ?: 30,
-                upcoming = queued.take(3),
-                hasMore = queued.size > 3,
+                upcoming = queued.take(5),
+                hasMore = queued.size > 5,
             )
             delay(15_000)
         }
@@ -68,7 +70,7 @@ fun HomeScreen(onOpenContent: (String) -> Unit, onOpenUpcoming: () -> Unit) {
                 Text("Coming up", style = MaterialTheme.typography.titleLarge)
                 Text("Ready offline · every ${state.interval} minutes", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            if (state.hasMore) TextButton(onClick = onOpenUpcoming) { Text("SEE ALL"); Spacer(Modifier.width(4.dp)); Icon(Icons.Rounded.ArrowForward, null, Modifier.size(17.dp)) }
+            if (state.hasMore) TextButton(onClick = onOpenUpcoming) { Text("SEE ALL"); Spacer(Modifier.width(4.dp)); Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, Modifier.size(17.dp)) }
         }
 
         if (state.upcoming.isEmpty()) {
@@ -79,9 +81,9 @@ fun HomeScreen(onOpenContent: (String) -> Unit, onOpenUpcoming: () -> Unit) {
             Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface, tonalElevation = 2.dp, border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
                 Column {
                     state.upcoming.forEachIndexed { index, item ->
-                        Row(Modifier.fillMaxWidth().clickable { onOpenContent(item.id) }.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
-                            Box(Modifier.padding(top = 8.dp).size(6.dp).background(MaterialTheme.colorScheme.tertiary, CircleShape))
-                            Text(cleanDisplayText(item.text), Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge, maxLines = 2)
+                        Row(Modifier.fillMaxWidth().clickable { onOpenContent(item.id) }.padding(horizontal = 16.dp, vertical = 13.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
+                            Text("${index + 1}".padStart(2, '0'), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.tertiary, modifier = Modifier.padding(top = 2.dp))
+                            Text(cleanDisplayText(item.text), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, maxLines = 2)
                         }
                         if (index < state.upcoming.lastIndex) HorizontalDivider(Modifier.padding(start = 34.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .65f))
                     }
