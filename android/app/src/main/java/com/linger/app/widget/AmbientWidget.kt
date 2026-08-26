@@ -48,7 +48,7 @@ class AmbientWidget : GlanceAppWidget() {
         val store = DataStoreManager(context)
         val widgetKey = id.toString()
         val stored = store.readWidgetProfile(widgetKey)
-        val isPlus = store.readEntitlementPlan() == "PLUS"
+        val isPlus = store.isPlusAccessActive()
         val profile = if (isPlus) stored else stored.freeDefaults()
         val now = System.currentTimeMillis()
         val state = WidgetState(
@@ -195,7 +195,7 @@ class FavoriteContentAction : ActionCallback {
 
 class NextContentAction : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
-        if (DataStoreManager(context).readEntitlementPlan() != "PLUS") return
+        if (!DataStoreManager(context).isPlusAccessActive()) return
         SyncScheduler.rotateWidget(context, parameters[widgetKey] ?: glanceId.toString())
     }
 

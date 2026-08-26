@@ -2,6 +2,7 @@ import {
   ForbiddenException,
   HttpException,
   Injectable,
+  ConflictException,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -23,7 +24,13 @@ export class EntitlementService {
 
   async getSummary(userId: string) {
     const user = await (this.prisma as any).user.findUniqueOrThrow({ where: { id: userId } });
-    const plan = this.effectivePlan(user);
+    const now = new Date();
+    const [purchaseCount, activePurchaseCount] = await Promise.all([
+      this.prisma.purchaseEntitlement.count({ where: { userId } }),
+      this.prisma.purchaseEntitlement.count({ where: { userId, expiresAt: { gt: now } } }),
+    ]);
+    const entitlement = this.resolveEntitlement(user, now, activePurchaseCount > 0, purchaseCount > 0);
+    const plan = entitlement.plan;
     const [savedCount, pendingCount, socialImportsUsed] = await Promise.all([
       this.prisma.userContent.count({ where: { userId } }),
       this.prisma.ingestion.count({
@@ -43,7 +50,49 @@ export class EntitlementService {
       socialImportLimit: limits.imports,
       accountPromptRecommended: user.isAnonymous && saveCount >= 5,
       plusExpiresAt: user.plusExpiresAt,
+      accessExpiresAt: entitlement.accessExpiresAt,
+      entitlementSource: entitlement.source,
+      trialStatus: entitlement.trialStatus,
+      trialEligible: entitlement.trialStatus === 'ELIGIBLE',
+      trialStartedAt: user.plusTrialStartedAt,
+      trialEndsAt: user.plusTrialEndsAt,
+      trialDaysRemaining: entitlement.trialDaysRemaining,
     };
+  }
+
+  async startTrial(userId: string) {
+    const db = this.prisma as any;
+    const user = await db.user.findUniqueOrThrow({ where: { id: userId } });
+    if (user.isAnonymous || !user.emailVerifiedAt) {
+      throw new ForbiddenException({
+        code: 'EMAIL_VERIFICATION_REQUIRED',
+        message: 'Verify your email before starting your free Plus access.',
+      });
+    }
+
+    const now = new Date();
+    if (user.plusTrialStartedAt) {
+      if (user.plusTrialEndsAt && user.plusTrialEndsAt > now) return this.getSummary(userId);
+      throw new ConflictException({ code: 'TRIAL_ALREADY_USED', message: 'This account has already used its free Plus access.' });
+    }
+    const purchaseCount = await this.prisma.purchaseEntitlement.count({ where: { userId } });
+    if (purchaseCount > 0 || (user.plan === 'PLUS' && user.plusExpiresAt && user.plusExpiresAt > now)) {
+      throw new ForbiddenException({ code: 'TRIAL_NOT_ELIGIBLE', message: 'This account is not eligible for a Plus trial.' });
+    }
+
+    const configuredDays = Number(this.config.get<string>('PLUS_REVERSE_TRIAL_DAYS') || '7');
+    const days = Number.isFinite(configuredDays) ? Math.max(1, Math.min(30, Math.floor(configuredDays))) : 7;
+    const endsAt = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+    const claimed = await db.user.updateMany({
+      where: { id: userId, plusTrialStartedAt: null, isAnonymous: false, emailVerifiedAt: { not: null } },
+      data: { plusTrialStartedAt: now, plusTrialEndsAt: endsAt },
+    });
+    if (claimed.count !== 1) {
+      const summary = await this.getSummary(userId);
+      if (summary.trialStatus === 'ACTIVE') return summary;
+      throw new ConflictException({ code: 'TRIAL_ALREADY_USED', message: 'This account has already used its free Plus access.' });
+    }
+    return this.getSummary(userId);
   }
 
   async assertCanSave(userId: string) {
@@ -142,9 +191,38 @@ export class EntitlementService {
     return this.getSummary(userId);
   }
 
-  private effectivePlan(user: { isAnonymous: boolean; plan: string; plusExpiresAt: Date | null }) {
-    if (user.plan === 'PLUS' && user.plusExpiresAt && user.plusExpiresAt > new Date()) return 'PLUS' as const;
-    return user.isAnonymous ? ('GUEST' as const) : ('FREE' as const);
+  private resolveEntitlement(
+    user: {
+      isAnonymous: boolean;
+      emailVerifiedAt: Date | null;
+      plan: string;
+      plusExpiresAt: Date | null;
+      plusTrialStartedAt: Date | null;
+      plusTrialEndsAt: Date | null;
+    },
+    now: Date,
+    hasActivePurchase: boolean,
+    hasPurchaseHistory: boolean,
+  ) {
+    const paidActive = user.plan === 'PLUS' && !!user.plusExpiresAt && user.plusExpiresAt > now;
+    const trialActive = !paidActive && !!user.plusTrialEndsAt && user.plusTrialEndsAt > now;
+    const trialDaysRemaining = trialActive
+      ? Math.max(1, Math.ceil((user.plusTrialEndsAt!.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)))
+      : 0;
+    const trialStatus = trialActive
+      ? 'ACTIVE'
+      : user.plusTrialStartedAt
+        ? 'EXPIRED'
+        : !user.isAnonymous && !!user.emailVerifiedAt && !hasPurchaseHistory && !paidActive
+          ? 'ELIGIBLE'
+          : 'INELIGIBLE';
+    return {
+      plan: paidActive || trialActive ? ('PLUS' as const) : user.isAnonymous ? ('GUEST' as const) : ('FREE' as const),
+      source: paidActive ? (hasActivePurchase ? 'GOOGLE_PLAY' : 'ADMIN') : trialActive ? 'TRIAL' : 'NONE',
+      accessExpiresAt: paidActive ? user.plusExpiresAt : trialActive ? user.plusTrialEndsAt : null,
+      trialStatus,
+      trialDaysRemaining,
+    };
   }
 
   private socialImportCount(userId: string, plan: 'GUEST' | 'FREE' | 'PLUS') {

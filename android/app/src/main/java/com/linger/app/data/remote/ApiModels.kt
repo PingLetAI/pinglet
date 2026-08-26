@@ -126,6 +126,13 @@ data class ContentDetailAccessDto(
     val hasAnalysis: Boolean,
     val fullDetailsUnlocked: Boolean,
     val lockedSections: List<String> = emptyList(),
+    val isAnonymous: Boolean = true,
+    val entitlementSource: String = "NONE",
+    val accessExpiresAt: String? = null,
+    val trialStatus: String = "INELIGIBLE",
+    val trialEligible: Boolean = false,
+    val trialEndsAt: String? = null,
+    val trialDaysRemaining: Int = 0,
 )
 
 data class PreferenceResponse(
@@ -170,6 +177,7 @@ data class EventPayload(
     @SerializedName("contentItemId") val contentItemId: String? = null,
     val surface: String,
     val timestamp: String,
+    val metadata: String? = null,
 )
 
 
@@ -185,6 +193,13 @@ data class EntitlementResponse(
     val socialImportLimit: Int,
     val accountPromptRecommended: Boolean,
     val plusExpiresAt: String? = null,
+    val entitlementSource: String = "NONE",
+    val accessExpiresAt: String? = null,
+    val trialStatus: String = "INELIGIBLE",
+    val trialEligible: Boolean = false,
+    val trialStartedAt: String? = null,
+    val trialEndsAt: String? = null,
+    val trialDaysRemaining: Int = 0,
 )
 
 data class EmailOtpRequest(val email: String)

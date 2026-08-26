@@ -54,6 +54,14 @@ enum EventType {
   CONTENT_SKIPPED
   CONTENT_FAVORITED
   CONTENT_OPENED
+  TRIAL_OFFER_VIEWED
+  TRIAL_STARTED
+  TRIAL_SKIPPED
+  TRIAL_ENDING_PROMPT_VIEWED
+  TRIAL_UPGRADE_CLICKED
+  TRIAL_EXPIRED
+  PURCHASE_STARTED
+  PURCHASE_COMPLETED
 }
 
 enum Surface {
@@ -97,6 +105,8 @@ model User {
   emailVerifiedAt DateTime?
   plan          AccountPlan        @default(GUEST)
   plusExpiresAt DateTime?
+  plusTrialStartedAt DateTime?
+  plusTrialEndsAt DateTime?
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
 

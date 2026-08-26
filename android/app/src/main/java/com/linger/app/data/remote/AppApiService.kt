@@ -21,6 +21,9 @@ interface AppApiService {
     @GET("/api/v1/me/entitlements")
     suspend fun getEntitlements(): EntitlementResponse
 
+    @POST("/api/v1/me/entitlements/trial")
+    suspend fun startPlusTrial(): EntitlementResponse
+
     @POST("/api/v1/me/entitlements/google-play")
     suspend fun verifyGooglePlayPurchase(@Body request: GooglePlayPurchaseRequest): EntitlementResponse
 

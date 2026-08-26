@@ -23,16 +23,17 @@ import com.linger.app.ui.components.StatusPill
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onCreateAccount: () -> Unit = {}, onUpgrade: () -> Unit = {}, onOpenQueue: () -> Unit = {}, onOpenWidgetSettings: () -> Unit = {}, viewModel: SettingsViewModel = hiltViewModel()) {
+fun SettingsScreen(onCreateAccount: () -> Unit = {}, onTryPlus: () -> Unit = {}, onUpgrade: () -> Unit = {}, onOpenQueue: () -> Unit = {}, onOpenWidgetSettings: () -> Unit = {}, entitlementRefreshKey: Long = 0L, viewModel: SettingsViewModel = hiltViewModel()) {
     val entitlement by viewModel.entitlement.collectAsState()
     val textSize by viewModel.widgetTextSize.collectAsState()
     val opacity by viewModel.widgetOpacity.collectAsState()
     val mix by viewModel.personalSystemMix.collectAsState()
     val context = LocalContext.current
     LaunchedEffect(Unit) { viewModel.refresh() }
+    LaunchedEffect(entitlementRefreshKey) { if (entitlementRefreshKey > 0L) viewModel.refresh() }
 
     LingerPage("Settings", "Make PingLet yours.", "Account, rotation, and widget preferences.") {
-        AccountSummary(entitlement, onCreateAccount, onUpgrade) {
+        AccountSummary(entitlement, onCreateAccount, onTryPlus, onUpgrade) {
             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/account/subscriptions?package=${BuildConfig.APPLICATION_ID}")))
         }
 
@@ -76,7 +77,7 @@ fun SettingsScreen(onCreateAccount: () -> Unit = {}, onUpgrade: () -> Unit = {},
 }
 
 @Composable
-private fun AccountSummary(entitlement: EntitlementResponse?, onCreateAccount: () -> Unit, onUpgrade: () -> Unit, onManageSubscription: () -> Unit) {
+private fun AccountSummary(entitlement: EntitlementResponse?, onCreateAccount: () -> Unit, onTryPlus: () -> Unit, onUpgrade: () -> Unit, onManageSubscription: () -> Unit) {
     val plan = entitlement?.plan ?: "GUEST"
     SectionLabel("ACCOUNT")
     LingerCard {
@@ -84,10 +85,10 @@ private fun AccountSummary(entitlement: EntitlementResponse?, onCreateAccount: (
             Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.secondaryContainer) { Icon(if (entitlement?.isAnonymous == false) Icons.Rounded.VerifiedUser else Icons.Rounded.PersonOutline, null, Modifier.padding(11.dp).size(24.dp)) }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(when (plan) { "PLUS" -> "PingLet Plus"; "FREE" -> "Free account"; else -> "Guest profile" }, style = MaterialTheme.typography.titleLarge)
+                Text(when { entitlement?.trialStatus == "ACTIVE" -> "PingLet Plus trial"; plan == "PLUS" -> "PingLet Plus"; plan == "FREE" -> "Free account"; else -> "Guest profile" }, style = MaterialTheme.typography.titleLarge)
                 Text(entitlement?.email ?: "Not connected to an email", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
             }
-            StatusPill(if (plan == "PLUS") "PLUS" else if (entitlement?.isAnonymous == false) "VERIFIED" else "LOCAL")
+            StatusPill(if (entitlement?.trialStatus == "ACTIVE") "TRIAL" else if (plan == "PLUS") "PLUS" else if (entitlement?.isAnonymous == false) "VERIFIED" else "LOCAL")
         }
         if (entitlement != null) {
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -96,10 +97,17 @@ private fun AccountSummary(entitlement: EntitlementResponse?, onCreateAccount: (
                 Usage("AI IMPORTS", entitlement.socialImportsUsed, entitlement.socialImportLimit)
             }
         } else LinearProgressIndicator(Modifier.fillMaxWidth())
+        if (entitlement?.trialStatus == "ACTIVE") Text("${entitlement.trialDaysRemaining} days of Plus remaining. Your account returns to Free automatically; you will not be charged.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         when {
             entitlement?.isAnonymous != false -> Button(onCreateAccount, Modifier.fillMaxWidth()) { Text("CONNECT EMAIL") }
+            entitlement.trialStatus == "ACTIVE" -> Button(onUpgrade, Modifier.fillMaxWidth()) { Text("KEEP PINGLET PLUS") }
+            plan != "PLUS" && entitlement.trialEligible -> {
+                Button(onTryPlus, Modifier.fillMaxWidth()) { Text("TRY PINGLET PLUS - 7 DAYS FREE") }
+                TextButton(onUpgrade, Modifier.fillMaxWidth()) { Text("VIEW PAID PLANS") }
+            }
             plan != "PLUS" -> Button(onUpgrade, Modifier.fillMaxWidth()) { Text("EXPLORE PINGLET PLUS") }
-            else -> OutlinedButton(onManageSubscription, Modifier.fillMaxWidth()) { Text("MANAGE SUBSCRIPTION") }
+            entitlement.entitlementSource == "GOOGLE_PLAY" -> OutlinedButton(onManageSubscription, Modifier.fillMaxWidth()) { Text("MANAGE SUBSCRIPTION") }
+            else -> OutlinedButton(onUpgrade, Modifier.fillMaxWidth()) { Text("VIEW PLUS PLANS") }
         }
     }
 }

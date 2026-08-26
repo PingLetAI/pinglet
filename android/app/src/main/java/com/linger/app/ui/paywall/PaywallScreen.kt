@@ -33,10 +33,11 @@ fun PaywallScreen(onBack: () -> Unit, onPurchased: () -> Unit, viewModel: Paywal
     LingerPage("PingLet Plus", "Keep everything worth remembering.", "More room for the ideas, words, and stories you want to carry forward.", onBack) {
         LingerCard(dark = true) {
             Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Rounded.WorkspacePremium, null, tint = MaterialTheme.colorScheme.secondary); Spacer(Modifier.width(9.dp)); Text("PINGLET PLUS", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.secondary) }
-            Benefit("Unlimited personal saves")
-            Benefit("50 original social imports each month")
-            Benefit("Duplicate links never consume processing quota")
-            Benefit("Independent premium widget profiles")
+            Benefit("Complete AI breakdowns", "Full transcripts, visible text and comprehensive summaries")
+            Benefit("Every useful insight", "All takeaways, themes and practical actions")
+            Benefit("50 social imports monthly", "Duplicate links never use your processing quota")
+            Benefit("Unlimited personal saves", "Keep your entire library without a total cap")
+            Benefit("Premium widget profiles", "Independent themes, schedules and content mixes")
         }
         PlanChoice("annual", "Annual", "${price("annual", "$14.99")} per year", "BEST VALUE", selected) { selected = "annual" }
         PlanChoice("monthly", "Monthly", "${price("monthly", "$1.99")} per month", null, selected) { selected = "monthly" }
@@ -56,7 +57,20 @@ fun PaywallScreen(onBack: () -> Unit, onPurchased: () -> Unit, viewModel: Paywal
     }
 }
 
-@Composable private fun Benefit(text: String) { Row(horizontalArrangement = Arrangement.spacedBy(9.dp), verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Rounded.CheckCircle, null, Modifier.size(19.dp), tint = MaterialTheme.colorScheme.secondary); Text(text, style = MaterialTheme.typography.bodyMedium) } }
+@Composable
+private fun Benefit(title: String, supporting: String) {
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.Top) {
+        Icon(Icons.Rounded.CheckCircle, null, Modifier.size(19.dp), tint = MaterialTheme.colorScheme.secondary)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+            Text(title, style = MaterialTheme.typography.bodyMedium)
+            Text(
+                supporting,
+                style = MaterialTheme.typography.bodySmall,
+                color = LocalContentColor.current.copy(alpha = 0.72f),
+            )
+        }
+    }
+}
 
 @Composable
 private fun PlanChoice(id: String, title: String, price: String, badge: String?, selected: String, onClick: () -> Unit) {

@@ -32,6 +32,9 @@ fun ContentDetailScreen(
     contentId: String,
     onBack: () -> Unit,
     onUpgrade: () -> Unit,
+    onCreateAccount: () -> Unit = {},
+    onTryPlus: () -> Unit = {},
+    entitlementRefreshKey: Long = 0L,
     viewModel: ContentDetailViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
@@ -48,6 +51,7 @@ fun ContentDetailScreen(
         favorite = DataStoreManager(appContext).isContentFavorite(contentId)
         localLoaded = true
     }
+    LaunchedEffect(entitlementRefreshKey) { if (entitlementRefreshKey > 0L) viewModel.refresh() }
 
     val detail = remote.detail
     val sourceUrl = detail?.content?.sourceUrl ?: item?.sourceUrl
@@ -110,7 +114,7 @@ fun ContentDetailScreen(
                     detail.visibleText?.takeIf { it.isNotBlank() }?.let { CollapsibleText("Text found in images", it) }
                     detail.caption?.takeIf { it.isNotBlank() }?.let { CollapsibleText("Original caption", it) }
                 } else if (detail?.access?.hasAnalysis == true) {
-                    PremiumUnlockCard(detail.access.lockedSections.size, onUpgrade)
+                    PremiumUnlockCard(detail.access, onCreateAccount, onTryPlus, onUpgrade)
                 }
 
                 if (remote.loadFailed && detail == null) DetailLoadFailure(viewModel::refresh)
@@ -165,15 +169,20 @@ private fun BulletRow(text: String) {
 }
 
 @Composable
-private fun PremiumUnlockCard(lockedCount: Int, onUpgrade: () -> Unit) {
+private fun PremiumUnlockCard(access: com.linger.app.data.remote.ContentDetailAccessDto, onCreateAccount: () -> Unit, onTryPlus: () -> Unit, onUpgrade: () -> Unit) {
     LingerCard(color = MaterialTheme.colorScheme.secondaryContainer) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Icon(Icons.Rounded.AutoAwesome, null, tint = MaterialTheme.colorScheme.tertiary)
             Text("There is more in this PingLet", style = MaterialTheme.typography.titleLarge)
         }
         Text("Unlock the full summary, all insights, practical takeaways, transcript, visible text, and related topics.", style = MaterialTheme.typography.bodyMedium)
-        if (lockedCount > 0) Text("$lockedCount detailed sections available", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Button(onClick = onUpgrade, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Rounded.LockOpen, null); Spacer(Modifier.width(8.dp)); Text("UNLOCK WITH PINGLET PLUS") }
+        if (access.lockedSections.isNotEmpty()) Text("${access.lockedSections.size} detailed sections available", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        when {
+            access.isAnonymous -> Button(onClick = onCreateAccount, modifier = Modifier.fillMaxWidth()) { Text("CREATE ACCOUNT TO TRY PLUS") }
+            access.trialEligible -> Button(onClick = onTryPlus, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Rounded.LockOpen, null); Spacer(Modifier.width(8.dp)); Text("TRY PLUS FREE - 7 DAYS") }
+            else -> Button(onClick = onUpgrade, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Rounded.LockOpen, null); Spacer(Modifier.width(8.dp)); Text("UNLOCK WITH PINGLET PLUS") }
+        }
+        if (!access.isAnonymous && access.trialEligible) TextButton(onClick = onUpgrade, modifier = Modifier.fillMaxWidth()) { Text("VIEW PAID PLANS") }
     }
 }
 

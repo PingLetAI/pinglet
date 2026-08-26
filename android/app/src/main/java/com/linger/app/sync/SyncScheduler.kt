@@ -121,7 +121,7 @@ object SyncScheduler {
         val session = SessionManager(authRepository, dataStore)
         val feed = session.withAuthRetry {
             flushPendingFavorites(dao, api)
-            dataStore.setEntitlementPlan(api.getEntitlements().plan)
+            dataStore.setEntitlement(api.getEntitlements())
             contentRepository.syncFeed()
         }
         dataStore.mergeFeedFavoriteContentIds(
@@ -169,7 +169,7 @@ object SyncScheduler {
         for (id in ids) {
             val key = id.toString()
             val stored = dataStore.readWidgetProfile(key)
-            val effective = if (dataStore.readEntitlementPlan() == "PLUS") stored else stored.freeDefaults()
+            val effective = if (dataStore.isPlusAccessActive()) stored else stored.freeDefaults()
             val item = WidgetRotationSelector.select(dao, effective, key, favoriteIds) ?: continue
             val updated = stored.copy(
                 currentContentId = item.id, currentText = item.text, currentAuthor = item.author,
@@ -195,7 +195,7 @@ object SyncScheduler {
         val profile = dataStore.readWidgetProfile(widgetKey)
         dataStore.setWidgetProfile(widgetKey, profile.copy(manualOffset = profile.manualOffset + 1))
         val dao = DatabaseProvider.database(context).contentDao()
-        val effective = if (dataStore.readEntitlementPlan() == "PLUS") profile.copy(manualOffset = profile.manualOffset + 1) else profile.freeDefaults()
+        val effective = if (dataStore.isPlusAccessActive()) profile.copy(manualOffset = profile.manualOffset + 1) else profile.freeDefaults()
         val item = WidgetRotationSelector.select(dao, effective, widgetKey, dataStore.readFavoriteContentIds()) ?: return@withLock
         val now = System.currentTimeMillis()
         val updated = profile.copy(

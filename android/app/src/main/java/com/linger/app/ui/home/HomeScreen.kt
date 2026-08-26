@@ -24,11 +24,11 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.isActive
 import kotlin.math.max
 
-private data class HomeState(val currentId: String = "", val message: String = "Your next thought is finding its place.", val author: String? = null, val remaining: Long = 30, val interval: Int = 30, val upcoming: List<HomeItem> = emptyList(), val hasMore: Boolean = false)
+private data class HomeState(val currentId: String = "", val message: String = "Your next thought is finding its place.", val author: String? = null, val remaining: Long = 30, val interval: Int = 30, val upcoming: List<HomeItem> = emptyList(), val hasMore: Boolean = false, val trialHoursRemaining: Long? = null)
 private data class HomeItem(val id: String, val text: String)
 
 @Composable
-fun HomeScreen(onOpenContent: (String) -> Unit, onOpenUpcoming: () -> Unit) {
+fun HomeScreen(onOpenContent: (String) -> Unit, onOpenUpcoming: () -> Unit, onUpgrade: () -> Unit = {}) {
     val context = LocalContext.current.applicationContext
     var state by remember { mutableStateOf(HomeState()) }
     LaunchedEffect(Unit) {
@@ -40,6 +40,10 @@ fun HomeScreen(onOpenContent: (String) -> Unit, onOpenUpcoming: () -> Unit) {
                 .mapNotNull { queued -> dao.contentById(queued.contentItemId)?.let { HomeItem(it.id, it.text) } }
                 .filterNot { it.id == currentId }
             val nextAt = store.readLastDisplayedNextChangeAt()
+            val entitlementExpiresAt = store.readEntitlementExpiresAt()
+            val trialHoursRemaining = if (store.readEntitlementSource() == "TRIAL" && entitlementExpiresAt > System.currentTimeMillis()) {
+                ((entitlementExpiresAt - System.currentTimeMillis()) / 3_600_000L).coerceAtLeast(1L)
+            } else null
             state = HomeState(
                 currentId = currentId,
                 message = store.readLastDisplayedContentText().ifBlank { state.message },
@@ -48,6 +52,7 @@ fun HomeScreen(onOpenContent: (String) -> Unit, onOpenUpcoming: () -> Unit) {
                 interval = store.refreshMinutes().firstOrNull() ?: 30,
                 upcoming = queued.take(5),
                 hasMore = queued.size > 5,
+                trialHoursRemaining = trialHoursRemaining,
             )
             delay(15_000)
         }
@@ -63,6 +68,15 @@ fun HomeScreen(onOpenContent: (String) -> Unit, onOpenUpcoming: () -> Unit) {
             Text(cleanDisplayText(state.message), style = MaterialTheme.typography.headlineMedium)
             state.author?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = Color(0xFFB8B4AA)) }
             Box(Modifier.padding(top = 7.dp).width(36.dp).height(3.dp).background(LingerGold, RoundedCornerShape(4.dp)))
+        }
+
+        state.trialHoursRemaining?.takeIf { it <= 48L }?.let { hours ->
+            LingerCard(color = MaterialTheme.colorScheme.secondaryContainer) {
+                Text("Keep your PingLet Plus features", style = MaterialTheme.typography.titleLarge)
+                Text(if (hours <= 24L) "Your free Plus access ends tomorrow." else "Your free Plus access ends in 2 days.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("You will not be charged automatically.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Button(onClick = onUpgrade, modifier = Modifier.fillMaxWidth()) { Text("KEEP PINGLET PLUS") }
+            }
         }
 
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {

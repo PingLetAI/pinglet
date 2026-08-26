@@ -81,6 +81,13 @@ export class ContentService {
       caption: plus ? ingestion?.caption || null : null,
       access: {
         plan: entitlement.plan,
+        isAnonymous: entitlement.isAnonymous,
+        entitlementSource: entitlement.entitlementSource,
+        accessExpiresAt: entitlement.accessExpiresAt,
+        trialStatus: entitlement.trialStatus,
+        trialEligible: entitlement.trialEligible,
+        trialEndsAt: entitlement.trialEndsAt,
+        trialDaysRemaining: entitlement.trialDaysRemaining,
         hasAnalysis,
         fullDetailsUnlocked: plus,
         lockedSections: !plus && hasAnalysis ? ['FULL_SUMMARY', 'ALL_INSIGHTS', 'ACTIONS', 'TRANSCRIPT', 'VISIBLE_TEXT', 'RELATED'] : [],

@@ -11,7 +11,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import com.linger.app.widget.WidgetProfile
+import com.linger.app.data.remote.EntitlementResponse
 import kotlinx.serialization.json.Json
+import java.time.Instant
 
 private val Context.dataStore by preferencesDataStore("linger_prefs")
 
@@ -38,6 +40,8 @@ class DataStoreManager(private val context: Context) {
         val widgetTextSize = stringKey("widget_text_size")
         val widgetOpacity = intPreferencesKey("widget_opacity")
         val entitlementPlan = stringKey("entitlement_plan")
+        val entitlementSource = stringKey("entitlement_source")
+        val entitlementExpiresAt = longKey("entitlement_expires_at")
         }
 
     fun installationId(): Flow<String> = prefsFlow.map { it[Keys.installationId] ?: "" }
@@ -147,6 +151,29 @@ class DataStoreManager(private val context: Context) {
 
     suspend fun setEntitlementPlan(value: String) {
         context.dataStore.edit { it[Keys.entitlementPlan] = value }
+    }
+
+    suspend fun setEntitlement(summary: EntitlementResponse) {
+        val expiresAt = summary.accessExpiresAt
+            ?.let { runCatching { Instant.parse(it).toEpochMilli() }.getOrNull() }
+            ?: 0L
+        context.dataStore.edit {
+            it[Keys.entitlementPlan] = summary.plan
+            it[Keys.entitlementSource] = summary.entitlementSource
+            it[Keys.entitlementExpiresAt] = expiresAt
+        }
+    }
+
+    suspend fun readEntitlementSource(): String =
+        prefsFlow.map { it[Keys.entitlementSource] ?: "NONE" }.firstOrNull() ?: "NONE"
+
+    suspend fun readEntitlementExpiresAt(): Long =
+        prefsFlow.map { it[Keys.entitlementExpiresAt] ?: 0L }.firstOrNull() ?: 0L
+
+    suspend fun isPlusAccessActive(nowMillis: Long = System.currentTimeMillis()): Boolean {
+        val plan = readEntitlementPlan()
+        val expiresAt = readEntitlementExpiresAt()
+        return plan == "PLUS" && (expiresAt <= 0L || expiresAt > nowMillis)
     }
 
     suspend fun readWidgetProfile(widgetKey: String): WidgetProfile {

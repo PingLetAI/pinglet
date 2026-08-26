@@ -7,6 +7,8 @@ import com.android.billingclient.api.ProductDetails
 import com.linger.app.billing.PlayBillingManager
 import com.linger.app.data.remote.AppApiService
 import com.linger.app.data.remote.GooglePlayPurchaseRequest
+import com.linger.app.data.remote.EventBatchRequest
+import com.linger.app.data.remote.EventPayload
 import com.linger.app.data.repository.SessionManager
 import com.linger.app.data.local.DataStoreManager
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -14,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import java.time.Instant
 
 data class PaywallUiState(
     val loading: Boolean = true,
@@ -45,9 +48,10 @@ class PaywallViewModel @Inject constructor(
                     session.withAuthRetry {
                         api.verifyGooglePlayPurchase(GooglePlayPurchaseRequest(purchase.purchaseToken, PlayBillingManager.PRODUCT_ID))
                     }
-                }.onSuccess {
+                }.onSuccess { entitlement ->
                     billing.acknowledge(purchase)
-                    dataStore.setEntitlementPlan("PLUS")
+                    dataStore.setEntitlement(entitlement)
+                    track("PURCHASE_COMPLETED")
                     _state.value = _state.value.copy(verifying = false, purchased = true)
                 }.onFailure {
                     _state.value = _state.value.copy(verifying = false, error = it.message ?: "Purchase verification failed.")
@@ -58,6 +62,7 @@ class PaywallViewModel @Inject constructor(
 
     fun buy(activity: Activity, basePlanId: String) {
         val product = _state.value.product ?: return
+        track("PURCHASE_STARTED", basePlanId)
         val result = billing.launch(activity, product, basePlanId)
         if (result.responseCode != 0) _state.value = _state.value.copy(error = result.debugMessage)
     }
@@ -67,5 +72,13 @@ class PaywallViewModel @Inject constructor(
         runCatching { billing.restorePurchases() }
             .onSuccess { found -> if (!found) _state.value = _state.value.copy(verifying = false, error = "No active PingLet subscription was found for this Google Play account.") }
             .onFailure { _state.value = _state.value.copy(verifying = false, error = "Purchases could not be restored. Try again.") }
+    }
+
+    private fun track(type: String, metadata: String? = null) = viewModelScope.launch {
+        runCatching {
+            session.withAuthRetry {
+                api.postEventBatch(EventBatchRequest(listOf(EventPayload(type = type, surface = "APP", timestamp = Instant.now().toString(), metadata = metadata))))
+            }
+        }
     }
 }

@@ -43,9 +43,9 @@ class WidgetSettingsViewModel @Inject constructor(
         val keys = GlanceAppWidgetManager(context).getGlanceIds<AmbientWidget>(AmbientWidget::class.java).map { it.toString() }
         val profiles = keys.associateWith { store.readWidgetProfile(it) }
         val entitlement = runCatching { session.withAuthRetry { api.getEntitlements() } }.getOrNull()
-        entitlement?.let { store.setEntitlementPlan(it.plan) }
+        entitlement?.let { store.setEntitlement(it) }
         val catalogs = runCatching { session.withAuthRetry { api.getCatalogPreferences() } }.getOrDefault(emptyList())
-        _state.value = WidgetSettingsUiState(false, keys, keys.firstOrNull(), profiles, catalogs, entitlement?.plan == "PLUS" || store.readEntitlementPlan() == "PLUS")
+        _state.value = WidgetSettingsUiState(false, keys, keys.firstOrNull(), profiles, catalogs, entitlement?.plan == "PLUS" || store.isPlusAccessActive())
     }
 
     fun select(key: String) { _state.value = _state.value.copy(selectedKey = key) }

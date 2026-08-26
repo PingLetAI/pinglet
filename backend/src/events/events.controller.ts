@@ -5,10 +5,13 @@ import { EventsService } from './events.service';
 
 class EventBatchDto {
   events: Array<{
-    type: 'CONTENT_SHOWN' | 'CONTENT_SKIPPED' | 'CONTENT_FAVORITED' | 'CONTENT_OPENED';
+    type: 'CONTENT_SHOWN' | 'CONTENT_SKIPPED' | 'CONTENT_FAVORITED' | 'CONTENT_OPENED' |
+      'TRIAL_OFFER_VIEWED' | 'TRIAL_STARTED' | 'TRIAL_SKIPPED' | 'TRIAL_ENDING_PROMPT_VIEWED' |
+      'TRIAL_UPGRADE_CLICKED' | 'TRIAL_EXPIRED' | 'PURCHASE_STARTED' | 'PURCHASE_COMPLETED';
     contentItemId?: string;
     surface: 'WIDGET' | 'APP' | 'NOTIFICATION';
     timestamp?: string;
+    metadata?: string;
   }> = [];
 }
 

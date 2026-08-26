@@ -22,4 +22,9 @@ export class EntitlementController {
   verifyGooglePlay(@Req() req: any, @Body() body: VerifyGooglePlayDto) {
     return this.entitlements.verifyGooglePlaySubscription(req.user.sub, body.purchaseToken, body.productId);
   }
+
+  @Post('trial')
+  startTrial(@Req() req: any) {
+    return this.entitlements.startTrial(req.user.sub);
+  }
 }

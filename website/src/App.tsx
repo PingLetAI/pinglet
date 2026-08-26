@@ -5,6 +5,7 @@ import { QRCodeSVG } from "qrcode.react";
 const nav = [
   ["How it works", "#how-it-works"],
   ["Features", "#features"],
+  ["AI details", "#ai-details"],
   ["FAQ", "#faq"],
 ];
 
@@ -16,23 +17,28 @@ const X_URL = "https://x.com/pingletAI";
 const INSTAGRAM_URL = "https://www.instagram.com/PingLet.AI";
 
 const steps = [
-  { number: "01", title: "Share what resonates", body: "Send a public TikTok, Instagram, or Facebook post to PingLet, or write your own thought." },
-  { number: "02", title: "We keep the meaning", body: "PingLet extracts the caption, visible text, and spoken words while preserving the original source." },
-  { number: "03", title: "It finds you again", body: "A quiet Home Screen widget keeps one thought nearby, then rotates when the moment is right." },
+  { number: "01", title: "Share it to PingLet", body: "From Instagram, TikTok, or Facebook, choose PingLet in the share sheet. You can also paste a public link or write your own thought." },
+  { number: "02", title: "AI reads the whole post", body: "Speech is transcribed, visible text is read from images and video frames, and the caption is combined into one faithful source document." },
+  { number: "03", title: "Keep it in view", body: "Processing finishes in the background. The result joins your library and quietly returns through your Home Screen widget." },
 ];
 
 const features = [
-  { icon: "quote", title: "Meaning, not metrics", body: "Captions, speech, and visible words are retained. Likes, shares, and engagement noise are left behind.", tone: "bg-mint" },
-  { icon: "heart", title: "Personal first", body: "Your own saves always lead the rotation. Curated ideas only fill the gaps.", tone: "bg-blush" },
-  { icon: "link", title: "Source preserved", body: "Every imported thought keeps a path back to the original creator and post.", tone: "bg-[#eee4cb]" },
-  { icon: "shield", title: "Quietly reliable", body: "Processing happens in the background. Rotation continues from your local cache, even offline.", tone: "bg-[#e6e9df]" },
+  { icon: "quote", title: "The whole post, understood", body: "PingLet combines captions, verbatim speech, image text, and sampled video frames instead of saving engagement metrics.", tone: "bg-mint" },
+  { icon: "heart", title: "Personal always comes first", body: "Things you intentionally save lead your library and widget. Discovery content only fills the spaces you allow.", tone: "bg-blush" },
+  { icon: "link", title: "Every source stays attached", body: "Open the original creator and post from a PingLet, its detailed analysis, or an Explore collection.", tone: "bg-[#eee4cb]" },
+  { icon: "shield", title: "Process without waiting", body: "Queue multiple links and leave the app. Media processing continues in the background with visible progress and status.", tone: "bg-[#e6e9df]" },
+  { icon: "spark", title: "From transcript to insight", body: "See a clear overview, faithful takeaways, themes, evidence-backed insights, and practical actions grounded in the source.", tone: "bg-[#e4eadf]" },
+  { icon: "quote", title: "A widget that feels yours", body: "Resize it, favorite from the Home Screen, and shape independent profiles with typography, themes, schedules, and content mixes.", tone: "bg-[#f1e6d7]" },
 ];
 
 const faqs = [
-  ["Does PingLet repost social content?", "No. PingLet creates a private personal memory from links you choose to save and always preserves the original source."],
+  ["Can I try PingLet Plus without subscribing?", "Yes. Verified accounts can try every Plus feature free for 7 days with no card and no automatic subscription. When the trial ends, the account returns to Free unless you explicitly choose a paid Google Play plan."],
+  ["Does PingLet repost social content?", "PingLet does not rehost the original social video or image. It creates a source-linked personal memory. Moderated, strongly matched insights from eligible public links may also appear anonymously in an Explore catalog; personal notes and the identity of the person who saved a link are not published."],
+  ["What does the AI actually extract?", "For supported public posts, PingLet can combine the caption, speech transcript, visible text from images, OCR from sampled video frames, and necessary visual context. It removes likes, shares, follower counts, and platform chrome."],
+  ["How does Explore choose content?", "Explore is built from approved public-link extractions rather than filler quotes. AI adds an item only when its extraction quality and semantic match to an active catalog both clear strong confidence thresholds."],
   ["Will the widget change exactly every 30 minutes?", "Android optimizes background work for battery, so rotation is approximately every 30 minutes rather than guaranteed to the exact second."],
   ["What happens when I am offline?", "Your widget continues rotating from a local cache. New imports and account sync resume when a connection returns."],
-  ["Which platforms are supported?", "PingLet is designed for public links shared from Instagram, TikTok, Facebook, and the wider web. Availability can depend on source permissions."],
+  ["Which platforms are supported?", "PingLet currently supports eligible public links from Instagram, TikTok, and Facebook. Availability still depends on the source platform permitting access to that specific post."],
 ];
 
 function Icon({ name, className = "h-6 w-6" }: { name: string; className?: string }) {
@@ -86,7 +92,7 @@ function LegalPage({ type }: { type: "privacy" | "terms" }) {
       <article className="mx-auto max-w-5xl rounded-[2.5rem] border border-ink/10 bg-paper/90 p-6 shadow-soft backdrop-blur sm:p-10 lg:p-14">
         <p className="eyebrow text-clay">Legal</p>
         <h1 className="mt-4 text-4xl font-semibold tracking-[-.05em] sm:text-6xl">{privacy ? "Privacy Policy" : "Terms of Service"}</h1>
-        <p className="mt-5 text-sm text-ink/48">Last updated August 25, 2026</p>
+        <p className="mt-5 text-sm text-ink/48">Last updated August 26, 2026</p>
         <p className="mt-8 max-w-3xl text-lg leading-relaxed text-ink/68">{privacy
           ? "PingLet is designed to keep what matters to you while collecting only the information needed to capture, process, sync, and resurface it."
           : "These terms govern your use of the PingLet applications, website, widgets, and related services operated by TinkerPal LLC."}</p>
@@ -95,13 +101,18 @@ function LegalPage({ type }: { type: "privacy" | "terms" }) {
           {privacy ? <>
             <LegalSection title="Information we collect">
               <p><strong>Account information.</strong> We collect your email address, verification status, account identifiers, plan, and subscription entitlement. You may initially use PingLet with an anonymous installation-based account.</p>
-              <p><strong>Content you choose to save.</strong> This includes notes, quotes, reminders, public social-post URLs, optional context, source information, favorites, collections, and widget preferences.</p>
+              <p><strong>Content you choose to save.</strong> This includes private notes, quotes, reminders, public social-post URLs, optional context, source information, favorites, catalog preferences, and widget profiles.</p>
               <p><strong>Processed media information.</strong> When you submit a supported public link, we may process its available caption, audio transcript, visible text, sampled video frames, OCR results, summaries, themes, and derived takeaways.</p>
               <p><strong>Device and usage information.</strong> We may collect installation ID, device platform, app version, locale, timezone, sync timestamps, content interactions, processing status, and diagnostic information. Google Play provides purchase status and entitlement information; PingLet does not receive your full payment-card details.</p>
             </LegalSection>
             <LegalSection title="How we use information">
-              <p>We use information to authenticate accounts, process saves, operate background ingestion, personalize and rotate widget content, preserve source links, synchronize devices, provide support, enforce limits, verify subscriptions, prevent abuse, improve reliability, and comply with law.</p>
-              <p>AI-generated summaries and insights are produced from material you intentionally submit. We do not use your private library to create public posts or advertising profiles.</p>
+              <p>We use information to authenticate accounts, process saves, operate background ingestion, generate source-grounded analysis, personalize and rotate widget content, preserve source links, synchronize devices, provide support, enforce limits, verify subscriptions, prevent abuse, improve reliability, and comply with law.</p>
+              <p>AI-generated summaries and insights are produced from material you intentionally submit. Private text you write in PingLet is not used to populate Explore catalogs or advertising profiles.</p>
+            </LegalSection>
+            <LegalSection title="Explore catalogs">
+              <p>Eligible content extracted from a public social-post link may be evaluated for an Explore catalog after automated moderation. PingLet requires strong extraction quality and a high-confidence semantic match before adding an item.</p>
+              <p>An Explore item may include a concise excerpt or derived takeaway, creator attribution when available, and the original public source link. We do not display the identity or account information of the PingLet user who submitted the link. Private notes, reminders, and personal stories entered directly in PingLet are not eligible.</p>
+              <p>Creators or rights holders may request review or removal by contacting <a className="font-semibold underline" href="mailto:hello@pinglet.ai">hello@pinglet.ai</a>.</p>
             </LegalSection>
             <LegalSection title="Service providers">
               <p>We use vendors that help operate PingLet, including cloud hosting and database providers, OpenAI for transcription, moderation, vision, and structured analysis, Zoho for account email, and Google Play for Android distribution and billing.</p>
@@ -129,21 +140,23 @@ function LegalPage({ type }: { type: "privacy" | "terms" }) {
           </> : <>
             <LegalSection title="Using PingLet">
               <p>You must be at least 13 and legally able to agree to these terms. If local law requires parental consent or a higher age, you must satisfy those requirements. You are responsible for activity associated with your account and device.</p>
-              <p>PingLet lets you save personal text and submit supported public links for private extraction, organization, and resurfacing. Source availability, background timing, and platform access are not guaranteed.</p>
+              <p>PingLet lets you save private personal text and submit supported public links for extraction, organization, analysis, discovery, and resurfacing. Source availability, background timing, and platform access are not guaranteed.</p>
             </LegalSection>
             <LegalSection title="Your content and permissions">
-              <p>You retain ownership of content you create. You grant TinkerPal LLC a limited, non-exclusive license to host, process, reproduce, and transform submitted material only as necessary to operate, secure, and improve the service for you.</p>
-              <p>You must have the right to submit material and must not use PingLet to infringe copyright, privacy, publicity, contractual, or other rights. Saving a link does not transfer ownership of the original post to you or PingLet.</p>
+              <p>You retain ownership of content you create. You grant TinkerPal LLC a limited, non-exclusive license to host, process, reproduce, and transform submitted material as necessary to operate, secure, and improve the service.</p>
+              <p>Eligible excerpts or derived takeaways from public-link submissions may be displayed in source-linked Explore catalogs after moderation and high-confidence classification. Directly entered personal text is not eligible unless you separately choose to publish it through a future sharing feature.</p>
+              <p>You must have the right to submit material and must not use PingLet to infringe copyright, privacy, publicity, contractual, or other rights. Saving a link does not transfer ownership of the original post to you or PingLet. Creators and rights holders may request review or removal.</p>
             </LegalSection>
             <LegalSection title="Acceptable use">
               <p>You may not use PingLet to access private or restricted media without permission, bypass platform protections, distribute malware, harass others, exploit children, automate abusive requests, reverse engineer protected parts of the service, interfere with infrastructure, or submit unlawful content.</p>
               <p>We may reject, remove, or stop processing material that violates these terms, our safety requirements, source-platform restrictions, or applicable law.</p>
             </LegalSection>
             <LegalSection title="AI and source services">
-              <p>Transcripts, OCR, summaries, classifications, and takeaways can contain errors. Review important material against the original source. PingLet does not provide medical, legal, financial, or other professional advice.</p>
+              <p>Transcripts, OCR, summaries, catalog classifications, and takeaways can contain errors. Review important material against the original source. PingLet does not provide medical, legal, financial, or other professional advice.</p>
               <p>Third-party services such as Instagram, TikTok, Facebook, Google Play, and linked websites are governed by their own terms. We are not responsible for their content, availability, policy changes, or actions.</p>
             </LegalSection>
             <LegalSection title="Subscriptions and billing">
+              <p>PingLet may offer a one-time seven-day reverse trial to eligible verified accounts. This trial requires no payment method, does not create a Google Play subscription, and ends automatically without a charge. Access returns to the Free plan unless you explicitly purchase Plus.</p>
               <p>Paid Android subscriptions are processed by Google Play and renew automatically unless canceled through your Play account before renewal. Prices, taxes, trial terms, and billing periods are shown by Google Play before purchase.</p>
               <p>Refunds and billing disputes are handled under Google Play policies and applicable law. Canceling stops future renewal but does not normally end access before the current paid period expires.</p>
             </LegalSection>
@@ -272,14 +285,14 @@ function App() {
       <section className="page-atmosphere relative min-h-screen pt-32 sm:pt-40">
         <div className="mx-auto grid max-w-7xl items-center gap-16 px-5 pb-24 sm:px-8 lg:grid-cols-[1.08fr_.92fr] lg:pb-32">
           <div>
-            <div className="reveal mb-7 inline-flex items-center gap-2 rounded-full border border-ink/10 bg-white/55 px-4 py-2 text-xs font-semibold"><Icon name="spark" className="h-4 w-4 text-clay" />AI memory, made ambient</div>
+            <div className="reveal mb-7 inline-flex items-center gap-2 rounded-full border border-ink/10 bg-white/55 px-4 py-2 text-xs font-semibold"><Icon name="spark" className="h-4 w-4 text-clay" />AI memory for what you discover</div>
             <h1 className="reveal reveal-delay-1 balance max-w-3xl text-[3.5rem] font-semibold leading-[.94] tracking-[-.065em] sm:text-[5.2rem] lg:text-[6.2rem]">Save it once.<br /><span className="editorial font-normal italic text-clay">Meet it again.</span></h1>
-            <p className="reveal reveal-delay-2 balance mt-8 max-w-xl text-lg leading-relaxed text-ink/65 sm:text-xl">PingLet turns the posts, words, and ideas you care about into a quiet personal memory on your Home Screen.</p>
+            <p className="reveal reveal-delay-2 balance mt-8 max-w-xl text-lg leading-relaxed text-ink/65 sm:text-xl">PingLet reads the posts you care about, keeps their source and meaning, and brings the best parts back through a quiet Home Screen memory.</p>
             <div className="reveal reveal-delay-3 mt-9 flex flex-wrap gap-3">
               <Button href="/download">Download app <Icon name="arrow" className="h-4 w-4" /></Button>
               <Button href="#how-it-works" secondary>See how it works</Button>
             </div>
-            <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 text-xs font-semibold text-ink/50"><span>ANDROID FIRST</span><span className="h-1 w-1 rounded-full bg-gold" /><span>PRIVATE BY DEFAULT</span><span className="h-1 w-1 rounded-full bg-gold" /><span>SOURCE PRESERVED</span></div>
+            <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 text-xs font-semibold text-ink/50"><span>ANDROID FIRST</span><span className="h-1 w-1 rounded-full bg-gold" /><span>PERSONAL SAVES LEAD</span><span className="h-1 w-1 rounded-full bg-gold" /><span>SOURCE PRESERVED</span></div>
           </div>
           <div className="reveal reveal-delay-2 py-10 lg:py-0"><WidgetPreview /></div>
         </div>
@@ -288,7 +301,7 @@ function App() {
       <section className="border-y border-ink/10 bg-ink py-7 text-paper">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-5 px-5 text-center sm:px-8 md:flex-row md:text-left">
           <p className="editorial text-xl text-paper/80">From the endless scroll to something that stays.</p>
-          <div className="flex items-center gap-7 text-xs font-bold tracking-[.15em] text-paper/45"><span>INSTAGRAM</span><span>TIKTOK</span><span>FACEBOOK</span><span>WEB</span></div>
+          <div className="flex items-center gap-7 text-xs font-bold tracking-[.15em] text-paper/45"><span>INSTAGRAM</span><span>TIKTOK</span><span>FACEBOOK</span></div>
         </div>
       </section>
 
@@ -310,6 +323,51 @@ function App() {
             {features.map((feature, index) => <article key={feature.title} className={`${feature.tone} rounded-[2rem] border border-ink/8 p-7 sm:p-10 ${index === 0 || index === 3 ? "md:min-h-80" : "md:min-h-64"}`}>
               <div className="grid h-12 w-12 place-items-center rounded-full bg-paper/80"><Icon name={feature.icon} /></div><h3 className="mt-12 text-2xl font-semibold tracking-[-.025em]">{feature.title}</h3><p className="mt-3 max-w-lg leading-relaxed text-ink/62">{feature.body}</p>
             </article>)}
+          </div>
+        </div>
+      </section>
+
+      <section id="ai-details" className="bg-paper py-24 sm:py-32">
+        <div className="mx-auto grid max-w-7xl gap-14 px-5 sm:px-8 lg:grid-cols-[.88fr_1.12fr] lg:items-center">
+          <div>
+            <p className="eyebrow text-clay">Inside a PingLet</p>
+            <h2 className="balance mt-4 text-4xl font-semibold tracking-[-.05em] sm:text-6xl">Not just a summary. A faithful way back in.</h2>
+            <p className="mt-6 max-w-xl text-lg leading-relaxed text-ink/62">PingLet keeps the original words familiar on your widget, then gives you deeper context when you open the saved post. Everything remains grounded in the extracted source.</p>
+            <div className="mt-8 inline-flex items-center gap-2 rounded-full bg-ink px-4 py-2 text-xs font-bold tracking-[.12em] text-paper"><Icon name="spark" className="h-4 w-4 text-gold" />COMPLETE DETAILS WITH PINGLET PLUS</div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {[
+              ["Full transcript", "Speech retained as closely as possible to the original wording."],
+              ["Visible text", "OCR from images, carousels, and sampled video frames."],
+              ["Complete summary", "A concise overview plus a comprehensive account of the whole post."],
+              ["Insights & evidence", "Key ideas explained with evidence grounded in the source."],
+              ["Takeaways & themes", "Memorable points and recurring subjects, without engagement noise."],
+              ["Practical actions", "Useful next steps supported by what the post actually says."],
+            ].map(([title, body], index) => <article key={title} className={`rounded-[1.7rem] border border-ink/8 p-6 ${index === 0 || index === 5 ? "bg-mint" : index === 2 ? "bg-blush" : "bg-[#f0ede4]"}`}>
+              <span className="editorial text-3xl text-gold">0{index + 1}</span>
+              <h3 className="mt-7 text-lg font-semibold">{title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-ink/60">{body}</p>
+            </article>)}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-sage py-24 text-paper sm:py-32">
+        <div className="mx-auto grid max-w-7xl gap-14 px-5 sm:px-8 lg:grid-cols-[1.05fr_.95fr] lg:items-center">
+          <div>
+            <p className="eyebrow text-mint">Explore what people found worth keeping</p>
+            <h2 className="balance mt-4 text-4xl font-semibold tracking-[-.05em] sm:text-6xl">Collections shaped by real discoveries.</h2>
+            <p className="mt-6 max-w-2xl text-lg leading-relaxed text-paper/68">Explore is not a bank of filler quotes. Eligible public-link insights enter a collection only after moderation, strong extraction quality, and a high-confidence semantic match. Every item keeps its original source.</p>
+            <div className="mt-8 flex flex-wrap gap-2 text-sm font-semibold">
+              {["Discipline", "Business mindset", "Confidence", "Morning focus", "Fitness", "Drive"].map((catalog) => <span key={catalog} className="rounded-full border border-paper/18 bg-paper/8 px-4 py-2">{catalog}</span>)}
+            </div>
+          </div>
+          <div className="rounded-[2.4rem] border border-paper/15 bg-paper/8 p-5 shadow-soft backdrop-blur sm:p-8">
+            <div className="rounded-[1.7rem] bg-paper p-6 text-ink sm:p-8">
+              <div className="flex items-center justify-between"><span className="eyebrow text-clay">Business mindset</span><span className="rounded-full bg-mint px-3 py-1 text-xs font-bold text-sage">SOURCE LINKED</span></div>
+              <p className="editorial mt-10 text-3xl leading-tight sm:text-4xl">“Build around a problem people already feel, not a solution you still have to explain.”</p>
+              <div className="mt-10 border-t border-ink/10 pt-5"><p className="text-sm font-semibold">Why it belongs here</p><p className="mt-2 text-sm leading-relaxed text-ink/56">Strongly matched to entrepreneurship and customer-problem discovery from an approved public source.</p></div>
+            </div>
           </div>
         </div>
       </section>

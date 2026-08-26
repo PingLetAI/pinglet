@@ -29,6 +29,7 @@ import com.linger.app.ui.home.UpcomingScreen
 import com.linger.app.ui.library.LibraryScreen
 import com.linger.app.ui.queue.ProcessingQueueScreen
 import com.linger.app.ui.settings.SettingsScreen
+import com.linger.app.ui.trial.TrialOfferScreen
 import com.linger.app.ui.account.AccountScreen
 import com.linger.app.ui.paywall.PaywallScreen
 import com.linger.app.ui.widgetsettings.WidgetSettingsScreen
@@ -73,6 +74,7 @@ fun LingerNavHost(
             composable("home") {
                 HomeScreen(
                     onOpenContent = { id -> navController.navigate("content/$id") },
+                    onUpgrade = { navController.navigate("paywall") },
                     onOpenUpcoming = {
                         navController.navigate("library") {
                             popUpTo("home") { saveState = true }
@@ -122,6 +124,9 @@ fun LingerNavHost(
                     contentId = backStackEntry.arguments?.getString("contentId").orEmpty(),
                     onBack = { navController.popBackStack() },
                     onUpgrade = { navController.navigate("paywall") },
+                    onCreateAccount = { navController.navigate("account") },
+                    onTryPlus = { navController.navigate("trial-offer/SAVED_DETAIL") },
+                    entitlementRefreshKey = backStackEntry.savedStateHandle["entitlement_changed"] ?: 0L,
                 )
             }
         composable("discover") {
@@ -139,9 +144,11 @@ fun LingerNavHost(
             composable("settings") {
                 SettingsScreen(
                     onCreateAccount = { navController.navigate("account") },
+                    onTryPlus = { navController.navigate("trial-offer/SETTINGS") },
                     onUpgrade = { navController.navigate("paywall") },
                     onOpenQueue = { navController.navigate("queue") },
                     onOpenWidgetSettings = { navController.navigate("widget-settings") },
+                    entitlementRefreshKey = it.savedStateHandle["entitlement_changed"] ?: 0L,
                 )
             }
             composable("widget-settings") {
@@ -153,13 +160,37 @@ fun LingerNavHost(
             composable("account") {
                 AccountScreen(
                     onBack = { navController.popBackStack() },
-                    onVerified = { navController.popBackStack() },
+                    onVerified = {
+                        navController.navigate("trial-offer/ACCOUNT_VERIFIED") {
+                            popUpTo("account") { inclusive = true }
+                        }
+                    },
+                )
+            }
+            composable("trial-offer/{source}") { backStackEntry ->
+                val source = backStackEntry.arguments?.getString("source") ?: "UNKNOWN"
+                TrialOfferScreen(
+                    entrySource = source,
+                    onBack = { navController.popBackStack() },
+                    onActivated = {
+                        navController.previousBackStackEntry?.savedStateHandle?.set("entitlement_changed", System.currentTimeMillis())
+                        navController.popBackStack()
+                    },
+                    onContinueFree = { navController.popBackStack() },
+                    onViewPlans = {
+                        navController.navigate("paywall") {
+                            popUpTo("trial-offer/{source}") { inclusive = true }
+                        }
+                    },
                 )
             }
             composable("paywall") {
                 PaywallScreen(
                     onBack = { navController.popBackStack() },
-                    onPurchased = { navController.popBackStack() },
+                    onPurchased = {
+                        navController.previousBackStackEntry?.savedStateHandle?.set("entitlement_changed", System.currentTimeMillis())
+                        navController.popBackStack()
+                    },
                 )
             }
         }

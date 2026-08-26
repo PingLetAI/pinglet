@@ -34,7 +34,7 @@ class SettingsViewModel @Inject constructor(
     fun refresh() = viewModelScope.launch {
         runCatching { session.withAuthRetry { api.getEntitlements() } }.onSuccess {
             _entitlement.value = it
-            dataStore.setEntitlementPlan(it.plan)
+            dataStore.setEntitlement(it)
         }
     }
 
