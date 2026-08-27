@@ -8,11 +8,52 @@ func cleanPingLetText(_ value: String) -> String {
 
 struct PingLetPage<Content: View>: View {
     let eyebrow: String, title: String, subtitle: String; @ViewBuilder let content: Content
-    var body: some View { ScrollView { LazyVStack(alignment: .leading, spacing: 18) { Text(eyebrow.uppercased()).font(.caption.bold()).foregroundStyle(.brown); Text(title).font(.system(size: 38, design: .serif)); Text(subtitle).font(.title3); content }.padding(24).padding(.bottom, 84) }.background(Color.pingletBackground) }
+    private var titleSize: CGFloat { title.count > 180 ? 27 : title.count > 90 ? 33 : 42 }
+    var body: some View {
+        ZStack {
+            PingLetCanvas()
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(eyebrow.uppercased())
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .tracking(1.8)
+                            .foregroundStyle(Color.pingletClay)
+                        Text(title)
+                            .font(.system(size: titleSize, weight: .regular, design: .serif))
+                            .foregroundStyle(Color.pingletInk)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text(subtitle)
+                            .font(.system(size: 17, weight: .medium, design: .rounded))
+                            .foregroundStyle(Color.pingletMutedInk)
+                            .lineSpacing(3)
+                    }
+                    .padding(.bottom, 8)
+                    content
+                }
+                .padding(.horizontal, 22)
+                .padding(.top, 22)
+                .padding(.bottom, 108)
+            }
+            .scrollIndicators(.hidden)
+        }
+        .foregroundStyle(Color.pingletInk)
+    }
 }
 struct PingLetCard<Content: View>: View {
     var dark = false; @ViewBuilder let content: Content
-    var body: some View { VStack(alignment: .leading, spacing: 12) { content }.padding(18).frame(maxWidth: .infinity, alignment: .leading).background(dark ? Color.pingletInk : .white.opacity(0.82), in: RoundedRectangle(cornerRadius: 22)).foregroundStyle(dark ? Color.white : Color.pingletInk).overlay(RoundedRectangle(cornerRadius: 22).stroke(.black.opacity(0.1))) }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 13) { content }
+            .padding(20)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                dark ? AnyShapeStyle(Color.pingletInk) : AnyShapeStyle(.ultraThinMaterial),
+                in: RoundedRectangle(cornerRadius: 26, style: .continuous)
+            )
+            .foregroundStyle(dark ? Color.pingletPaper : Color.pingletInk)
+            .overlay(RoundedRectangle(cornerRadius: 26, style: .continuous).stroke(dark ? Color.white.opacity(0.07) : Color.pingletLine, lineWidth: 1))
+            .shadow(color: Color.pingletInk.opacity(dark ? 0.16 : 0.07), radius: 18, x: 0, y: 9)
+    }
 }
 
 struct HomeView: View {
@@ -20,7 +61,8 @@ struct HomeView: View {
     private var profile: WidgetProfile { env.shared.widgetProfile(key: "default") }
     var body: some View { PingLetPage(eyebrow: "Today", title: "One good thought, kept close.", subtitle: "Your personal saves lead. PingLet fills the gaps quietly.") {
         PingLetCard(dark: true) { HStack { Text("ON YOUR WIDGET").font(.caption.bold()).foregroundStyle(Color.pingletGold); Spacer(); Text(profile.nextChangeAt > 0 ? "CHANGING SOON" : "ABOUT 30 MIN").font(.caption) }; Text(cleanPingLetText(profile.currentText.isEmpty ? "Your next thought is finding its place." : profile.currentText)).font(.system(size: 28, design: .serif)); if let author = profile.currentAuthor { Text(author).foregroundStyle(.gray) }; Rectangle().fill(Color.pingletGold).frame(width: 36, height: 3) }.onTapGesture { if !profile.currentContentId.isEmpty { onOpen(profile.currentContentId) } }
-        Text("Coming up").font(.title2.bold()); Text("Ready offline · every 30 minutes").foregroundStyle(.secondary)
+        PingLetSectionLabel(title: "Coming up", trailing: "Ready offline")
+        Text("A new PingLet returns approximately every 30 minutes.").font(.system(size: 14, weight: .medium, design: .rounded)).foregroundStyle(Color.pingletMutedInk)
         let upcoming = Array(env.feed.filter { $0.id != profile.currentContentId }.prefix(5))
         if upcoming.isEmpty { PingLetCard { Text("Share a post or tap + to build your rotation.") } }
         else { PingLetCard { ForEach(Array(upcoming.enumerated()), id: \.element.id) { index, item in Button { onOpen(item.id) } label: { HStack(spacing: 12) { Text(String(format: "%02d", index + 1)).foregroundStyle(.brown); Text(cleanPingLetText(item.text)).lineLimit(2).foregroundStyle(Color.pingletInk); Spacer(); Image(systemName: "chevron.right") } }.buttonStyle(.plain); if index < upcoming.count - 1 { Divider() } } } }

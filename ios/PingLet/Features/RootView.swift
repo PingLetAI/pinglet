@@ -9,7 +9,20 @@ struct RootView: View {
             LibraryView(onOpen: { contentID = $0 }, onAdd: { adding = true }).tabItem { Label("Library", systemImage: "bookmark.fill") }.tag(Tab.library)
             ExploreView().tabItem { Label("Explore", systemImage: "safari.fill") }.tag(Tab.explore)
             SettingsView().tabItem { Label("Settings", systemImage: "gearshape.fill") }.tag(Tab.settings)
-        }; Button { adding = true } label: { Image(systemName: "plus").font(.title2.bold()).frame(width: 54, height: 54).background(Color.pingletGold, in: Circle()).foregroundStyle(Color.pingletInk) }.padding(.bottom, 6) }
+        }
+        .tint(Color.pingletInk)
+        Button { adding = true } label: {
+            Image(systemName: "plus")
+                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .frame(width: 58, height: 58)
+                .background(Color.pingletGold, in: Circle())
+                .foregroundStyle(Color.pingletInk)
+                .overlay(Circle().stroke(Color.pingletPaper.opacity(0.9), lineWidth: 5))
+                .shadow(color: Color.pingletInk.opacity(0.22), radius: 14, y: 7)
+        }
+        .accessibilityLabel("Add a PingLet")
+        .padding(.bottom, 8)
+        }
         .sheet(isPresented: $adding) { AddPingLetView() }
         .sheet(item: Binding(get: { contentID.map(ContentRoute.init) }, set: { contentID = $0?.id })) { ContentDetailView(contentID: $0.id) }
     }
