@@ -37,7 +37,13 @@ import SwiftUI
 
 struct AddPingLetView: View {
     @EnvironmentObject private var env: AppEnvironment; @Environment(\.dismiss) private var dismiss; @StateObject private var model = AddPingLetModel()
-    init(initialText: String = "") { _model = StateObject(wrappedValue: AddPingLetModel(initialText: initialText)) }
+    private let onSaved: (() -> Void)?
+    private let onCancel: (() -> Void)?
+    init(initialText: String = "", onSaved: (() -> Void)? = nil, onCancel: (() -> Void)? = nil) {
+        _model = StateObject(wrappedValue: AddPingLetModel(initialText: initialText))
+        self.onSaved = onSaved
+        self.onCancel = onCancel
+    }
     var body: some View {
         NavigationStack {
             ZStack {
@@ -94,8 +100,8 @@ struct AddPingLetView: View {
                     .padding(.bottom, 28)
                 }
             }
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() }.fontWeight(.semibold) } }
-            .task { await model.prepare(env) }.onChange(of: model.queued) { _, ready in if ready { dismiss() } }
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { if let onCancel { onCancel() } else { dismiss() } }.fontWeight(.semibold) } }
+            .task { await model.prepare(env) }.onChange(of: model.queued) { _, ready in if ready { if let onSaved { onSaved() } else { dismiss() } } }
             .confirmationDialog("Sharing content with PingLet", isPresented: $model.showTerms, titleVisibility: .visible) {
                 Button("AGREE AND CONTINUE") { Task { await model.acceptAndSave(env) } }; Button("Cancel", role: .cancel) {}
             } message: { Text("By continuing, you agree to our Terms of Use. Only submit content you are permitted to share. PingLet may analyze public links and use eligible AI-derived excerpts, topics, source attribution, and links in public Explore catalogs. Your personal notes, account information, and full saved details remain private.") }

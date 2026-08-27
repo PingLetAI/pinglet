@@ -77,6 +77,9 @@ targets:
       - path: PingLet/Core/APIClient.swift
       - path: PingLet/Core/SecureStore.swift
       - path: PingLet/Core/SessionManager.swift
+      - path: PingLet/App/AppEnvironment.swift
+      - path: PingLet/Design/Theme.swift
+      - path: PingLet/Features/AddPingLetView.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: ai.pinglet.app.share
