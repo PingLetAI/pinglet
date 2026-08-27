@@ -75,7 +75,10 @@ struct PingLetProvider: AppIntentTimelineProvider {
 }
 
 struct FavoriteIntent: AppIntent {
-    static var title: LocalizedStringResource = "Favorite PingLet"; @Parameter var contentID: String; @Parameter var profileKey: String; @Parameter var favorite: Bool
+    static var title: LocalizedStringResource = "Favorite PingLet"
+    @Parameter(title: "Content ID") var contentID: String
+    @Parameter(title: "Profile") var profileKey: String
+    @Parameter(title: "Favorite") var favorite: Bool
     init() {}
     init(contentID: String, profileKey: String, favorite: Bool) {
         self.contentID = contentID
@@ -87,7 +90,8 @@ struct FavoriteIntent: AppIntent {
     }
 }
 struct NextIntent: AppIntent {
-    static var title: LocalizedStringResource = "Show another"; @Parameter var profileKey: String
+    static var title: LocalizedStringResource = "Show another"
+    @Parameter(title: "Profile") var profileKey: String
     init() {}
     init(profileKey: String) {
         self.profileKey = profileKey
