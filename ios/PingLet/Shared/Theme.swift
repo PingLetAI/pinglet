@@ -53,6 +53,27 @@ struct PingLetSectionLabel: View {
     }
 }
 
+struct PingLetCard<Content: View>: View {
+    var dark = false
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 13) { content }
+            .padding(20)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                dark ? AnyShapeStyle(Color.pingletInk) : AnyShapeStyle(.ultraThinMaterial),
+                in: RoundedRectangle(cornerRadius: 26, style: .continuous)
+            )
+            .foregroundStyle(dark ? Color.pingletPaper : Color.pingletInk)
+            .overlay(
+                RoundedRectangle(cornerRadius: 26, style: .continuous)
+                    .stroke(dark ? Color.white.opacity(0.07) : Color.pingletLine, lineWidth: 1)
+            )
+            .shadow(color: Color.pingletInk.opacity(dark ? 0.16 : 0.07), radius: 18, x: 0, y: 9)
+    }
+}
+
 struct PingLetPrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
