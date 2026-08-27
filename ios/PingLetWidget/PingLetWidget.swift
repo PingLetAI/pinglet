@@ -76,20 +76,49 @@ struct PingLetProvider: AppIntentTimelineProvider {
 
 struct FavoriteIntent: AppIntent {
     static var title: LocalizedStringResource = "Favorite PingLet"; @Parameter var contentID: String; @Parameter var profileKey: String; @Parameter var favorite: Bool
-    init() {} init(contentID: String, profileKey: String, favorite: Bool) { self.contentID = contentID; self.profileKey = profileKey; self.favorite = favorite }
+    init() {}
+    init(contentID: String, profileKey: String, favorite: Bool) {
+        self.contentID = contentID
+        self.profileKey = profileKey
+        self.favorite = favorite
+    }
     func perform() async throws -> some IntentResult {
         let store = SharedStore(); var profile = store.widgetProfile(key: profileKey); profile.currentFavorite = favorite; store.setWidgetProfile(profile, key: profileKey); store.queueFavorite(contentID: contentID, favorite: favorite); WidgetCenter.shared.reloadAllTimelines(); return .result()
     }
 }
 struct NextIntent: AppIntent {
     static var title: LocalizedStringResource = "Show another"; @Parameter var profileKey: String
-    init() {} init(profileKey: String) { self.profileKey = profileKey }
+    init() {}
+    init(profileKey: String) {
+        self.profileKey = profileKey
+    }
     func perform() async throws -> some IntentResult { let store = SharedStore(); guard store.entitlement?.plan == "PLUS" else { return .result() }; var profile = store.widgetProfile(key: profileKey); profile.manualOffset += 1; store.setWidgetProfile(profile, key: profileKey); WidgetCenter.shared.reloadAllTimelines(); return .result() }
 }
 
 struct PingLetWidgetView: View {
     let entry: PingLetEntry
-    private var colors: (Color, Color, Color) { switch entry.profile.theme { case "FOREST": return (Color(red: .09, green: .19, blue: .16), .white, Color(red: .56, green: .82, blue: .67)); case "CLAY": return (Color(red: .32, green: .16, blue: .14), .white, Color(red: .94, green: .66, blue: .47)); default: return (Color(red: .06, green: .07, blue: .06), .white, Color.widgetGold) } }
+    private var colors: (Color, Color, Color) {
+        switch entry.profile.theme {
+        case "FOREST":
+            return (
+                Color(red: 0.09, green: 0.19, blue: 0.16),
+                .white,
+                Color(red: 0.56, green: 0.82, blue: 0.67)
+            )
+        case "CLAY":
+            return (
+                Color(red: 0.32, green: 0.16, blue: 0.14),
+                .white,
+                Color(red: 0.94, green: 0.66, blue: 0.47)
+            )
+        default:
+            return (
+                Color(red: 0.06, green: 0.07, blue: 0.06),
+                .white,
+                Color.widgetGold
+            )
+        }
+    }
     var body: some View { VStack(alignment: .leading, spacing: entry.profile.spacing == "COMPACT" ? 7 : 11) {
         HStack { Circle().fill(colors.2).frame(width: 8); Text("PINGLET").font(.caption.bold()); Spacer(); if entry.isPlus && entry.profile.manualNext { Button(intent: NextIntent(profileKey: entry.key)) { Image(systemName: "arrow.right") }.buttonStyle(.plain) }; if !entry.profile.currentContentId.isEmpty { Button(intent: FavoriteIntent(contentID: entry.profile.currentContentId, profileKey: entry.key, favorite: !entry.profile.currentFavorite)) { Image(systemName: entry.profile.currentFavorite ? "heart.fill" : "heart") }.buttonStyle(.plain) } }
         Link(destination: URL(string: "pinglet://content/\(entry.profile.currentContentId)")!) { Text(cleanWidgetText(entry.profile.currentText.isEmpty ? "Add something worth keeping and it will live here." : entry.profile.currentText)).font(entry.profile.textScale == "LARGE" ? .title2 : .title3).fontDesign(entry.profile.typography == "EDITORIAL" ? .serif : .default).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading) }.buttonStyle(.plain)
