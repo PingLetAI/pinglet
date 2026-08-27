@@ -54,6 +54,11 @@ struct RootView: View {
         } message: {
             Text("Your shared post is now in the processing queue. You can keep using PingLet while it is analyzed.")
         }
+        .onOpenURL { url in
+            guard url.scheme?.lowercased() == "pinglet", url.host?.lowercased() == "content",
+                  let id = url.pathComponents.dropFirst().first, !id.isEmpty else { return }
+            contentID = id
+        }
     }
 
     private var activeProcessing: [Ingestion] { processingItems.filter { !["READY", "FAILED", "REJECTED"].contains($0.status) } }

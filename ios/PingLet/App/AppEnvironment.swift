@@ -1,4 +1,5 @@
 import Foundation
+import WidgetKit
 
 @MainActor final class AppEnvironment: ObservableObject {
     let shared = SharedStore(); let secure = SecureStore(); let api = APIClient(); lazy var session = SessionManager(api: api, secure: secure, shared: shared)
@@ -8,7 +9,11 @@ import Foundation
     func bootstrap() async { feed = shared.feed; library = shared.library; await refreshEntitlement(); await flushPendingFavorites(); await syncFeed() }
     func refreshEntitlement() async { entitlement = try? await session.perform("/api/v1/me/entitlements"); shared.entitlement = entitlement }
     func syncFeed() async {
-        if let response: FeedResponse = try? await session.perform("/api/v1/me/feed?limit=200") { feed = response.items; shared.feed = feed }
+        if let response: FeedResponse = try? await session.perform("/api/v1/me/feed?limit=200") {
+            feed = response.items
+            shared.feed = feed
+            WidgetCenter.shared.reloadAllTimelines()
+        }
     }
     func refreshLibrary() async throws {
         let rows: [UserContent] = try await session.perform("/api/v1/me/content")

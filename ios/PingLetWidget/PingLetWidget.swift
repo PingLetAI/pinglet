@@ -67,9 +67,7 @@ struct PingLetProvider: AppIntentTimelineProvider {
     }
     private func entry(_ key: String, _ date: Date) -> PingLetEntry {
         let store = SharedStore(), plus = store.entitlement?.plan == "PLUS"
-        let stored = store.widgetProfile(key: key), effective = WidgetSelector.effective(stored, plus: plus)
-        guard let item = WidgetSelector.select(feed: store.feed, profile: effective, key: key, date: date) else { return PingLetEntry(date: date, key: key, profile: effective, isPlus: plus) }
-        var shown = effective; shown.currentContentId = item.id; shown.currentText = item.text; shown.currentAuthor = item.author; shown.currentSourceUrl = item.sourceUrl; shown.currentFavorite = item.favorite; shown.shownAt = Int64(date.timeIntervalSince1970 * 1000); shown.nextChangeAt = shown.shownAt + 1_800_000
+        let shown = SharedWidgetSelector.resolvedProfile(feed: store.feed, stored: store.widgetProfile(key: key), plus: plus, key: key, date: date)
         return PingLetEntry(date: date, key: key, profile: shown, isPlus: plus)
     }
 }

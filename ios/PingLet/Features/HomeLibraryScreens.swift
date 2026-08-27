@@ -42,7 +42,15 @@ struct PingLetPage<Content: View>: View {
 }
 struct HomeView: View {
     @EnvironmentObject private var env: AppEnvironment; let onOpen: (String) -> Void; @State private var tick = Date()
-    private var profile: WidgetProfile { env.shared.widgetProfile(key: "default") }
+    private var profile: WidgetProfile {
+        SharedWidgetSelector.resolvedProfile(
+            feed: env.feed,
+            stored: env.shared.widgetProfile(key: "default"),
+            plus: (env.entitlement ?? env.shared.entitlement)?.plan == "PLUS",
+            key: "default",
+            date: tick
+        )
+    }
     var body: some View { PingLetPage(eyebrow: "Today", title: "One good thought, kept close.", subtitle: "Your personal saves lead. PingLet fills the gaps quietly.") {
         PingLetCard(dark: true) { HStack { Text("ON YOUR WIDGET").font(.caption.bold()).foregroundStyle(Color.pingletGold); Spacer(); Text(profile.nextChangeAt > 0 ? "CHANGING SOON" : "ABOUT 30 MIN").font(.caption) }; Text(cleanPingLetText(profile.currentText.isEmpty ? "Your next thought is finding its place." : profile.currentText)).font(.system(size: 28, design: .serif)); if let author = profile.currentAuthor { Text(author).foregroundStyle(.gray) }; Rectangle().fill(Color.pingletGold).frame(width: 36, height: 3) }.onTapGesture { if !profile.currentContentId.isEmpty { onOpen(profile.currentContentId) } }
         PingLetSectionLabel(title: "Coming up", trailing: "Ready offline")

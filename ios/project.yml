@@ -15,6 +15,17 @@ targets:
   PingLet:
     type: application
     platform: iOS
+    info:
+      path: PingLet/Info.plist
+      properties:
+        CFBundleDisplayName: PingLet
+        CFBundleURLTypes:
+          - CFBundleURLName: ai.pinglet.app
+            CFBundleURLSchemes:
+              - pinglet
+        PingLetKeychainAccessGroup: $(AppIdentifierPrefix)ai.pinglet.shared
+        UIApplicationSupportsIndirectInputEvents: true
+        UILaunchScreen: {}
     sources:
       - PingLet
     settings:
@@ -51,6 +62,7 @@ targets:
       - PingLetWidget
       - path: PingLet/Core/Models.swift
       - path: PingLet/Core/SharedStore.swift
+      - path: PingLet/Core/WidgetSelection.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: ai.pinglet.app.widget
