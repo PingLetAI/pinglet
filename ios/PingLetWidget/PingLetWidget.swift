@@ -131,6 +131,23 @@ struct PingLetWidgetView: View {
 }
 private func cleanWidgetText(_ value: String) -> String { value.replacingOccurrences(of: #"([.!?])\s+(?:\d{1,3}(?:[,.]\d{3})*|\d+(?:\.\d+)?[KkMmBb])\s*$"#, with: "$1", options: .regularExpression) }
 
+struct PingLetWidget: Widget {
+    var body: some WidgetConfiguration {
+        AppIntentConfiguration(
+            kind: "PingLetWidget",
+            intent: PingLetWidgetConfiguration.self,
+            provider: PingLetProvider()
+        ) { entry in
+            PingLetWidgetView(entry: entry)
+        }
+        .configurationDisplayName("PingLet")
+        .description("Keep one meaningful idea within reach.")
+        .supportedFamilies([.systemMedium, .systemLarge])
+    }
+}
+
 @main struct PingLetWidgetBundle: WidgetBundle {
-    var body: some Widget { AppIntentConfiguration(kind: "PingLetWidget", intent: PingLetWidgetConfiguration.self, provider: PingLetProvider()) { PingLetWidgetView(entry: $0) }.configurationDisplayName("PingLet").description("Keep one meaningful idea within reach.").supportedFamilies([.systemMedium, .systemLarge]) }
+    var body: some Widget {
+        PingLetWidget()
+    }
 }
