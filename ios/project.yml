@@ -37,6 +37,12 @@ targets:
   PingLetWidget:
     type: app-extension
     platform: iOS
+    info:
+      path: PingLetWidget/Info.plist
+      properties:
+        CFBundleDisplayName: PingLet
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
     sources:
       - PingLetWidget
       - path: PingLet/Core/Models.swift
@@ -44,8 +50,6 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: ai.pinglet.app.widget
-        INFOPLIST_KEY_CFBundleDisplayName: PingLet
-        INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier: com.apple.widgetkit-extension
     entitlements:
       path: PingLetWidget/PingLetWidget.entitlements
       properties:
@@ -54,6 +58,15 @@ targets:
   PingLetShare:
     type: app-extension
     platform: iOS
+    info:
+      path: PingLetShare/Info.plist
+      properties:
+        CFBundleDisplayName: PingLet
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.share-services
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController
+          NSExtensionAttributes:
+            NSExtensionActivationRule: SUBQUERY(extensionItems, $item, SUBQUERY($item.attachments, $attachment, ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.url" OR ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.plain-text").@count > 0).@count > 0
     sources:
       - PingLetShare
       - path: PingLet/Core/Models.swift
@@ -61,10 +74,6 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: ai.pinglet.app.share
-        INFOPLIST_KEY_CFBundleDisplayName: PingLet
-        INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier: com.apple.share-services
-        INFOPLIST_KEY_NSExtension_NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController
-        INFOPLIST_KEY_NSExtension_NSExtensionAttributes_NSExtensionActivationRule: SUBQUERY(extensionItems, $item, SUBQUERY($item.attachments, $attachment, ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.url" OR ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.plain-text").@count > 0).@count > 0
     entitlements:
       path: PingLetShare/PingLetShare.entitlements
       properties:
