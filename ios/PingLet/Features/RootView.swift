@@ -5,6 +5,7 @@ struct RootView: View {
     @EnvironmentObject private var env: AppEnvironment
     @Environment(\.scenePhase) private var scenePhase
     @State private var tab: Tab = .home; @State private var addRoute: AddRoute?; @State private var contentID: String?
+    @State private var submittingShare = false; @State private var shareQueued = false
     var body: some View {
         ZStack(alignment: .bottom) { TabView(selection: $tab) {
             HomeView(onOpen: { contentID = $0 }).tabItem { Label("Home", systemImage: "house.fill") }.tag(Tab.home)
@@ -27,14 +28,52 @@ struct RootView: View {
         }
         .sheet(item: $addRoute) { AddPingLetView(initialText: $0.text) }
         .sheet(item: Binding(get: { contentID.map(ContentRoute.init) }, set: { contentID = $0?.id })) { ContentDetailView(contentID: $0.id) }
-        .task { presentPendingShare() }
-        .onChange(of: scenePhase) { _, phase in if phase == .active { presentPendingShare() } }
+        .task { await submitPendingShare() }
+        .onChange(of: scenePhase) { _, phase in if phase == .active { Task { await submitPendingShare() } } }
+        .alert("Saved to PingLet", isPresented: $shareQueued) {
+            Button("OK") {}
+        } message: {
+            Text("Your shared post is now in the processing queue. You can keep using PingLet while it is analyzed.")
+        }
     }
 
-    private func presentPendingShare() {
-        guard addRoute == nil, let value = env.shared.pendingShare?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else { return }
-        env.shared.pendingShare = nil
-        addRoute = AddRoute(text: value)
+    private func submitPendingShare() async {
+        guard !submittingShare, addRoute == nil,
+              let value = env.shared.pendingShare?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !value.isEmpty else { return }
+        guard let url = firstWebURL(in: value) else {
+            env.shared.pendingShare = nil
+            addRoute = AddRoute(text: value)
+            return
+        }
+
+        submittingShare = true
+        let context = value.replacingOccurrences(of: url.absoluteString, with: "").trimmingCharacters(in: .whitespacesAndNewlines)
+        do {
+            let _: Ingestion = try await env.session.perform(
+                "/api/v1/me/ingestions",
+                method: .post,
+                body: IngestionRequest(url: url.absoluteString, contextText: context.isEmpty ? nil : context)
+            )
+            env.shared.pendingShare = nil
+            await env.refreshEntitlement()
+            shareQueued = true
+        } catch let api as APIError where api.code == "TERMS_ACCEPTANCE_REQUIRED" {
+            env.shared.pendingShare = nil
+            addRoute = AddRoute(text: value)
+        } catch {
+            env.shared.pendingShare = nil
+            addRoute = AddRoute(text: value)
+        }
+        submittingShare = false
+    }
+
+    private func firstWebURL(in value: String) -> URL? {
+        guard let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue) else { return nil }
+        let range = NSRange(value.startIndex..., in: value)
+        return detector.matches(in: value, range: range).compactMap(\.url).first {
+            ["http", "https"].contains($0.scheme?.lowercased() ?? "")
+        }
     }
 }
 private struct AddRoute: Identifiable { let id = UUID(); let text: String }
