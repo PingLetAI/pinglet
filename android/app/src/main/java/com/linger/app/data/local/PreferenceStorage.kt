@@ -43,6 +43,8 @@ class DataStoreManager(private val context: Context) {
         val entitlementSource = stringKey("entitlement_source")
         val entitlementExpiresAt = longKey("entitlement_expires_at")
         val paidPlansEnabled = booleanPreferencesKey("paid_plans_enabled")
+        val widgetPinPromptShown = booleanPreferencesKey("widget_pin_prompt_shown")
+        val widgetPinPromptVersion = intPreferencesKey("widget_pin_prompt_version")
         }
 
     fun installationId(): Flow<String> = prefsFlow.map { it[Keys.installationId] ?: "" }
@@ -180,6 +182,16 @@ class DataStoreManager(private val context: Context) {
 
     suspend fun readPaidPlansEnabled(): Boolean =
         prefsFlow.map { it[Keys.paidPlansEnabled] ?: false }.firstOrNull() ?: false
+
+    suspend fun readWidgetPinPromptVersion(): Int =
+        prefsFlow.map { it[Keys.widgetPinPromptVersion] ?: 0 }.firstOrNull() ?: 0
+
+    suspend fun setWidgetPinPromptVersion(version: Int) {
+        context.dataStore.edit {
+            it[Keys.widgetPinPromptVersion] = version
+            it.remove(Keys.widgetPinPromptShown)
+        }
+    }
 
     suspend fun clearAccountData() {
         context.dataStore.edit { preferences ->

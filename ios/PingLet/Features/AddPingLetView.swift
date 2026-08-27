@@ -3,6 +3,7 @@ import SwiftUI
 @MainActor final class AddPingLetModel: ObservableObject {
     @Published var text = ""; @Published var author = ""; @Published var saving = false; @Published var error: String?; @Published var showTerms = false; @Published var queued = false
     private var termsAccepted: Bool?
+    init(initialText: String = "") { text = initialText }
     func prepare(_ env: AppEnvironment) async { let status: TermsStatus? = try? await env.session.perform("/api/v1/me/terms"); termsAccepted = status?.accepted }
     func save(_ env: AppEnvironment) async {
         guard !saving else { return }; let url = detectedURL
@@ -36,6 +37,7 @@ import SwiftUI
 
 struct AddPingLetView: View {
     @EnvironmentObject private var env: AppEnvironment; @Environment(\.dismiss) private var dismiss; @StateObject private var model = AddPingLetModel()
+    init(initialText: String = "") { _model = StateObject(wrappedValue: AddPingLetModel(initialText: initialText)) }
     var body: some View {
         NavigationStack {
             ZStack {

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1640" height="624" viewBox="0 0 1640 624">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F8F5ED"/><stop offset="1" stop-color="#E9E2D7"/></linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#252820"/><stop offset="1" stop-color="#11130F"/></linearGradient>
+    <filter id="shadow" x="-30%" y="-40%" width="170%" height="190%"><feDropShadow dx="0" dy="22" stdDeviation="24" flood-color="#2E271C" flood-opacity=".18"/></filter>
+  </defs>
+  <rect width="1640" height="624" fill="url(#bg)"/>
+  <circle cx="1575" cy="28" r="302" fill="#C7E6D7" opacity=".82"/>
+  <circle cx="130" cy="629" r="238" fill="#E9C4B7" opacity=".52"/>
+  <path d="M0 0H430C343 128 359 252 248 328C163 386 82 385 0 353Z" fill="#FFFFFF" opacity=".2"/>
+
+  <g transform="translate(546 70) scale(.072)"><path fill="#DDAE3D" fill-rule="evenodd" d="M240 812V212H470C646 212 740 307 740 439C740 579 646 663 470 663H354V812ZM354 327V548H470C573 548 625 508 625 439C625 369 573 327 470 327Z"/><circle cx="491" cy="439" r="49" fill="#F8F6F0"/><path d="M707 213C820 275 871 357 871 449C871 584 799 696 675 758" fill="none" stroke="#F8F6F0" stroke-width="51" stroke-linecap="round"/></g>
+  <text x="626" y="127" fill="#171914" font-family="Arial, sans-serif" font-size="35" font-weight="700">PingLet</text>
+  <text x="546" y="248" fill="#171914" font-family="Georgia, serif" font-size="66"><tspan x="546">Keep what</tspan><tspan x="546" dy="76">resonates.</tspan></text>
+  <text x="548" y="425" fill="#4E504A" font-family="Arial, sans-serif" font-size="27">Save discoveries. See them again.</text>
+  <rect x="1086" y="119" width="444" height="350" rx="44" fill="url(#card)" filter="url(#shadow)"/>
+  <text x="1132" y="200" fill="#DDAE3D" font-family="Arial, sans-serif" font-size="19" font-weight="700" letter-spacing="2">TODAY'S PINGLET</text>
+  <text x="1132" y="271" fill="#F8F6F0" font-family="Georgia, serif" font-size="35"><tspan x="1132">“Small ideas become</tspan><tspan x="1132" dy="49">part of you when they</tspan><tspan x="1132" dy="49">return at the right time.”</tspan></text>
+  <rect x="1132" y="418" width="72" height="6" rx="3" fill="#DDAE3D"/>
+</svg>

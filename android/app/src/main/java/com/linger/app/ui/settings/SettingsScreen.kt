@@ -2,6 +2,7 @@ package com.linger.app.ui.settings
 
 import android.content.Intent
 import android.net.Uri
+import android.provider.Settings as AndroidSettings
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -12,14 +13,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.linger.app.BuildConfig
 import com.linger.app.data.remote.EntitlementResponse
 import com.linger.app.ui.components.LingerCard
 import com.linger.app.ui.components.LingerPage
 import com.linger.app.ui.components.SectionLabel
 import com.linger.app.ui.components.StatusPill
+import com.linger.app.ui.widget.WidgetInstallPrompt
+import com.linger.app.ui.widget.WidgetManualInstallDialog
+import com.linger.app.widget.WidgetPinning
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,42 +39,57 @@ fun SettingsScreen(onCreateAccount: () -> Unit = {}, onTryPlus: () -> Unit = {},
     val opacity by viewModel.widgetOpacity.collectAsState()
     val mix by viewModel.personalSystemMix.collectAsState()
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val coroutineScope = rememberCoroutineScope()
+    var widgetInstalled by remember { mutableStateOf(WidgetPinning.hasInstalledWidget(context)) }
+    var widgetPinRequestPending by remember { mutableStateOf(false) }
+    var showWidgetPrompt by remember { mutableStateOf(false) }
+    var showWidgetManualHelp by remember { mutableStateOf(false) }
     var showSignOut by remember { mutableStateOf(false) }
     var showDelete by remember { mutableStateOf(false) }
     var deletionCode by remember { mutableStateOf("") }
     LaunchedEffect(Unit) { viewModel.refresh() }
     LaunchedEffect(entitlementRefreshKey) { if (entitlementRefreshKey > 0L) viewModel.refresh() }
     LaunchedEffect(accountAction.sessionReset) { if (accountAction.sessionReset) onAccountReset() }
+    DisposableEffect(lifecycleOwner, context) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                widgetInstalled = WidgetPinning.hasInstalledWidget(context)
+                if (widgetPinRequestPending) {
+                    widgetPinRequestPending = false
+                    if (!widgetInstalled) showWidgetManualHelp = true
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
-    LingerPage("Settings", "Make PingLet yours.", "Account, rotation, and widget preferences.") {
+    LingerPage("Settings", "Your PingLet, your rhythm.", "A quieter place for your account and experience.") {
         AccountSummary(entitlement, onCreateAccount, onTryPlus, onUpgrade, { showSignOut = true }, { showDelete = true }) {
             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/account/subscriptions?package=${BuildConfig.APPLICATION_ID}")))
         }
 
-        SectionLabel("ROTATION")
-        SettingsGroup {
-            SettingsRow(Icons.Rounded.Schedule, "Every 30 minutes", "Approximate timing, optimized for battery")
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            Column(Modifier.padding(15.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
-                Text("CONTENT BALANCE", style = MaterialTheme.typography.labelMedium)
-                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                    listOf("MOSTLY_MINE" to "Mine", "BALANCED" to "Balanced", "MORE_DISCOVERY" to "Discover").forEachIndexed { index, option ->
-                        SegmentedButton(mix == option.first, { viewModel.setPersonalSystemMix(option.first) }, SegmentedButtonDefaults.itemShape(index, 3), label = { Text(option.second) }, icon = {})
+        if (!widgetInstalled) {
+            WidgetSetupCard { showWidgetPrompt = true }
+        } else {
+            SectionLabel("EXPERIENCE")
+            SettingsGroup {
+                SettingsRow(Icons.Rounded.Schedule, "Every 30 minutes", "Approximate timing, optimized for battery")
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Column(Modifier.padding(15.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                    Text("CONTENT BALANCE", style = MaterialTheme.typography.labelMedium)
+                    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                        listOf("MOSTLY_MINE" to "Mine", "BALANCED" to "Balanced", "MORE_DISCOVERY" to "Discover").forEachIndexed { index, option ->
+                            SegmentedButton(mix == option.first, { viewModel.setPersonalSystemMix(option.first) }, SegmentedButtonDefaults.itemShape(index, 3), label = { Text(option.second) }, icon = {})
+                        }
                     }
+                    Text("Personal saves are always prioritized.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Text("Personal saves are always prioritized.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            SettingsRow(Icons.Rounded.CloudQueue, "Processing queue", "See shared-post progress", onClick = onOpenQueue)
-        }
-
-        SectionLabel("HOME SCREEN WIDGET")
-        SettingsGroup {
-            SettingsRow(Icons.Rounded.Widgets, "Manage Home Screen widgets", "Independent themes, content, schedules, and controls", onClick = onOpenWidgetSettings)
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            Column(Modifier.padding(15.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                Text("Resize any widget directly from your Home Screen.", style = MaterialTheme.typography.bodyMedium)
-                Text("Basic readability and translucency remain available to everyone.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                SettingsRow(Icons.Rounded.Widgets, "Widget appearance", "Themes, schedules, typography, and controls", onClick = onOpenWidgetSettings)
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                SettingsRow(Icons.Rounded.CloudQueue, "Processing queue", "Shared-post progress and history", onClick = onOpenQueue)
             }
         }
 
@@ -78,6 +102,38 @@ fun SettingsScreen(onCreateAccount: () -> Unit = {}, onTryPlus: () -> Unit = {},
             SettingsRow(Icons.Rounded.Description, "Terms of service", "The terms for using PingLet") { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://pinglet.ai/terms"))) }
         }
         Text("Rotation can shift slightly while Android is conserving battery.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+
+    if (showWidgetPrompt) {
+        WidgetInstallPrompt(
+            onAddWidget = {
+                showWidgetPrompt = false
+                coroutineScope.launch {
+                    val requestSent = WidgetPinning.requestPin(context)
+                    if (!requestSent) {
+                        showWidgetManualHelp = true
+                    } else {
+                        widgetPinRequestPending = true
+                        delay(2_000L)
+                        if (widgetPinRequestPending && lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                            widgetPinRequestPending = false
+                            widgetInstalled = WidgetPinning.hasInstalledWidget(context)
+                            if (!widgetInstalled) showWidgetManualHelp = true
+                        }
+                    }
+                }
+            },
+            onDismiss = { showWidgetPrompt = false },
+        )
+    }
+    if (showWidgetManualHelp) {
+        WidgetManualInstallDialog(
+            onOpenHomeSettings = {
+                runCatching { context.startActivity(Intent(AndroidSettings.ACTION_HOME_SETTINGS)) }
+                    .onSuccess { showWidgetManualHelp = false }
+            },
+            onDismiss = { showWidgetManualHelp = false },
+        )
     }
 
     if (showSignOut) AlertDialog(
@@ -114,6 +170,42 @@ fun SettingsScreen(onCreateAccount: () -> Unit = {}, onTryPlus: () -> Unit = {},
         },
         dismissButton = { TextButton(onClick = { showDelete = false; viewModel.clearAccountAction() }) { Text("CANCEL") } },
     )
+}
+
+@Composable
+private fun WidgetSetupCard(onAddWidget: () -> Unit) {
+    Surface(
+        shape = MaterialTheme.shapes.extraLarge,
+        color = androidx.compose.ui.graphics.Color(0xFF171914),
+        contentColor = androidx.compose.ui.graphics.Color(0xFFF8F6F0),
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(shape = MaterialTheme.shapes.medium, color = androidx.compose.ui.graphics.Color(0xFFC7E6D7)) {
+                    Icon(Icons.Rounded.Widgets, null, Modifier.padding(10.dp).size(23.dp), tint = androidx.compose.ui.graphics.Color(0xFF171914))
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("HOME SCREEN WIDGET", style = MaterialTheme.typography.labelSmall, color = androidx.compose.ui.graphics.Color(0xFFDDAE3D))
+                    Text("Bring PingLet Home", style = MaterialTheme.typography.titleLarge)
+                }
+            }
+            Text("Let meaningful ideas return without opening the app.", style = MaterialTheme.typography.bodyMedium, color = androidx.compose.ui.graphics.Color(0xFFD7D6D0))
+            Button(
+                onClick = onAddWidget,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = androidx.compose.ui.graphics.Color(0xFFDDAE3D),
+                    contentColor = androidx.compose.ui.graphics.Color(0xFF171914),
+                ),
+            ) {
+                Text("ADD HOME SCREEN WIDGET")
+            }
+        }
+    }
 }
 
 @Composable

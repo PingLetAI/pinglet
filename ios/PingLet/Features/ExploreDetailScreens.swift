@@ -32,10 +32,26 @@ struct ContentDetailView: View {
     private var local: FeedItem? { env.feed.first { $0.id == contentID } ?? env.library.first { $0.contentItemId == contentID }?.contentItem }
     var body: some View { NavigationStack { PingLetPage(eyebrow: local?.source == .personal ? "Saved by you" : "From PingLet", title: cleanPingLetText(detail?.content.text ?? local?.text ?? "This PingLet is unavailable."), subtitle: detail?.content.author ?? local?.author ?? "") {
         if let source = detail?.content.sourceUrl ?? local?.sourceUrl, let url = URL(string: source) { Link("OPEN ORIGINAL SOURCE", destination: url).buttonStyle(.borderedProminent) }
-        if let d = detail { if let overview = d.overview, !overview.isEmpty { detailSection("Overview", overview) }; if !d.insights.isEmpty { Text("Key insights").font(.title2); ForEach(d.insights) { insight in PingLetCard { Text(insight.title).font(.headline); Text(insight.explanation); if !insight.evidence.isEmpty { Text("“\(insight.evidence)”").foregroundStyle(.secondary) } } } }; if d.access.fullDetailsUnlocked { if let summary = d.comprehensiveSummary { detailSection("Full summary", summary) }; if !d.actions.isEmpty { detailSection("Things to take forward", d.actions.map { "• \($0)" }.joined(separator: "\n")) }; ForEach(d.themes, id: \.self) { Text($0).padding(7).background(.thinMaterial, in: Capsule()) }; disclosure("Full transcript", d.transcript); disclosure("Text found in images", d.visibleText); disclosure("Original caption", d.caption) } else if d.access.hasAnalysis { PingLetCard { Text("There is more in this PingLet").font(.title2); Text("Unlock the full summary, all insights, practical takeaways, transcript, visible text, and related topics."); Text(d.access.isAnonymous ? "CREATE ACCOUNT TO TRY PLUS" : d.access.trialEligible ? "TRY PLUS FREE - 7 DAYS" : d.access.paidPlansEnabled ? "UNLOCK WITH PINGLET PLUS" : "PingLet Plus subscriptions are coming soon.").font(.headline) } } }
+        if let d = detail { if let overview = d.overview, !overview.isEmpty { detailSection("Overview", overview) }; if !d.insights.isEmpty { Text("Key insights").font(.title2); ForEach(d.insights) { insight in PingLetCard { Text(insight.title).font(.headline); Text(insight.explanation); if !insight.evidence.isEmpty { Text("“\(insight.evidence)”").foregroundStyle(.secondary) } } } }; if d.access.fullDetailsUnlocked { if let summary = d.comprehensiveSummary { detailSection("Full summary", summary) }; if !d.actions.isEmpty { detailSection("Things to take forward", d.actions.map { "• \($0)" }.joined(separator: "\n")) }; ForEach(d.themes, id: \.self) { Text($0).padding(7).background(.thinMaterial, in: Capsule()) }; disclosure("Full transcript", d.transcript); disclosure("Text found in images", d.visibleText); disclosure("Original caption", d.caption) } else if d.access.hasAnalysis { PingLetCard { Text("There is more in this PingLet").font(.title2); Text("Unlock the full summary, all insights, practical takeaways, transcript, visible text, and related topics."); plusAction(d.access) } } }
         else if failed { PingLetCard { Text("Details couldn't load").font(.headline); Text("Your saved PingLet and original source are still available."); Button("TRY AGAIN") { Task { await load() } } } }
-    }.toolbar { Button("Close", action: dismiss.callAsFunction) }.task { await load() } } }
+    }.toolbar { Button("Close", action: dismiss.callAsFunction) }.task { await load() }.onChange(of: env.entitlement?.plan) { _, _ in Task { await load() } }.onChange(of: env.entitlement?.isAnonymous) { _, _ in Task { await load() } } } }
     @ViewBuilder private func detailSection(_ title: String, _ value: String) -> some View { Divider(); Text(title).font(.title2); Text(value) }
     @ViewBuilder private func disclosure(_ title: String, _ value: String?) -> some View { if let value, !value.isEmpty { DisclosureGroup(title) { Text(value) } } }
+    @ViewBuilder private func plusAction(_ access: DetailAccess) -> some View {
+        if access.isAnonymous {
+            NavigationLink { AccountConnectionView() } label: { Text("CREATE ACCOUNT TO TRY PLUS") }
+                .buttonStyle(PingLetPrimaryButtonStyle())
+        } else if access.trialEligible {
+            NavigationLink { TrialOfferView() } label: { Text("TRY PINGLET PLUS · 7 DAYS FREE") }
+                .buttonStyle(PingLetPrimaryButtonStyle())
+        } else if access.paidPlansEnabled {
+            NavigationLink { PlusPlansView() } label: { Text("UNLOCK WITH PINGLET PLUS") }
+                .buttonStyle(PingLetPrimaryButtonStyle())
+        } else {
+            Text("PingLet Plus subscriptions are coming soon.")
+                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .foregroundStyle(Color.pingletMutedInk)
+        }
+    }
     private func load() async { do { detail = try await env.session.perform("/api/v1/me/content/\(contentID)/detail"); failed = false } catch { failed = true } }
 }

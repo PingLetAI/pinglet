@@ -13,7 +13,34 @@ struct EmailOTPResponse: Decodable { let sent: Bool; let expiresInSeconds: Int; 
 struct EmailOTPVerifyResponse: Decodable { let verified: Bool; let email: String; let plan: String; let accessToken: String?; let refreshToken: String?; let userId: String? }
 
 struct FeedResponse: Decodable { let items: [FeedItem] }
-struct FeedItem: Codable, Identifiable { let id: String; let text: String; let type: ContentType; let author: String?; let sourceUrl: String?; let categories: [String]; let catalogIds: [String]; let source: ContentSource; let favorite: Bool; let updatedAt: String? }
+struct FeedItem: Codable, Identifiable {
+    let id: String
+    let text: String
+    let type: ContentType
+    let author: String?
+    let sourceUrl: String?
+    let categories: [String]
+    let catalogIds: [String]
+    let source: ContentSource
+    let favorite: Bool
+    let updatedAt: String?
+
+    private enum CodingKeys: String, CodingKey { case id, text, type, author, sourceUrl, categories, catalogIds, source, favorite, updatedAt }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        id = try values.decode(String.self, forKey: .id)
+        text = try values.decode(String.self, forKey: .text)
+        type = try values.decode(ContentType.self, forKey: .type)
+        author = try values.decodeIfPresent(String.self, forKey: .author)
+        sourceUrl = try values.decodeIfPresent(String.self, forKey: .sourceUrl)
+        categories = try values.decodeIfPresent([String].self, forKey: .categories) ?? []
+        catalogIds = try values.decodeIfPresent([String].self, forKey: .catalogIds) ?? []
+        source = try values.decodeIfPresent(ContentSource.self, forKey: .source) ?? .personal
+        favorite = try values.decodeIfPresent(Bool.self, forKey: .favorite) ?? false
+        updatedAt = try values.decodeIfPresent(String.self, forKey: .updatedAt)
+    }
+}
 struct UserContent: Codable, Identifiable { let id: String; let contentItemId: String; var favorite: Bool; let archived: Bool; let contentItem: FeedItem }
 struct ContentInsight: Codable, Identifiable { var id: String { title }; let title: String; let explanation: String; let evidence: String }
 struct DetailAccess: Codable { let plan: String; let hasAnalysis: Bool; let fullDetailsUnlocked: Bool; let lockedSections: [String]; let isAnonymous: Bool; let entitlementSource: String; let accessExpiresAt: String?; let trialStatus: String; let trialEligible: Bool; let trialEndsAt: String?; let trialDaysRemaining: Int; let paidPlansEnabled: Bool }

@@ -14,6 +14,12 @@ final class SharedStore {
     var pendingFavorites: [PendingFavorite] { get { decode("pending_favorites") ?? [] } set { encode(newValue, "pending_favorites") } }
     var contentMix: String { get { defaults.string(forKey: "personal_system_mix") ?? "BALANCED" } set { defaults.set(newValue, forKey: "personal_system_mix") } }
     var pendingShare: String? { get { defaults.string(forKey: "pending_share") } set { if let newValue { defaults.set(newValue, forKey: "pending_share") } else { defaults.removeObject(forKey: "pending_share") } } }
+    func savePendingShare(_ value: String) {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        pendingShare = trimmed
+        defaults.synchronize()
+    }
     func widgetProfile(key: String) -> WidgetProfile { decode("widget_profile_\(key)") ?? WidgetProfile() }
     func setWidgetProfile(_ profile: WidgetProfile, key: String) { encode(profile, "widget_profile_\(key)") }
     func queueFavorite(contentID: String, favorite: Bool) {
