@@ -1,7 +1,7 @@
 import SwiftUI
 import WidgetKit
 
-struct SettingsView: View {
+private struct LegacySettingsView: View {
     @EnvironmentObject private var env: AppEnvironment; @State private var deleting = false; @State private var deletionCodeSent = false; @State private var code = ""; @State private var error: String?
     var body: some View { NavigationStack { PingLetPage(eyebrow: "Settings", title: "Your PingLet, your rhythm.", subtitle: "A quieter place for your account and experience.") {
         accountCard
