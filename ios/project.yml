@@ -24,11 +24,14 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: PingLet
         INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_PingLetKeychainAccessGroup: $(AppIdentifierPrefix)ai.pinglet.shared
     entitlements:
       path: PingLet/PingLet.entitlements
       properties:
         com.apple.security.application-groups:
           - group.ai.pinglet.app
+        keychain-access-groups:
+          - $(AppIdentifierPrefix)ai.pinglet.shared
     dependencies:
       - target: PingLetWidget
         embed: true
@@ -71,11 +74,17 @@ targets:
       - PingLetShare
       - path: PingLet/Core/Models.swift
       - path: PingLet/Core/SharedStore.swift
+      - path: PingLet/Core/APIClient.swift
+      - path: PingLet/Core/SecureStore.swift
+      - path: PingLet/Core/SessionManager.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: ai.pinglet.app.share
+        INFOPLIST_KEY_PingLetKeychainAccessGroup: $(AppIdentifierPrefix)ai.pinglet.shared
     entitlements:
       path: PingLetShare/PingLetShare.entitlements
       properties:
         com.apple.security.application-groups:
           - group.ai.pinglet.app
+        keychain-access-groups:
+          - $(AppIdentifierPrefix)ai.pinglet.shared

@@ -6,6 +6,7 @@ struct RootView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var tab: Tab = .home; @State private var addRoute: AddRoute?; @State private var contentID: String?
     @State private var submittingShare = false; @State private var shareQueued = false
+    @State private var processingItems: [Ingestion] = []; @State private var showingQueue = false
     var body: some View {
         ZStack(alignment: .bottom) { TabView(selection: $tab) {
             HomeView(onOpen: { contentID = $0 }).tabItem { Label("Home", systemImage: "house.fill") }.tag(Tab.home)
@@ -25,15 +26,41 @@ struct RootView: View {
         }
         .accessibilityLabel("Add a PingLet")
         .padding(.bottom, 8)
+        if !activeProcessing.isEmpty {
+            Button { showingQueue = true } label: {
+                HStack(spacing: 9) {
+                    ProgressView().tint(Color.pingletPaper)
+                    Text(activeProcessing.count == 1 ? "1 LINK IN PROGRESS" : "\(activeProcessing.count) LINKS IN PROGRESS")
+                        .font(.system(size: 11, weight: .bold, design: .rounded)).tracking(0.8)
+                    Image(systemName: "chevron.right")
+                }
+                .padding(.horizontal, 15).padding(.vertical, 11)
+                .foregroundStyle(Color.pingletPaper).background(Color.pingletInk, in: Capsule())
+                .shadow(color: Color.pingletInk.opacity(0.22), radius: 10, y: 5)
+            }
+            .buttonStyle(.plain)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+            .padding(.leading, 14).padding(.bottom, 76)
+        }
         }
         .sheet(item: $addRoute) { AddPingLetView(initialText: $0.text) }
         .sheet(item: Binding(get: { contentID.map(ContentRoute.init) }, set: { contentID = $0?.id })) { ContentDetailView(contentID: $0.id) }
+        .sheet(isPresented: $showingQueue) { NavigationStack { ProcessingQueueView() } }
         .task { await submitPendingShare() }
+        .task { await monitorProcessing() }
         .onChange(of: scenePhase) { _, phase in if phase == .active { Task { await submitPendingShare() } } }
         .alert("Saved to PingLet", isPresented: $shareQueued) {
             Button("OK") {}
         } message: {
             Text("Your shared post is now in the processing queue. You can keep using PingLet while it is analyzed.")
+        }
+    }
+
+    private var activeProcessing: [Ingestion] { processingItems.filter { !["READY", "FAILED", "REJECTED"].contains($0.status) } }
+    private func monitorProcessing() async {
+        while !Task.isCancelled {
+            if let rows: [Ingestion] = try? await env.session.perform("/api/v1/me/ingestions") { processingItems = rows }
+            try? await Task.sleep(for: .seconds(4))
         }
     }
 
