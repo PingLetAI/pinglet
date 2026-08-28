@@ -15,4 +15,8 @@ export function validateProductionEnvironment() {
   if (enabled(process.env.EMAIL_OTP_DEV_MODE)) {
     throw new Error('EMAIL_OTP_DEV_MODE must be false in production');
   }
+  for (const name of ['APP_REVIEW_OTP', 'PLAY_REVIEW_OTP']) {
+    const value = process.env[name]?.trim();
+    if (value && !/^\d{6}$/.test(value)) throw new Error(`${name} must contain exactly 6 digits`);
+  }
 }

@@ -43,10 +43,9 @@ export class EmailOtpService implements OnModuleDestroy {
     const cooldownKey = `email-otp-cooldown:${userId}:${email}`;
     const acquired = await this.redis.set(cooldownKey, '1', 'EX', 60, 'NX');
     if (!acquired) throw new HttpException('Wait one minute before requesting another code.', 429);
-    const reviewEmail = this.config.get<string>('PLAY_REVIEW_EMAIL')?.trim().toLowerCase();
-    const reviewCode = this.config.get<string>('PLAY_REVIEW_OTP')?.trim();
-    const isReviewer = email === reviewEmail && /^\d{6}$/.test(reviewCode || '');
-    const code = isReviewer ? reviewCode! : randomInt(100000, 1000000).toString();
+    const reviewer = this.reviewerConfig();
+    const isReviewer = Boolean(reviewer.code && reviewer.emails.has(email));
+    const code = isReviewer ? reviewer.code! : randomInt(100000, 1000000).toString();
     const payload = JSON.stringify({ hash: this.hash(userId, email, code), attempts: 0 });
     const otpKey = `email-otp:${userId}:${email}`;
     try {
@@ -64,6 +63,8 @@ export class EmailOtpService implements OnModuleDestroy {
   async verify(userId: string, deviceId: string, installationId: string, rawEmail: string, code: string) {
     const db = this.prisma as any;
     const email = rawEmail.trim().toLowerCase();
+    const reviewer = this.reviewerConfig();
+    const isReviewer = Boolean(reviewer.code && reviewer.emails.has(email));
     await this.consumeCode(userId, email, code);
     const current = await db.user.findUnique({ where: { id: userId } });
     if (!current) throw new BadRequestException('This session is no longer available.');
@@ -81,7 +82,18 @@ export class EmailOtpService implements OnModuleDestroy {
     } else {
       await db.user.update({
         where: { id: userId },
-        data: { email, emailVerifiedAt: new Date(), isAnonymous: false, plan: current.plan === 'GUEST' ? 'FREE' : current.plan },
+        data: {
+          email,
+          emailVerifiedAt: new Date(),
+          isAnonymous: false,
+          plan: isReviewer ? 'PLUS' : current.plan === 'GUEST' ? 'FREE' : current.plan,
+        },
+      });
+    }
+    if (isReviewer) {
+      await db.user.update({
+        where: { id: accountId },
+        data: { emailVerifiedAt: new Date(), isAnonymous: false, plan: 'PLUS' },
       });
     }
     const account = await db.user.findUniqueOrThrow({ where: { id: accountId } });
@@ -213,6 +225,24 @@ export class EmailOtpService implements OnModuleDestroy {
     const value = this.config.get<string>(key);
     if (value === undefined) return fallback;
     return value.trim().toLowerCase() === 'true';
+  }
+
+  private reviewerConfig() {
+    const code = (
+      this.config.get<string>('APP_REVIEW_OTP') ||
+      this.config.get<string>('PLAY_REVIEW_OTP') ||
+      ''
+    ).trim();
+    const emails = new Set(
+      [
+        'app-review@pinglet.ai',
+        this.config.get<string>('APP_REVIEW_EMAIL'),
+        this.config.get<string>('PLAY_REVIEW_EMAIL'),
+      ]
+        .map((value) => value?.trim().toLowerCase())
+        .filter((value): value is string => Boolean(value)),
+    );
+    return { code: /^\d{6}$/.test(code) ? code : undefined, emails };
   }
 
   private otpEmail(code: string) {
