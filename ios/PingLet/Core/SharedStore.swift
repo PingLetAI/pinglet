@@ -23,9 +23,22 @@ final class SharedStore {
     func widgetProfile(key: String) -> WidgetProfile { decode("widget_profile_\(key)") ?? WidgetProfile() }
     func setWidgetProfile(_ profile: WidgetProfile, key: String) { encode(profile, "widget_profile_\(key)") }
     func queueFavorite(contentID: String, favorite: Bool) {
+        var feedRows = feed
+        for index in feedRows.indices where feedRows[index].id == contentID {
+            feedRows[index].favorite = favorite
+        }
+        feed = feedRows
+
+        var libraryRows = library
+        for index in libraryRows.indices where libraryRows[index].contentItemId == contentID {
+            libraryRows[index].favorite = favorite
+        }
+        library = libraryRows
+
         var rows = pendingFavorites.filter { $0.contentID != contentID }
         rows.append(PendingFavorite(id: UUID(), contentID: contentID, favorite: favorite, createdAt: .now))
         pendingFavorites = rows
+        defaults.synchronize()
     }
     func clearAccountData() {
         for key in defaults.dictionaryRepresentation().keys where key != "installation_id" { defaults.removeObject(forKey: key) }

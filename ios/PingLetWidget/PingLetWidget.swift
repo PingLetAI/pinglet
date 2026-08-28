@@ -84,7 +84,14 @@ struct FavoriteIntent: AppIntent {
         self.favorite = favorite
     }
     func perform() async throws -> some IntentResult {
-        let store = SharedStore(); var profile = store.widgetProfile(key: profileKey); profile.currentFavorite = favorite; store.setWidgetProfile(profile, key: profileKey); store.queueFavorite(contentID: contentID, favorite: favorite); WidgetCenter.shared.reloadAllTimelines(); return .result()
+        let store = SharedStore()
+        var profile = store.widgetProfile(key: profileKey)
+        guard profile.currentContentId == contentID else { return .result() }
+        profile.currentFavorite = favorite
+        store.setWidgetProfile(profile, key: profileKey)
+        store.queueFavorite(contentID: contentID, favorite: favorite)
+        WidgetCenter.shared.reloadTimelines(ofKind: "PingLetWidget")
+        return .result()
     }
 }
 struct NextIntent: AppIntent {

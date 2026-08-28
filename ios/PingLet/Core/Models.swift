@@ -22,7 +22,7 @@ struct FeedItem: Codable, Identifiable {
     let categories: [String]
     let catalogIds: [String]
     let source: ContentSource
-    let favorite: Bool
+    var favorite: Bool
     let updatedAt: String?
 
     private enum CodingKeys: String, CodingKey { case id, text, type, author, sourceUrl, categories, catalogIds, source, favorite, updatedAt }

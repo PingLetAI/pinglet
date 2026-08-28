@@ -48,7 +48,14 @@ struct RootView: View {
         .sheet(isPresented: $showingQueue) { NavigationStack { ProcessingQueueView() } }
         .task { await submitPendingShare() }
         .task { await monitorProcessing() }
-        .onChange(of: scenePhase) { _, phase in if phase == .active { Task { await submitPendingShare() } } }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                Task {
+                    await env.resumeFromBackground()
+                    await submitPendingShare()
+                }
+            }
+        }
         .alert("Saved to PingLet", isPresented: $shareQueued) {
             Button("OK") {}
         } message: {

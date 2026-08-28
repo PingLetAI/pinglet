@@ -7,6 +7,7 @@ struct SettingsView: View {
     @State private var deletionCodeSent = false
     @State private var deletionCode = ""
     @State private var working = false
+    @State private var workingMessage = ""
     @State private var error: String?
 
     private var entitlement: Entitlement? { env.entitlement }
@@ -44,7 +45,7 @@ struct SettingsView: View {
                         .keyboardType(.numberPad)
                 }
                 Button("Cancel", role: .cancel) { resetDeletion() }
-                Button(deletionCodeSent ? "Delete permanently" : "Send verification code", role: .destructive) {
+                Button(working ? "Please wait..." : deletionCodeSent ? "Delete permanently" : "Send verification code", role: .destructive) {
                     Task { await deletionAction() }
                 }
                 .disabled(working || (deletionCodeSent && deletionCode.count != 6))
@@ -52,6 +53,26 @@ struct SettingsView: View {
                 Text(deletionCodeSent
                      ? "Enter the code sent to \(entitlement?.email ?? "your email"). This cannot be undone."
                      : "This permanently deletes your account, personal saves, imports, favorites, devices, and account history.")
+            }
+            .overlay {
+                if working {
+                    ZStack {
+                        Color.pingletInk.opacity(0.24).ignoresSafeArea()
+                        VStack(spacing: 14) {
+                            ProgressView()
+                                .controlSize(.large)
+                                .tint(Color.pingletGold)
+                            Text(workingMessage)
+                                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                                .foregroundStyle(Color.pingletPaper)
+                        }
+                        .padding(.horizontal, 34)
+                        .padding(.vertical, 28)
+                        .background(Color.pingletInk, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+                        .shadow(color: Color.black.opacity(0.18), radius: 30, y: 16)
+                    }
+                    .transition(.opacity)
+                }
             }
         }
     }
@@ -304,14 +325,17 @@ struct SettingsView: View {
 
     private func signOut() async {
         working = true
+        workingMessage = "Signing out..."
+        defer { working = false; workingMessage = "" }
         do { try await env.signOut(); error = nil }
         catch { self.error = "Sign-out could not reach PingLet. Check your connection and try again." }
-        working = false
     }
 
     private func deletionAction() async {
         guard let email = entitlement?.email else { return }
         working = true
+        workingMessage = deletionCodeSent ? "Deleting your account..." : "Sending verification code..."
+        defer { working = false; workingMessage = "" }
         do {
             if !deletionCodeSent {
                 let _: EmailOTPResponse = try await env.session.perform(
@@ -337,7 +361,6 @@ struct SettingsView: View {
             self.error = error.localizedDescription
             showDelete = true
         }
-        working = false
     }
 
     private func resetDeletion() {

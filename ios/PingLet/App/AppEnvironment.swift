@@ -7,6 +7,13 @@ import WidgetKit
     @Published var feed: [FeedItem] = []
     @Published var library: [UserContent] = []
     func bootstrap() async { feed = shared.feed; library = shared.library; await refreshEntitlement(); await flushPendingFavorites(); await syncFeed() }
+    func resumeFromBackground() async {
+        feed = shared.feed
+        library = shared.library
+        await flushPendingFavorites()
+        await syncFeed()
+        try? await refreshLibrary()
+    }
     func refreshEntitlement() async { entitlement = try? await session.perform("/api/v1/me/entitlements"); shared.entitlement = entitlement }
     func syncFeed() async {
         if let response: FeedResponse = try? await session.perform("/api/v1/me/feed?limit=200") {
