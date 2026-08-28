@@ -2,6 +2,8 @@
 
 Use the seven numbered PNG files in this directory for the iPhone 6.9-inch screenshot set in App Store Connect. They are `1290 x 2796`, RGB PNG files built from the real iOS screenshots in `reference/`.
 
+For the App Store Connect 6.5-inch upload slot, use the seven files in `6.5-inch/`. They are the accepted `1284 x 2778` portrait size.
+
 The first three tell the core PingLet story in installation-sheet order:
 
 1. A saved idea returning through the Home Screen widget.

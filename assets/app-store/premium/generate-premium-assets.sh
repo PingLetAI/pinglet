@@ -3,11 +3,12 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 OUT="$ROOT/assets/app-store/premium"
+OUT_65="$OUT/6.5-inch"
 SOURCE="$OUT/source"
 REFERENCES="$ROOT/reference"
 CHROME="${CHROME:-/usr/bin/google-chrome}"
 
-mkdir -p "$SOURCE"
+mkdir -p "$SOURCE" "$OUT_65"
 
 render() {
   local key="$1" image="$2" background="$3" ink="$4" accent="$5"
@@ -70,6 +71,9 @@ EOF
     --user-data-dir="/tmp/pinglet-premium-chrome-$key" --hide-scrollbars \
     --force-device-scale-factor=1 --window-size=1290,2796 \
     --screenshot="$png" "file://$html" >/dev/null 2>&1
+  ffmpeg -loglevel error -y -i "$png" \
+    -vf "scale=1284:2778:flags=lanczos" \
+    "$OUT_65/${key/1290x2796/1284x2778}.png"
   rm -f "$html"
 }
 
