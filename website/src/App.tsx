@@ -14,7 +14,8 @@ const APP_STORE_URL = import.meta.env.VITE_APP_STORE_URL as string | undefined;
 const PUBLIC_SITE_URL = (import.meta.env.VITE_PUBLIC_SITE_URL as string | undefined) || "https://pinglet.ai";
 const DOWNLOAD_URL = `${PUBLIC_SITE_URL.replace(/\/$/, "")}/download`;
 const X_URL = "https://x.com/pingletAI";
-const INSTAGRAM_URL = "https://www.instagram.com/PingLet.AI";
+const INSTAGRAM_URL = "https://www.instagram.com/pinglet_ai";
+const TIKTOK_URL = "https://www.tiktok.com/@pinglet_ai";
 
 const steps = [
   { number: "01", title: "Share it to PingLet", body: "From Instagram, TikTok, or Facebook, choose PingLet in the share sheet. You can also paste a public link or write your own thought." },
@@ -32,11 +33,11 @@ const features = [
 ];
 
 const faqs = [
-  ["Can I try PingLet Plus without subscribing?", "Yes. Verified accounts can try every Plus feature free for 7 days with no card and no automatic subscription. When the trial ends, the account returns to Free unless you explicitly choose a paid Google Play plan."],
+  ["Can I try PingLet Plus without subscribing?", "Yes. Verified accounts can try every Plus feature free for 7 days with no card and no automatic subscription. When the trial ends, the account returns to Free unless you explicitly choose a paid plan through your device's app store."],
   ["Does PingLet repost social content?", "PingLet does not rehost the original social video or image. It creates a source-linked personal memory. Moderated, strongly matched insights from eligible public links may also appear anonymously in an Explore catalog; personal notes and the identity of the person who saved a link are not published."],
   ["What does the AI actually extract?", "For supported public posts, PingLet can combine the caption, speech transcript, visible text from images, OCR from sampled video frames, and necessary visual context. It removes likes, shares, follower counts, and platform chrome."],
   ["How does Explore choose content?", "Explore is built from approved public-link extractions rather than filler quotes. AI adds an item only when its extraction quality and semantic match to an active catalog both clear strong confidence thresholds."],
-  ["Will the widget change exactly every 30 minutes?", "Android optimizes background work for battery, so rotation is approximately every 30 minutes rather than guaranteed to the exact second."],
+  ["Will the widget change exactly every 30 minutes?", "iOS and Android optimize background work for battery, so rotation is approximately every 30 minutes rather than guaranteed to the exact second."],
   ["What happens when I am offline?", "Your widget continues rotating from a local cache. New imports and account sync resume when a connection returns."],
   ["Which platforms are supported?", "PingLet currently supports eligible public links from Instagram, TikTok, and Facebook. Availability still depends on the source platform permitting access to that specific post."],
 ];
@@ -68,7 +69,8 @@ function SiteFooter() {
       <a href="/terms" className="hover:text-paper">Terms</a>
       <a href="/delete-account" className="hover:text-paper">Delete account</a>
       <a href={X_URL} target="_blank" rel="noreferrer" className="hover:text-paper">X</a>
-      <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className="hover:text-paper">Instagram</a>
+      <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className="hover:text-paper">Instagram @pinglet_ai</a>
+      <a href={TIKTOK_URL} target="_blank" rel="noreferrer" className="hover:text-paper">TikTok @pinglet_ai</a>
     </div>
     <p className="text-xs text-paper/35">© {new Date().getFullYear()} PingLet</p>
   </div></footer>;
@@ -104,7 +106,7 @@ function LegalPage({ type }: { type: "privacy" | "terms" }) {
               <p><strong>Account information.</strong> We collect your email address, verification status, account identifiers, plan, and subscription entitlement. You may initially use PingLet with an anonymous installation-based account.</p>
               <p><strong>Content you choose to save.</strong> This includes private notes, quotes, reminders, public social-post URLs, optional context, source information, favorites, catalog preferences, and widget profiles.</p>
               <p><strong>Processed media information.</strong> When you submit a supported public link, we may process its available caption, audio transcript, visible text, sampled video frames, OCR results, summaries, themes, and derived takeaways.</p>
-              <p><strong>Device and usage information.</strong> We may collect installation ID, device platform, app version, locale, timezone, sync timestamps, content interactions, processing status, and diagnostic information. Google Play provides purchase status and entitlement information; PingLet does not receive your full payment-card details.</p>
+              <p><strong>Device and usage information.</strong> We may collect installation ID, device platform, app version, locale, timezone, sync timestamps, content interactions, processing status, and diagnostic information. Apple and Google provide purchase status and entitlement information for their respective app stores; PingLet does not receive your full payment-card details.</p>
             </LegalSection>
             <LegalSection title="How we use information">
               <p>We use information to authenticate accounts, process saves, operate background ingestion, generate source-grounded analysis, personalize and rotate widget content, preserve source links, synchronize devices, provide support, enforce limits, verify subscriptions, prevent abuse, improve reliability, and comply with law.</p>
@@ -116,7 +118,7 @@ function LegalPage({ type }: { type: "privacy" | "terms" }) {
               <p>Creators or rights holders may request review or removal by contacting <a className="font-semibold underline" href="mailto:hello@pinglet.ai">hello@pinglet.ai</a>.</p>
             </LegalSection>
             <LegalSection title="Service providers">
-              <p>We use vendors that help operate PingLet, including cloud hosting and database providers, OpenAI for transcription, moderation, vision, and structured analysis, Zoho for account email, and Google Play for Android distribution and billing.</p>
+              <p>We use vendors that help operate PingLet, including cloud hosting and database providers, OpenAI for transcription, moderation, vision, and structured analysis, Zoho for account email, Apple for iOS distribution and billing, and Google Play for Android distribution and billing.</p>
               <p>Submitted source links may be requested from the original social platform. Those platforms process requests under their own privacy policies. Vendors receive only information reasonably necessary to provide their services.</p>
             </LegalSection>
             <LegalSection title="How information is shared">
@@ -124,7 +126,7 @@ function LegalPage({ type }: { type: "privacy" | "terms" }) {
             </LegalSection>
             <LegalSection title="Storage and retention">
               <p>Widget content is cached locally so rotation can continue offline. Account and saved-content records are retained while your account is active. Temporary media-processing workspaces are removed after processing under our operational retention schedule; derived records such as transcripts and OCR remain associated with your saved item until that item or account is deleted.</p>
-              <p>You can permanently delete your account and associated personal data from Settings in the PingLet Android app. If you no longer have the app, submit a request at <a className="font-semibold underline" href="/delete-account">pinglet.ai/delete-account</a>. Private saves, imports, favorites, devices, sessions, and account history are deleted. Public-source excerpts already admitted to shared catalogs may be retained without your account identifier so other users' libraries and source-linked catalogs are not broken.</p>
+              <p>You can permanently delete your account and associated personal data from Settings in the PingLet app on iOS or Android. If you no longer have the app, submit a request at <a className="font-semibold underline" href="/delete-account">pinglet.ai/delete-account</a>. Private saves, imports, favorites, devices, sessions, and account history are deleted. Public-source excerpts already admitted to shared catalogs may be retained without your account identifier so other users' libraries and source-linked catalogs are not broken.</p>
               <p>Deletion requests submitted outside the app require ownership verification. We may retain narrowly limited records where required for security, fraud prevention, completed billing transactions, dispute resolution, or law, and will disclose the reason when applicable.</p>
             </LegalSection>
             <LegalSection title="Security and choices">
@@ -160,11 +162,11 @@ function LegalPage({ type }: { type: "privacy" | "terms" }) {
             </LegalSection>
             <LegalSection title="Subscriptions and billing">
               <p>PingLet may offer a one-time seven-day reverse trial to eligible verified accounts. This trial requires no payment method, does not create a Google Play subscription, and ends automatically without a charge. Access returns to the Free plan unless you explicitly purchase Plus.</p>
-              <p>Paid Android subscriptions are processed by Google Play and renew automatically unless canceled through your Play account before renewal. Prices, taxes, trial terms, and billing periods are shown by Google Play before purchase.</p>
-              <p>Refunds and billing disputes are handled under Google Play policies and applicable law. Canceling stops future renewal but does not normally end access before the current paid period expires.</p>
+              <p>Paid subscriptions are processed by the Apple App Store on iOS or Google Play on Android and renew automatically unless canceled through the corresponding store account before renewal. Prices, taxes, trial terms, and billing periods are shown by that store before purchase.</p>
+              <p>Refunds and billing disputes are handled under the applicable app store's policies and applicable law. Canceling stops future renewal but does not normally end access before the current paid period expires.</p>
             </LegalSection>
             <LegalSection title="Service changes and termination">
-              <p>We may modify, suspend, or discontinue features, limits, integrations, or supported sources. Android controls background execution, so widget rotation times are approximate.</p>
+              <p>We may modify, suspend, or discontinue features, limits, integrations, or supported sources. iOS and Android control background execution, so widget rotation times are approximate.</p>
               <p>You may stop using PingLet at any time. We may restrict or terminate access for material violations, abuse, security risk, legal requirements, or nonpayment. Provisions that logically survive termination will remain effective.</p>
             </LegalSection>
             <LegalSection title="Disclaimers and liability">
@@ -179,7 +181,7 @@ function LegalPage({ type }: { type: "privacy" | "terms" }) {
           <LegalSection title="Contact">
             <p>TinkerPal LLC · Cleveland, Ohio, United States</p>
             <p>Questions, privacy requests, or legal notices: <a className="font-semibold underline" href="mailto:hello@pinglet.ai">hello@pinglet.ai</a>.</p>
-            <div className="flex gap-5 pt-2"><a href={X_URL} target="_blank" rel="noreferrer" className="font-semibold underline">X</a><a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className="font-semibold underline">Instagram</a></div>
+            <div className="flex flex-wrap gap-5 pt-2"><a href={X_URL} target="_blank" rel="noreferrer" className="font-semibold underline">X</a><a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className="font-semibold underline">Instagram @pinglet_ai</a><a href={TIKTOK_URL} target="_blank" rel="noreferrer" className="font-semibold underline">TikTok @pinglet_ai</a></div>
           </LegalSection>
         </div>
       </article>
@@ -219,7 +221,7 @@ function DownloadChoices({ compact = false }: { compact?: boolean }) {
     <div className={compact ? "text-center lg:text-left" : "text-center md:text-left"}>
       <p className="eyebrow text-sage">Scan to download</p>
       <h3 className="mt-3 text-2xl font-semibold tracking-[-.035em] sm:text-3xl">One code. The right store.</h3>
-      <p className="mt-3 max-w-md leading-relaxed text-ink/58">Scan with your phone and PingLet will route you to the right app for your device.</p>
+      <p className="mt-3 max-w-md leading-relaxed text-ink/58">PingLet is built for iPhone and Android. Scan with your phone and we will route you to the available store for your device.</p>
       <div className={`mt-6 flex flex-col gap-3 sm:flex-row ${compact ? "lg:justify-start" : "md:justify-start"} justify-center`}>
         <StoreButton platform="android" href={PLAY_STORE_URL} />
         <StoreButton platform="ios" href={APP_STORE_URL} unavailable={!APP_STORE_URL} />
@@ -327,14 +329,14 @@ function App() {
       <section className="page-atmosphere relative min-h-screen pt-32 sm:pt-40">
         <div className="mx-auto grid max-w-7xl items-center gap-16 px-5 pb-24 sm:px-8 lg:grid-cols-[1.08fr_.92fr] lg:pb-32">
           <div>
-            <div className="reveal mb-7 inline-flex items-center gap-2 rounded-full border border-ink/10 bg-white/55 px-4 py-2 text-xs font-semibold"><Icon name="spark" className="h-4 w-4 text-clay" />AI memory for what you discover</div>
+            <div className="reveal mb-7 inline-flex items-center gap-2 rounded-full border border-ink/10 bg-white/55 px-4 py-2 text-xs font-semibold"><Icon name="spark" className="h-4 w-4 text-clay" />AI memory for iPhone and Android</div>
             <h1 className="reveal reveal-delay-1 balance max-w-3xl text-[3.5rem] font-semibold leading-[.94] tracking-[-.065em] sm:text-[5.2rem] lg:text-[6.2rem]">Save it once.<br /><span className="editorial font-normal italic text-clay">Meet it again.</span></h1>
             <p className="reveal reveal-delay-2 balance mt-8 max-w-xl text-lg leading-relaxed text-ink/65 sm:text-xl">PingLet reads the posts you care about, keeps their source and meaning, and brings the best parts back through a quiet Home Screen memory.</p>
             <div className="reveal reveal-delay-3 mt-9 flex flex-wrap gap-3">
               <Button href="/download">Download app <Icon name="arrow" className="h-4 w-4" /></Button>
               <Button href="#how-it-works" secondary>See how it works</Button>
             </div>
-            <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 text-xs font-semibold text-ink/50"><span>ANDROID FIRST</span><span className="h-1 w-1 rounded-full bg-gold" /><span>PERSONAL SAVES LEAD</span><span className="h-1 w-1 rounded-full bg-gold" /><span>SOURCE PRESERVED</span></div>
+            <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 text-xs font-semibold text-ink/50"><span>iOS + ANDROID</span><span className="h-1 w-1 rounded-full bg-gold" /><span>PERSONAL SAVES LEAD</span><span className="h-1 w-1 rounded-full bg-gold" /><span>SOURCE PRESERVED</span></div>
           </div>
           <div className="reveal reveal-delay-2 py-10 lg:py-0"><WidgetPreview /></div>
         </div>
