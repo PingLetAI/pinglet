@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1290" height="2796" viewBox="0 0 1290 2796">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FBF8F1"/><stop offset="1" stop-color="#EDE4D7"/></linearGradient>
+  <linearGradient id="phone" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#30332C"/><stop offset="1" stop-color="#0F110E"/></linearGradient>
+  <linearGradient id="screen" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FFFDF7"/><stop offset="1" stop-color="#F2EBDD"/></linearGradient>
+  <filter id="shadow" x="-30%" y="-20%" width="160%" height="160%"><feDropShadow dx="0" dy="36" stdDeviation="34" flood-color="#2E271C" flood-opacity=".22"/></filter>
+  <clipPath id="clip"><rect x="179" y="614" width="932" height="2078" rx="52"/></clipPath>
+</defs>
+<rect width="1290" height="2796" fill="url(#bg)"/>
+<circle cx="1190" cy="92" r="320" fill="#C7E6D7" opacity=".72"/><circle cx="0" cy="2570" r="285" fill="#E7C0B2" opacity=".38"/>
+<circle cx="88" cy="86" r="42" fill="#171914"/><text x="88" y="103" text-anchor="middle" fill="#DDAE3D" font-family="Georgia,serif" font-size="49" font-weight="700">P</text>
+<text x="150" y="103" fill="#171914" font-family="Arial,sans-serif" font-size="38" font-weight="700">PingLet</text>
+<text x="74" y="256" fill="#171914" font-family="Georgia,serif" font-size="78"><tspan x="74">Share what matters.</tspan><tspan x="74" dy="91">PingLet finds the signal.</tspan></text>
+<rect x="74" y="463" width="104" height="8" rx="4" fill="#DDAE3D"/>
+<rect x="149" y="574" width="992" height="2158" rx="82" fill="url(#phone)" filter="url(#shadow)"/>
+<rect x="169" y="594" width="952" height="2118" rx="65" fill="url(#screen)"/>
+<g clip-path="url(#clip)">
+<rect x="179" y="614" width="932" height="2078" fill="url(#screen)"/>
+<text x="236" y="720" fill="#B54B35" font-family="Arial" font-size="25" font-weight="700" letter-spacing="3">NEW PINGLET</text>
+<text x="236" y="805" fill="#171914" font-family="Georgia" font-size="61">Keep what found you.</text>
+<text x="236" y="865" fill="#4A4D45" font-family="Arial" font-size="27">Write your own words or share a public post.</text>
+<rect x="222" y="930" width="846" height="720" rx="42" fill="#FFFFFF" fill-opacity=".78" stroke="#171914" stroke-opacity=".11"/>
+<text x="260" y="1000" fill="#B54B35" font-family="Arial" font-size="21" font-weight="700" letter-spacing="2">YOUR WORDS OR A DISCOVERED POST</text>
+<text x="260" y="1090" fill="#171914" font-family="Georgia" font-size="34"><tspan x="260">This idea about building confidence</tspan><tspan x="260" dy="49">is worth seeing again.</tspan></text>
+<text x="260" y="1235" fill="#4A4D45" font-family="Arial" font-size="25"><tspan x="260">https://www.instagram.com/reel/</tspan><tspan x="260" dy="39">meaningful-public-post</tspan></text>
+<line x1="260" y1="1440" x2="1030" y2="1440" stroke="#171914" stroke-opacity=".11"/>
+<text x="260" y="1510" fill="#77786F" font-family="Arial" font-size="25">Author or creator (optional)</text>
+<rect x="222" y="1705" width="846" height="100" rx="30" fill="#171914"/><text x="645" y="1768" text-anchor="middle" fill="#FAF7F0" font-family="Arial" font-size="25" font-weight="700" letter-spacing="2">EXTRACT AND SAVE</text>
+<text x="645" y="1870" text-anchor="middle" fill="#67695F" font-family="Arial" font-size="22">Words, images, and speech are analyzed quietly.</text>
+</g>
+<rect x="486" y="592" width="318" height="39" rx="20" fill="#171914"/>
+</svg>
