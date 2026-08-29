@@ -6,6 +6,9 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Environment, SignedDataVerifier } from '@apple/app-store-server-library';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { GoogleAuth } from 'google-auth-library';
 import { PrismaService } from '../common/prisma/prisma.service';
 
@@ -15,8 +18,12 @@ const LIMITS = {
   PLUS: { saves: null, imports: 50 },
 } as const;
 
+const APPLE_PRODUCT_IDS = new Set(['ai.pinglet.app.plus.monthly', 'ai.pinglet.app.plus.annual']);
+const ACTIVE_PURCHASE_STATES = ['ACTIVE', 'SUBSCRIPTION_STATE_ACTIVE', 'SUBSCRIPTION_STATE_IN_GRACE_PERIOD'];
+
 @Injectable()
 export class EntitlementService {
+  private appleRoots?: Buffer[];
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
@@ -25,11 +32,14 @@ export class EntitlementService {
   async getSummary(userId: string) {
     const user = await (this.prisma as any).user.findUniqueOrThrow({ where: { id: userId } });
     const now = new Date();
-    const [purchaseCount, activePurchaseCount] = await Promise.all([
+    const [purchaseCount, activePurchase] = await Promise.all([
       this.prisma.purchaseEntitlement.count({ where: { userId } }),
-      this.prisma.purchaseEntitlement.count({ where: { userId, expiresAt: { gt: now } } }),
+      this.prisma.purchaseEntitlement.findFirst({
+        where: { userId, expiresAt: { gt: now }, status: { in: ACTIVE_PURCHASE_STATES } },
+        orderBy: { expiresAt: 'desc' },
+      }),
     ]);
-    const entitlement = this.resolveEntitlement(user, now, activePurchaseCount > 0, purchaseCount > 0);
+    const entitlement = this.resolveEntitlement(user, now, activePurchase?.provider, purchaseCount > 0);
     const plan = entitlement.plan;
     const [savedCount, pendingCount, socialImportsUsed] = await Promise.all([
       this.prisma.userContent.count({ where: { userId } }),
@@ -57,7 +67,10 @@ export class EntitlementService {
       trialStartedAt: user.plusTrialStartedAt,
       trialEndsAt: user.plusTrialEndsAt,
       trialDaysRemaining: entitlement.trialDaysRemaining,
-      paidPlansEnabled: this.booleanConfig('GOOGLE_PLAY_BILLING_ENABLED', false),
+      paidPlansEnabled:
+        this.booleanConfig('PAID_PLANS_ENABLED', false) ||
+        this.booleanConfig('GOOGLE_PLAY_BILLING_ENABLED', false) ||
+        this.booleanConfig('APPLE_STORE_BILLING_ENABLED', false),
     };
   }
 
@@ -198,6 +211,108 @@ export class EntitlementService {
     return this.getSummary(userId);
   }
 
+  async verifyAppleSubscription(userId: string, signedTransaction: string) {
+    if (!this.booleanConfig('APPLE_STORE_BILLING_ENABLED', false)) {
+      throw new ServiceUnavailableException({ code: 'BILLING_NOT_CONFIGURED', message: 'Apple purchases are not enabled.' });
+    }
+    const transaction = await this.verifyAppleTransaction(signedTransaction);
+    return this.applyAppleTransaction(transaction, userId);
+  }
+
+  async processAppleNotification(signedPayload: string) {
+    const environment = this.environmentHint(signedPayload, true);
+    const notification = await this.appleVerifier(environment).verifyAndDecodeNotification(signedPayload);
+    const signedTransaction = notification.data?.signedTransactionInfo;
+    if (!signedTransaction) return;
+    const transaction = await this.appleVerifier(environment).verifyAndDecodeTransaction(signedTransaction);
+    await this.applyAppleTransaction(transaction);
+  }
+
+  private async verifyAppleTransaction(signedTransaction: string) {
+    try {
+      const environment = this.environmentHint(signedTransaction, false);
+      return await this.appleVerifier(environment).verifyAndDecodeTransaction(signedTransaction);
+    } catch {
+      throw new ForbiddenException({ code: 'PURCHASE_INVALID', message: 'This Apple subscription could not be verified.' });
+    }
+  }
+
+  private async applyAppleTransaction(transaction: any, requestedUserId?: string) {
+    const productId = transaction.productId;
+    const originalTransactionId = transaction.originalTransactionId;
+    const expiresDate = transaction.expiresDate;
+    if (!APPLE_PRODUCT_IDS.has(productId) || !originalTransactionId || !expiresDate) {
+      throw new ForbiddenException({ code: 'PURCHASE_INVALID', message: 'This is not a PingLet Plus subscription.' });
+    }
+    const purchaseToken = `apple:${originalTransactionId}`;
+    const existing = await this.prisma.purchaseEntitlement.findUnique({ where: { purchaseToken } });
+    const userId = requestedUserId || existing?.userId;
+    if (!userId) return this.getSummaryForMissingNotification();
+    const expiresAt = new Date(expiresDate);
+    const active = !transaction.revocationDate && expiresAt > new Date();
+    const status = transaction.revocationDate ? 'REVOKED' : active ? 'ACTIVE' : 'EXPIRED';
+    const db = this.prisma as any;
+    await db.purchaseEntitlement.upsert({
+      where: { purchaseToken },
+      create: { userId, provider: 'APPLE_APP_STORE', productId, purchaseToken, status, expiresAt, rawData: transaction },
+      update: { userId, productId, status, expiresAt, rawData: transaction },
+    });
+    const latest = await db.purchaseEntitlement.findFirst({
+      where: { userId, expiresAt: { gt: new Date() }, status: { in: ACTIVE_PURCHASE_STATES } },
+      orderBy: { expiresAt: 'desc' },
+    });
+    await db.user.update({
+      where: { id: userId },
+      data: { plan: latest ? 'PLUS' : 'FREE', plusExpiresAt: latest?.expiresAt || null },
+    });
+    if (requestedUserId && !active) {
+      throw new ForbiddenException({ code: 'PURCHASE_INVALID', message: 'This Apple subscription is not active.' });
+    }
+    return this.getSummary(userId);
+  }
+
+  private getSummaryForMissingNotification() {
+    return undefined;
+  }
+
+  private appleVerifier(environment: Environment) {
+    const bundleId = this.config.get<string>('APPLE_IAP_BUNDLE_ID') || 'ai.pinglet.app';
+    const appAppleId = Number(this.config.get<string>('APPLE_IAP_APP_ID'));
+    if (environment === Environment.PRODUCTION && !Number.isFinite(appAppleId)) {
+      throw new ServiceUnavailableException({ code: 'BILLING_NOT_CONFIGURED', message: 'Apple production verification is not configured.' });
+    }
+    return new SignedDataVerifier(
+      this.appleRootCertificates(),
+      this.booleanConfig('APPLE_IAP_ONLINE_CHECKS', true),
+      environment,
+      bundleId,
+      environment === Environment.PRODUCTION ? appAppleId : undefined,
+    );
+  }
+
+  private appleRootCertificates() {
+    if (this.appleRoots) return this.appleRoots;
+    const directory = this.config.get<string>('APPLE_IAP_CERTIFICATES_DIR') || join(process.cwd(), 'certs', 'apple');
+    try {
+      this.appleRoots = ['AppleIncRootCertificate.cer', 'AppleRootCA-G2.cer', 'AppleRootCA-G3.cer'].map((name) =>
+        readFileSync(join(directory, name)),
+      );
+      return this.appleRoots;
+    } catch {
+      throw new ServiceUnavailableException({ code: 'BILLING_NOT_CONFIGURED', message: 'Apple verification certificates are missing.' });
+    }
+  }
+
+  private environmentHint(jws: string, notification: boolean): Environment {
+    try {
+      const payload = JSON.parse(Buffer.from(jws.split('.')[1], 'base64url').toString('utf8'));
+      const value = notification ? payload.data?.environment : payload.environment;
+      return value === Environment.PRODUCTION ? Environment.PRODUCTION : Environment.SANDBOX;
+    } catch {
+      throw new ForbiddenException({ code: 'PURCHASE_INVALID', message: 'Invalid Apple signed payload.' });
+    }
+  }
+
   private resolveEntitlement(
     user: {
       isAnonymous: boolean;
@@ -208,10 +323,10 @@ export class EntitlementService {
       plusTrialEndsAt: Date | null;
     },
     now: Date,
-    hasActivePurchase: boolean,
+    activePurchaseProvider: string | undefined,
     hasPurchaseHistory: boolean,
   ) {
-    const paidActive = user.plan === 'PLUS' && !!user.plusExpiresAt && user.plusExpiresAt > now;
+    const paidActive = !!activePurchaseProvider || (user.plan === 'PLUS' && !!user.plusExpiresAt && user.plusExpiresAt > now);
     const trialActive = !paidActive && !!user.plusTrialEndsAt && user.plusTrialEndsAt > now;
     const trialDaysRemaining = trialActive
       ? Math.max(1, Math.ceil((user.plusTrialEndsAt!.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)))
@@ -225,7 +340,7 @@ export class EntitlementService {
           : 'INELIGIBLE';
     return {
       plan: paidActive || trialActive ? ('PLUS' as const) : user.isAnonymous ? ('GUEST' as const) : ('FREE' as const),
-      source: paidActive ? (hasActivePurchase ? 'GOOGLE_PLAY' : 'ADMIN') : trialActive ? 'TRIAL' : 'NONE',
+      source: paidActive ? (activePurchaseProvider || 'ADMIN') : trialActive ? 'TRIAL' : 'NONE',
       accessExpiresAt: paidActive ? user.plusExpiresAt : trialActive ? user.plusTrialEndsAt : null,
       trialStatus,
       trialDaysRemaining,

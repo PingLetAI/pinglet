@@ -1,3 +1,4 @@
+import StoreKit
 import SwiftUI
 
 @MainActor final class AccountConnectionModel: ObservableObject {
@@ -18,5 +19,99 @@ struct TrialOfferView: View {
 
 struct PlusPlansView: View {
     @EnvironmentObject private var env: AppEnvironment
-    var body: some View { ZStack { PingLetCanvas(); ScrollView { VStack(alignment: .leading, spacing: 20) { PingLetSectionLabel(title: "PingLet Plus", trailing: "More room to remember"); Text("Keep everything worth remembering.").font(.system(size: 42, design: .serif)); Text("Complete understanding for every post, and a Home Screen that feels distinctly yours.").font(.system(size: 17, weight: .medium, design: .rounded)).foregroundStyle(Color.pingletMutedInk); PingLetCard(dark: true) { ForEach(["Complete AI breakdowns", "Every useful insight and takeaway", "50 social imports every month", "Unlimited personal saves", "Independent premium widget profiles"], id: \.self) { Label($0, systemImage: "checkmark.seal.fill").font(.system(size: 15, weight: .semibold, design: .rounded)).foregroundStyle(Color.pingletPaper) } }; PingLetCard { HStack { VStack(alignment: .leading, spacing: 4) { Text("ANNUAL").font(.caption.bold()).tracking(1.2).foregroundStyle(Color.pingletClay); Text("$14.99 per year").font(.system(size: 25, design: .serif)) }; Spacer(); Text("BEST VALUE").font(.caption.bold()).padding(.horizontal, 10).padding(.vertical, 6).background(Color.pingletMint, in: Capsule()) } }; PingLetCard { Text("MONTHLY").font(.caption.bold()).tracking(1.2).foregroundStyle(Color.pingletClay); Text("$1.99 per month").font(.system(size: 25, design: .serif)) }; Text("Apple subscription products must be configured before purchasing is enabled.").font(.system(size: 12, weight: .medium, design: .rounded)).foregroundStyle(Color.pingletMutedInk).multilineTextAlignment(.center).frame(maxWidth: .infinity); HStack { Spacer(); Link("Terms", destination: URL(string: "https://pinglet.ai/terms")!); Text("·"); Link("Privacy", destination: URL(string: "https://pinglet.ai/privacy")!); Spacer() }.font(.caption.bold()) }.padding(24).padding(.bottom, 30) } }.navigationTitle("PingLet Plus").navigationBarTitleDisplayMode(.inline) }
+    @EnvironmentObject private var subscriptions: AppleSubscriptionManager
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ZStack {
+            PingLetCanvas()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    PingLetSectionLabel(title: "PingLet Plus", trailing: "More room to remember")
+                    Text("Keep everything worth remembering.").font(.system(size: 42, design: .serif))
+                    Text("Complete understanding for every post, and a Home Screen that feels distinctly yours.")
+                        .font(.system(size: 17, weight: .medium, design: .rounded))
+                        .foregroundStyle(Color.pingletMutedInk)
+                    PingLetCard(dark: true) {
+                        ForEach(["Complete AI breakdowns", "Every useful insight and takeaway", "50 social imports every month", "Unlimited personal saves", "Independent premium widget profiles"], id: \.self) {
+                            Label($0, systemImage: "checkmark.seal.fill")
+                                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                                .foregroundStyle(Color.pingletPaper)
+                        }
+                    }
+                    if env.entitlement?.paidPlansEnabled == true {
+                        plans
+                        if subscriptions.loading { ProgressView().frame(maxWidth: .infinity) }
+                        if let message = subscriptions.message { Label(message, systemImage: "checkmark.circle.fill").foregroundStyle(Color.pingletForest) }
+                        if let error = subscriptions.error { Label(error, systemImage: "exclamationmark.circle.fill").foregroundStyle(.red) }
+                        Button(subscriptions.purchasing ? "CONFIRMING…" : continueTitle) {
+                            Task { await subscriptions.purchase(env) }
+                        }
+                        .buttonStyle(PingLetPrimaryButtonStyle())
+                        .disabled(subscriptions.selectedProduct == nil || subscriptions.loading || subscriptions.purchasing)
+                        Button("RESTORE PURCHASES") { Task { await subscriptions.restore(env) } }
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .frame(maxWidth: .infinity)
+                            .disabled(subscriptions.purchasing)
+                        Text("Payment will be charged to your Apple Account after confirmation. Your subscription renews automatically unless canceled at least 24 hours before the end of the current period. Manage or cancel subscriptions in your Apple Account settings.")
+                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                            .foregroundStyle(Color.pingletMutedInk)
+                            .lineSpacing(2)
+                            .multilineTextAlignment(.center)
+                    } else {
+                        PingLetCard { Text("Subscriptions are coming soon").font(.headline); Text("The seven-day PingLet Plus trial remains free, requires no payment method, and never starts an automatic subscription.").foregroundStyle(Color.pingletMutedInk) }
+                    }
+                    if env.entitlement?.trialEligible == true {
+                        NavigationLink { TrialOfferView() } label: {
+                            Label("TRY PLUS FREE FOR 7 DAYS — NO CARD", systemImage: "sparkles")
+                                .font(.system(size: 13, weight: .bold, design: .rounded))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 15)
+                                .background(Color.pingletMint.opacity(0.7), in: RoundedRectangle(cornerRadius: 18))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    HStack { Spacer(); Link("Terms", destination: URL(string: "https://pinglet.ai/terms")!); Text("·"); Link("Privacy", destination: URL(string: "https://pinglet.ai/privacy")!); Spacer() }.font(.caption.bold())
+                }
+                .padding(24)
+                .padding(.bottom, 30)
+            }
+        }
+        .navigationTitle("PingLet Plus")
+        .navigationBarTitleDisplayMode(.inline)
+        .task { await subscriptions.prepare(env) }
+        .onChange(of: subscriptions.purchaseCompleted) { _, completed in if completed { dismiss() } }
+    }
+
+    private var plans: some View {
+        VStack(spacing: 12) {
+            if let annual = subscriptions.annualProduct { planChoice(annual, title: "Annual", badge: subscriptions.annualSavingsPercent.map { "SAVE \($0)%" } ?? "BEST VALUE") }
+            if let monthly = subscriptions.monthlyProduct { planChoice(monthly, title: "Monthly", badge: nil) }
+        }
+    }
+
+    private func planChoice(_ product: Product, title: String, badge: String?) -> some View {
+        let selected = subscriptions.selectedProductID == product.id
+        return Button { subscriptions.selectedProductID = product.id } label: {
+            HStack(spacing: 13) {
+                Image(systemName: selected ? "checkmark.circle.fill" : "circle").font(.title3).foregroundStyle(selected ? Color.pingletForest : Color.pingletMutedInk)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title.uppercased()).font(.caption.bold()).tracking(1.2).foregroundStyle(Color.pingletClay)
+                    Text("\(product.displayPrice) per \(subscriptions.duration(for: product))").font(.system(size: 23, design: .serif)).foregroundStyle(Color.pingletInk)
+                }
+                Spacer()
+                if let badge { Text(badge).font(.caption.bold()).foregroundStyle(Color.pingletInk).padding(.horizontal, 9).padding(.vertical, 6).background(Color.pingletMint, in: Capsule()) }
+            }
+            .padding(17)
+            .background(selected ? Color.pingletMint.opacity(0.32) : Color.white.opacity(0.68), in: RoundedRectangle(cornerRadius: 22))
+            .overlay(RoundedRectangle(cornerRadius: 22).stroke(selected ? Color.pingletForest : Color.pingletMutedInk.opacity(0.22), lineWidth: selected ? 1.5 : 1))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var continueTitle: String {
+        guard let product = subscriptions.selectedProduct else { return "CONTINUE" }
+        let plan = product.id == AppleSubscriptionManager.annualProductID ? "ANNUAL" : "MONTHLY"
+        return "CONTINUE WITH \(plan) — \(product.displayPrice)"
+    }
 }
