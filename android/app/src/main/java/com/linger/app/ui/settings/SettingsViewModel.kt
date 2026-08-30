@@ -105,6 +105,9 @@ class SettingsViewModel @Inject constructor(
 
     fun setPersonalSystemMix(value: String) = viewModelScope.launch {
         dataStore.setPersonalSystemMix(value)
-        runCatching { session.withAuthRetry { api.patchPreferences(mapOf("personalSystemMix" to value)) } }
+        runCatching {
+            session.withAuthRetry { api.patchPreferences(mapOf("personalSystemMix" to value)) }
+            SyncScheduler.syncAndRefresh(context)
+        }
     }
 }

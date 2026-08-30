@@ -48,6 +48,7 @@ struct RootView: View {
         .sheet(isPresented: $showingQueue) { NavigationStack { ProcessingQueueView() } }
         .task { await submitPendingShare() }
         .task { await monitorProcessing() }
+        .task { await refreshFeedPeriodically() }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 Task {
@@ -69,6 +70,13 @@ struct RootView: View {
     }
 
     private var activeProcessing: [Ingestion] { processingItems.filter { !["READY", "FAILED", "REJECTED"].contains($0.status) } }
+    private func refreshFeedPeriodically() async {
+        while !Task.isCancelled {
+            try? await Task.sleep(for: .seconds(30 * 60))
+            guard !Task.isCancelled, scenePhase == .active else { continue }
+            await env.syncFeed()
+        }
+    }
     private func monitorProcessing() async {
         while !Task.isCancelled {
             if let rows: [Ingestion] = try? await env.session.perform("/api/v1/me/ingestions") { processingItems = rows }

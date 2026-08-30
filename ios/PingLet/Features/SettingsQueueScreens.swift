@@ -16,7 +16,7 @@ private struct LegacySettingsView: View {
         else if env.entitlement?.trialStatus != "ACTIVE" && env.entitlement?.plan != "PLUS" && env.entitlement?.trialEligible == true { NavigationLink("TRY PINGLET PLUS - 7 DAYS FREE") { TrialOfferView() }.buttonStyle(.borderedProminent) }
         if env.entitlement?.paidPlansEnabled == true && env.entitlement?.plan != "PLUS" { NavigationLink("VIEW PAID PLANS") { PlusPlansView() }.buttonStyle(.bordered) }
     }
-    private func patchMix(_ value: String) async { struct Body: Encodable { let personalSystemMix: String }; let _: PreferenceResponse? = try? await env.session.perform("/api/v1/me/preferences", method: .patch, body: Body(personalSystemMix: value)) }
+    private func patchMix(_ value: String) async { struct Body: Encodable { let personalSystemMix: String }; let response: PreferenceResponse? = try? await env.session.perform("/api/v1/me/preferences", method: .patch, body: Body(personalSystemMix: value)); if response != nil { await env.syncFeed() } }
     private func deleteAction() async { guard let email = env.entitlement?.email else { return }; do { if !deletionCodeSent { let _: EmailOTPResponse = try await env.session.perform("/api/v1/auth/email/request", method: .post, body: EmailOTPRequest(email: email)); deletionCodeSent = true; deleting = true } else { struct Body: Encodable { let email: String; let code: String }; let _: BoolResponse = try await env.session.perform("/api/v1/auth/account", method: .delete, body: Body(email: email, code: code)); try await env.session.resetToAnonymous(); await env.bootstrap() } } catch { self.error = error.localizedDescription } }
 }
 

@@ -316,11 +316,13 @@ struct SettingsView: View {
 
     private func patchMix(_ value: String) async {
         struct Body: Encodable { let personalSystemMix: String }
-        let _: PreferenceResponse? = try? await env.session.perform(
+        let response: PreferenceResponse? = try? await env.session.perform(
             "/api/v1/me/preferences",
             method: .patch,
             body: Body(personalSystemMix: value)
         )
+        guard response != nil else { return }
+        await env.syncFeed()
     }
 
     private func signOut() async {

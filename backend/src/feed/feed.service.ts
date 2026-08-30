@@ -137,14 +137,20 @@ export class FeedService {
       take: safeLimit * 2,
     });
 
-    const topSystemByCatalogWeight = rankedSystemCandidates
+    const rankedSystemByCatalogWeight = rankedSystemCandidates
       .map((entry) => ({
         entry,
         weight: Number(entry.priority) * (weightByCatalog.get(entry.catalogId) || 1),
       }))
       .sort((a, b) => b.weight - a.weight)
-      .map(({ entry }) => entry)
-      .filter((entry) => !recentlyShown.has(entry.contentItem.id));
+      .map(({ entry }) => entry);
+
+    // Prefer fresh discoveries, but never let a small catalog collapse Balanced or
+    // Discover into a personal-only feed after every catalog item has been shown.
+    const topSystemByCatalogWeight = [
+      ...rankedSystemByCatalogWeight.filter((entry) => !recentlyShown.has(entry.contentItem.id)),
+      ...rankedSystemByCatalogWeight.filter((entry) => recentlyShown.has(entry.contentItem.id)),
+    ];
 
     const uniqueSystem = new Map<string, FeedItem>();
 
@@ -162,7 +168,7 @@ export class FeedService {
         favorite: row.contentItem.favorites.length > 0,
         updatedAt: row.contentItem.updatedAt.toISOString(),
       });
-      if (uniqueSystem.size >= safeLimit) break;
+      if (uniqueSystem.size >= systemLimit) break;
     }
 
     const items: FeedItem[] = [...personalItems
