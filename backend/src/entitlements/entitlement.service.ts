@@ -29,7 +29,7 @@ export class EntitlementService {
     private readonly config: ConfigService,
   ) {}
 
-  async getSummary(userId: string) {
+  async getSummary(userId: string, platform?: string) {
     const user = await (this.prisma as any).user.findUniqueOrThrow({ where: { id: userId } });
     const now = new Date();
     const [purchaseCount, activePurchase] = await Promise.all([
@@ -67,10 +67,7 @@ export class EntitlementService {
       trialStartedAt: user.plusTrialStartedAt,
       trialEndsAt: user.plusTrialEndsAt,
       trialDaysRemaining: entitlement.trialDaysRemaining,
-      paidPlansEnabled:
-        this.booleanConfig('PAID_PLANS_ENABLED', false) ||
-        this.booleanConfig('GOOGLE_PLAY_BILLING_ENABLED', false) ||
-        this.booleanConfig('APPLE_STORE_BILLING_ENABLED', false),
+      paidPlansEnabled: this.paidPlansEnabled(platform),
     };
   }
 
@@ -80,7 +77,14 @@ export class EntitlementService {
     return value.trim().toLowerCase() === 'true';
   }
 
-  async startTrial(userId: string) {
+  private paidPlansEnabled(platform?: string) {
+    if (this.booleanConfig('PAID_PLANS_ENABLED', false)) return true;
+    return platform?.trim().toLowerCase() === 'ios'
+      ? this.booleanConfig('APPLE_STORE_BILLING_ENABLED', false)
+      : this.booleanConfig('GOOGLE_PLAY_BILLING_ENABLED', false);
+  }
+
+  async startTrial(userId: string, platform?: string) {
     const db = this.prisma as any;
     const user = await db.user.findUniqueOrThrow({ where: { id: userId } });
     if (user.isAnonymous || !user.emailVerifiedAt) {
@@ -92,7 +96,7 @@ export class EntitlementService {
 
     const now = new Date();
     if (user.plusTrialStartedAt) {
-      if (user.plusTrialEndsAt && user.plusTrialEndsAt > now) return this.getSummary(userId);
+      if (user.plusTrialEndsAt && user.plusTrialEndsAt > now) return this.getSummary(userId, platform);
       throw new ConflictException({ code: 'TRIAL_ALREADY_USED', message: 'This account has already used its free Plus access.' });
     }
     const purchaseCount = await this.prisma.purchaseEntitlement.count({ where: { userId } });
@@ -108,11 +112,11 @@ export class EntitlementService {
       data: { plusTrialStartedAt: now, plusTrialEndsAt: endsAt },
     });
     if (claimed.count !== 1) {
-      const summary = await this.getSummary(userId);
+      const summary = await this.getSummary(userId, platform);
       if (summary.trialStatus === 'ACTIVE') return summary;
       throw new ConflictException({ code: 'TRIAL_ALREADY_USED', message: 'This account has already used its free Plus access.' });
     }
-    return this.getSummary(userId);
+    return this.getSummary(userId, platform);
   }
 
   async assertCanSave(userId: string) {
@@ -208,7 +212,7 @@ export class EntitlementService {
       }),
       db.user.update({ where: { id: userId }, data: { plan: 'PLUS', plusExpiresAt: expiresAt } }),
     ]);
-    return this.getSummary(userId);
+    return this.getSummary(userId, 'android');
   }
 
   async verifyAppleSubscription(userId: string, signedTransaction: string) {
@@ -268,7 +272,7 @@ export class EntitlementService {
     if (requestedUserId && !active) {
       throw new ForbiddenException({ code: 'PURCHASE_INVALID', message: 'This Apple subscription is not active.' });
     }
-    return this.getSummary(userId);
+    return this.getSummary(userId, 'ios');
   }
 
   private getSummaryForMissingNotification() {

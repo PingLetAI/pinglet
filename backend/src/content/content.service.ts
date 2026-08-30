@@ -44,7 +44,7 @@ export class ContentService {
     }));
   }
 
-  async getUserContentDetail(userId: string, contentItemId: string) {
+  async getUserContentDetail(userId: string, contentItemId: string, platform?: string) {
     const saved = await this.prisma.userContent.findUnique({
       where: { userId_contentItemId: { userId, contentItemId } },
       include: { contentItem: { include: { categories: { include: { category: true } } } } },
@@ -56,7 +56,7 @@ export class ContentService {
         where: { userId, contentItemId, status: 'READY', moderationStatus: 'APPROVED' },
         orderBy: { finishedAt: 'desc' },
       }),
-      this.entitlements.getSummary(userId),
+      this.entitlements.getSummary(userId, platform),
     ]);
     const analysis = ingestion?.analysis as any;
     const plus = entitlement.plan === 'PLUS';

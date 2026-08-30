@@ -23,7 +23,7 @@ export class EntitlementController {
 
   @Get()
   get(@Req() req: any) {
-    return this.entitlements.getSummary(req.user.sub);
+    return this.entitlements.getSummary(req.user.sub, req.headers['x-pinglet-platform']);
   }
 
   @Post('google-play')
@@ -38,7 +38,7 @@ export class EntitlementController {
 
   @Post('trial')
   startTrial(@Req() req: any) {
-    return this.entitlements.startTrial(req.user.sub);
+    return this.entitlements.startTrial(req.user.sub, req.headers['x-pinglet-platform']);
   }
 }
 

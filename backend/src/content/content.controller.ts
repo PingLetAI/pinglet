@@ -17,7 +17,7 @@ export class ContentController {
 
   @Get(':id/detail')
   detail(@Req() req: any, @Param('id') id: string) {
-    return this.service.getUserContentDetail(req.user.sub, id);
+    return this.service.getUserContentDetail(req.user.sub, id, req.headers['x-pinglet-platform']);
   }
 
   @Post()

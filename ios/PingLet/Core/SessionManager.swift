@@ -32,7 +32,7 @@ actor SessionManager {
                 try secure.write(next); credentials = next; return
             } catch { secure.clear(); credentials = nil }
         }
-        let request = AuthAnonymousRequest(installationId: shared.installationID, timezone: TimeZone.current.identifier, locale: Locale.current.identifier, appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.7")
+        let request = AuthAnonymousRequest(installationId: shared.installationID, timezone: TimeZone.current.identifier, locale: Locale.current.identifier, appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
         let anonymous: AuthAnonymousResponse = try await api.send("/api/v1/auth/anonymous", method: .post, body: request)
         let next = Credentials(accessToken: anonymous.accessToken, refreshToken: anonymous.refreshToken, userId: anonymous.userId)
         try secure.write(next); credentials = next

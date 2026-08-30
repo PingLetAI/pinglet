@@ -228,7 +228,7 @@ struct SettingsView: View {
             PingLetCard {
                 settingsRow(
                     title: "PingLet for iOS",
-                    detail: "Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.7")",
+                    detail: "Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")",
                     icon: "info.circle.fill",
                     showsChevron: false
                 )
