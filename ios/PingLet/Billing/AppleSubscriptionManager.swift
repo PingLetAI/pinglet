@@ -28,7 +28,7 @@ private struct ApplePurchaseRequest: Encodable { let signedTransaction: String }
     var annualSavingsPercent: Int? {
         guard let monthlyProduct, let annualProduct else { return nil }
         let annualAtMonthlyRate = NSDecimalNumber(decimal: monthlyProduct.price).multiplying(by: 12)
-        guard annualAtMonthlyRate.compare(.zero) == .orderedDescending else { return nil }
+        guard annualAtMonthlyRate.compare(NSDecimalNumber(value: 0)) == .orderedDescending else { return nil }
         let ratio = NSDecimalNumber(decimal: annualProduct.price).dividing(by: annualAtMonthlyRate).doubleValue
         return max(0, Int(((1 - ratio) * 100).rounded()))
     }
@@ -145,7 +145,7 @@ private struct ApplePurchaseRequest: Encodable { let signedTransaction: String }
             let entitlement: Entitlement = try await environment.session.perform(
                 "/api/v1/me/entitlements/apple",
                 method: .post,
-                body: ApplePurchaseRequest(signedTransaction: transaction.jwsRepresentation)
+                body: ApplePurchaseRequest(signedTransaction: result.jwsRepresentation)
             )
             environment.entitlement = entitlement
             environment.shared.entitlement = entitlement

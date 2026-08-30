@@ -42,7 +42,7 @@ struct PlusPlansView: View {
                     if env.entitlement?.paidPlansEnabled == true {
                         plans
                         if subscriptions.loading { ProgressView().frame(maxWidth: .infinity) }
-                        if let message = subscriptions.message { Label(message, systemImage: "checkmark.circle.fill").foregroundStyle(Color.pingletForest) }
+                        if let message = subscriptions.message { Label(message, systemImage: "checkmark.circle.fill").foregroundStyle(Color.pingletInk) }
                         if let error = subscriptions.error { Label(error, systemImage: "exclamationmark.circle.fill").foregroundStyle(.red) }
                         Button(subscriptions.purchasing ? "CONFIRMING…" : continueTitle) {
                             Task { await subscriptions.purchase(env) }
@@ -94,7 +94,7 @@ struct PlusPlansView: View {
         let selected = subscriptions.selectedProductID == product.id
         return Button { subscriptions.selectedProductID = product.id } label: {
             HStack(spacing: 13) {
-                Image(systemName: selected ? "checkmark.circle.fill" : "circle").font(.title3).foregroundStyle(selected ? Color.pingletForest : Color.pingletMutedInk)
+                Image(systemName: selected ? "checkmark.circle.fill" : "circle").font(.title3).foregroundStyle(selected ? Color.pingletInk : Color.pingletMutedInk)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title.uppercased()).font(.caption.bold()).tracking(1.2).foregroundStyle(Color.pingletClay)
                     Text("\(product.displayPrice) per \(subscriptions.duration(for: product))").font(.system(size: 23, design: .serif)).foregroundStyle(Color.pingletInk)
@@ -104,7 +104,7 @@ struct PlusPlansView: View {
             }
             .padding(17)
             .background(selected ? Color.pingletMint.opacity(0.32) : Color.white.opacity(0.68), in: RoundedRectangle(cornerRadius: 22))
-            .overlay(RoundedRectangle(cornerRadius: 22).stroke(selected ? Color.pingletForest : Color.pingletMutedInk.opacity(0.22), lineWidth: selected ? 1.5 : 1))
+            .overlay(RoundedRectangle(cornerRadius: 22).stroke(selected ? Color.pingletInk : Color.pingletMutedInk.opacity(0.22), lineWidth: selected ? 1.5 : 1))
         }
         .buttonStyle(.plain)
     }
