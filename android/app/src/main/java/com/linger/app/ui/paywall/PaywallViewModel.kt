@@ -24,6 +24,7 @@ data class PaywallUiState(
     val verifying: Boolean = false,
     val purchased: Boolean = false,
     val billingEnabled: Boolean = false,
+    val plusMonthlyImportLimit: Int? = null,
     val error: String? = null,
 )
 
@@ -40,12 +41,18 @@ class PaywallViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             val entitlement = runCatching { session.withAuthRetry { api.getEntitlements() } }.getOrNull()
-            entitlement?.let { dataStore.setEntitlement(it) }
+            entitlement?.let {
+                dataStore.setEntitlement(it)
+                _state.value = _state.value.copy(
+                    plusMonthlyImportLimit = it.plusMonthlyImportLimit
+                        ?: it.socialImportLimit.takeIf { _ -> it.plan == "PLUS" },
+                )
+            }
             if (entitlement?.paidPlansEnabled != true) {
-                _state.value = PaywallUiState(loading = false, billingEnabled = false)
+                _state.value = _state.value.copy(loading = false, billingEnabled = false)
             } else {
                 _state.value = runCatching { billing.queryPlus().firstOrNull() }
-                    .fold({ PaywallUiState(loading = false, product = it, billingEnabled = true) }, { PaywallUiState(loading = false, billingEnabled = true, error = "Google Play billing is temporarily unavailable.") })
+                    .fold({ _state.value.copy(loading = false, product = it, billingEnabled = true) }, { _state.value.copy(loading = false, billingEnabled = true, error = "Google Play billing is temporarily unavailable.") })
             }
         }
         viewModelScope.launch {
@@ -59,7 +66,12 @@ class PaywallViewModel @Inject constructor(
                     billing.acknowledge(purchase)
                     dataStore.setEntitlement(entitlement)
                     track("PURCHASE_COMPLETED")
-                    _state.value = _state.value.copy(verifying = false, purchased = true)
+                    _state.value = _state.value.copy(
+                        verifying = false,
+                        purchased = true,
+                        plusMonthlyImportLimit = entitlement.plusMonthlyImportLimit
+                            ?: entitlement.socialImportLimit.takeIf { entitlement.plan == "PLUS" },
+                    )
                 }.onFailure {
                     _state.value = _state.value.copy(verifying = false, error = it.message ?: "Purchase verification failed.")
                 }

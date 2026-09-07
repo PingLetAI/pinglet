@@ -33,7 +33,7 @@ struct PlusPlansView: View {
                         .font(.system(size: 17, weight: .medium, design: .rounded))
                         .foregroundStyle(Color.pingletMutedInk)
                     PingLetCard(dark: true) {
-                        ForEach(["Complete AI breakdowns", "Every useful insight and takeaway", "50 social imports every month", "Unlimited personal saves", "Independent premium widget profiles"], id: \.self) {
+                        ForEach(["Complete AI breakdowns", "Every useful insight and takeaway", monthlyImportsBenefit, "Unlimited personal saves", "Independent premium widget profiles"], id: \.self) {
                             Label($0, systemImage: "checkmark.seal.fill")
                                 .font(.system(size: 15, weight: .semibold, design: .rounded))
                                 .foregroundStyle(Color.pingletPaper)
@@ -115,5 +115,12 @@ struct PlusPlansView: View {
         guard let product = subscriptions.selectedProduct else { return "CONTINUE" }
         let plan = product.id == AppleSubscriptionManager.annualProductID ? "ANNUAL" : "MONTHLY"
         return "CONTINUE WITH \(plan) — \(product.displayPrice)"
+    }
+
+    private var monthlyImportsBenefit: String {
+        let allowance = env.entitlement?.plusMonthlyImportLimit
+            ?? (env.entitlement?.plan == "PLUS" ? env.entitlement?.socialImportLimit : nil)
+        guard let allowance, allowance > 0 else { return "More AI imports every month" }
+        return "\(allowance) AI imports every month"
     }
 }

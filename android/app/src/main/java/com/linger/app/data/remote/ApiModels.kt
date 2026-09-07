@@ -203,6 +203,7 @@ data class EntitlementResponse(
     val saveLimit: Int? = null,
     val socialImportsUsed: Int,
     val socialImportLimit: Int,
+    val plusMonthlyImportLimit: Int? = null,
     val accountPromptRecommended: Boolean,
     val plusExpiresAt: String? = null,
     val entitlementSource: String = "NONE",

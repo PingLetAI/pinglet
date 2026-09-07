@@ -15,7 +15,7 @@ import { PrismaService } from '../common/prisma/prisma.service';
 const LIMITS = {
   GUEST: { saves: 10, imports: 5 },
   FREE: { saves: 30, imports: 10 },
-  PLUS: { saves: null, imports: 50 },
+  PLUS: { saves: null, imports: 100 },
 } as const;
 
 const APPLE_PRODUCT_IDS = new Set(['ai.pinglet.app.plus.monthly', 'ai.pinglet.app.plus.annual']);
@@ -24,10 +24,18 @@ const ACTIVE_PURCHASE_STATES = ['ACTIVE', 'SUBSCRIPTION_STATE_ACTIVE', 'SUBSCRIP
 @Injectable()
 export class EntitlementService {
   private appleRoots?: Buffer[];
+  private readonly plusMonthlyImportLimit: number;
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
-  ) {}
+  ) {
+    this.plusMonthlyImportLimit = Number(
+      this.config.get<string>('PLUS_MONTHLY_AI_IMPORT_LIMIT') ?? LIMITS.PLUS.imports,
+    );
+    if (!Number.isSafeInteger(this.plusMonthlyImportLimit) || this.plusMonthlyImportLimit <= 0) {
+      throw new Error('PLUS_MONTHLY_AI_IMPORT_LIMIT must be a positive integer.');
+    }
+  }
 
   async getSummary(userId: string, platform?: string) {
     const user = await (this.prisma as any).user.findUniqueOrThrow({ where: { id: userId } });
@@ -48,7 +56,9 @@ export class EntitlementService {
       }),
       this.socialImportCount(userId, plan),
     ]);
-    const limits = LIMITS[plan];
+    const limits = plan === 'PLUS'
+      ? { ...LIMITS.PLUS, imports: this.plusMonthlyImportLimit }
+      : LIMITS[plan];
     const saveCount = savedCount + pendingCount;
     return {
       plan,
@@ -58,6 +68,7 @@ export class EntitlementService {
       saveLimit: limits.saves,
       socialImportsUsed,
       socialImportLimit: limits.imports,
+      plusMonthlyImportLimit: this.plusMonthlyImportLimit,
       accountPromptRecommended: user.isAnonymous && saveCount >= 5,
       plusExpiresAt: user.plusExpiresAt,
       accessExpiresAt: entitlement.accessExpiresAt,
@@ -154,8 +165,8 @@ export class EntitlementService {
         code: 'SOCIAL_IMPORT_LIMIT',
         message:
           summary.plan === 'PLUS'
-            ? 'Your 50 monthly AI imports are used. Reused links remain available without consuming quota.'
-            : 'Your 10 monthly AI imports are used. Upgrade to Plus for 50 per month.',
+            ? `Your ${summary.socialImportLimit} monthly AI imports are used. Reused links remain available without consuming quota.`
+            : `Your ${summary.socialImportLimit} monthly AI imports are used. Upgrade to Plus for ${summary.plusMonthlyImportLimit} per month.`,
         entitlement: summary,
       },
       402,

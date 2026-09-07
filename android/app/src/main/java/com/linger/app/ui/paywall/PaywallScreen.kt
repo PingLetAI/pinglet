@@ -44,7 +44,11 @@ fun PaywallScreen(onBack: () -> Unit, onPurchased: () -> Unit, viewModel: Paywal
             Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Rounded.WorkspacePremium, null, tint = MaterialTheme.colorScheme.secondary); Spacer(Modifier.width(9.dp)); Text("PINGLET PLUS", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.secondary) }
             Benefit("Complete AI breakdowns", "Full transcripts, visible text and comprehensive summaries")
             Benefit("Every useful insight", "All takeaways, themes and practical actions")
-            Benefit("50 social imports monthly", "Duplicate links never use your processing quota")
+            Benefit(
+                state.plusMonthlyImportLimit?.takeIf { it > 0 }?.let { "$it AI imports every month" }
+                    ?: "More AI imports every month",
+                "Duplicate links never use your processing quota",
+            )
             Benefit("Unlimited personal saves", "Keep your entire library without a total cap")
             Benefit("Premium widget profiles", "Independent themes, schedules and content mixes")
         }
