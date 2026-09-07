@@ -45,6 +45,9 @@ private struct ApplePurchaseRequest: Encodable { let signedTransaction: String }
     }
 
     func prepare(_ environment: AppEnvironment) async {
+        #if DEBUG
+        print("[PingLetStoreKit] paidPlansEnabled=\(String(describing: environment.entitlement?.paidPlansEnabled))")
+        #endif
         guard environment.entitlement?.paidPlansEnabled == true else { return }
         await loadProducts()
         await reconcileCurrentEntitlements(environment)
@@ -108,14 +111,38 @@ private struct ApplePurchaseRequest: Encodable { let signedTransaction: String }
     private func loadProducts() async {
         loading = true
         error = nil
+        #if DEBUG
+        print("[PingLetStoreKit] bundle=\(Bundle.main.bundleIdentifier ?? "unknown") version=\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] ?? "unknown") build=\(Bundle.main.infoDictionary?["CFBundleVersion"] ?? "unknown")")
+        print("[PingLetStoreKit] requested=\(Self.productIDs.joined(separator: ", "))")
+        if let storefront = await Storefront.current {
+            print("[PingLetStoreKit] storefront=\(storefront.id) country=\(storefront.countryCode)")
+        } else {
+            print("[PingLetStoreKit] storefront unavailable")
+        }
+        #endif
         do {
             products = try await Product.products(for: Self.productIDs).sorted { lhs, rhs in
                 if lhs.id == Self.annualProductID { return true }
                 if rhs.id == Self.annualProductID { return false }
                 return lhs.price < rhs.price
             }
+            #if DEBUG
+            print("[PingLetStoreKit] returnedCount=\(products.count)")
+            for product in products {
+                print("[PingLetStoreKit] product=\(product.id) type=\(product.type) price=\(product.displayPrice)")
+            }
+            let missing = Self.productIDs.filter { id in !products.contains { $0.id == id } }
+            print("[PingLetStoreKit] missing=\(missing.joined(separator: ", "))")
+            #endif
             if products.isEmpty { error = "Subscriptions are temporarily unavailable. Try again later." }
         } catch {
+            #if DEBUG
+            let storeError = error as NSError
+            print("[PingLetStoreKit] product request failed domain=\(storeError.domain) code=\(storeError.code)")
+            if let underlying = storeError.userInfo[NSUnderlyingErrorKey] as? NSError {
+                print("[PingLetStoreKit] underlying domain=\(underlying.domain) code=\(underlying.code)")
+            }
+            #endif
             self.error = "Apple subscriptions are temporarily unavailable."
         }
         loading = false
