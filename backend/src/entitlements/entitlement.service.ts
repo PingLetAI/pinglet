@@ -249,26 +249,37 @@ export class EntitlementService {
       throw new ForbiddenException({ code: 'PURCHASE_INVALID', message: 'This is not a PingLet Plus subscription.' });
     }
     const purchaseToken = `apple:${originalTransactionId}`;
-    const existing = await this.prisma.purchaseEntitlement.findUnique({ where: { purchaseToken } });
-    const userId = requestedUserId || existing?.userId;
-    if (!userId) return this.getSummaryForMissingNotification();
     const expiresAt = new Date(expiresDate);
     const active = !transaction.revocationDate && expiresAt > new Date();
     const status = transaction.revocationDate ? 'REVOKED' : active ? 'ACTIVE' : 'EXPIRED';
-    const db = this.prisma as any;
-    await db.purchaseEntitlement.upsert({
-      where: { purchaseToken },
-      create: { userId, provider: 'APPLE_APP_STORE', productId, purchaseToken, status, expiresAt, rawData: transaction },
-      update: { userId, productId, status, expiresAt, rawData: transaction },
+    const userId = await this.prisma.$transaction(async (db) => {
+      const existing = await db.purchaseEntitlement.findUnique({ where: { purchaseToken } });
+      const ownerId = existing?.userId || requestedUserId;
+      if (!ownerId) return undefined;
+      const ownershipError = () => new ConflictException({
+        code: 'PURCHASE_ACCOUNT_MISMATCH',
+        message: 'This subscription belongs to another PingLet account. Sign in to the original account and restore purchases.',
+      });
+      if (requestedUserId && ownerId !== requestedUserId) throw ownershipError();
+      const purchase = await db.purchaseEntitlement.upsert({
+        where: { purchaseToken },
+        create: { userId: ownerId, provider: 'APPLE_APP_STORE', productId, purchaseToken, status, expiresAt, rawData: transaction },
+        // Never transfer ownership during verification or a store notification.
+        update: { productId, status, expiresAt, rawData: transaction },
+      });
+      // Also protect concurrent first claims; throwing rolls back this update.
+      if (purchase.userId !== ownerId) throw ownershipError();
+      const latest = await db.purchaseEntitlement.findFirst({
+        where: { userId: ownerId, expiresAt: { gt: new Date() }, status: { in: ACTIVE_PURCHASE_STATES } },
+        orderBy: { expiresAt: 'desc' },
+      });
+      await db.user.update({
+        where: { id: ownerId },
+        data: { plan: latest ? 'PLUS' : 'FREE', plusExpiresAt: latest?.expiresAt || null },
+      });
+      return ownerId;
     });
-    const latest = await db.purchaseEntitlement.findFirst({
-      where: { userId, expiresAt: { gt: new Date() }, status: { in: ACTIVE_PURCHASE_STATES } },
-      orderBy: { expiresAt: 'desc' },
-    });
-    await db.user.update({
-      where: { id: userId },
-      data: { plan: latest ? 'PLUS' : 'FREE', plusExpiresAt: latest?.expiresAt || null },
-    });
+    if (!userId) return this.getSummaryForMissingNotification();
     if (requestedUserId && !active) {
       throw new ForbiddenException({ code: 'PURCHASE_INVALID', message: 'This Apple subscription is not active.' });
     }

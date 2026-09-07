@@ -48,7 +48,7 @@ struct PlusPlansView: View {
                             Task { await subscriptions.purchase(env) }
                         }
                         .buttonStyle(PingLetPrimaryButtonStyle())
-                        .disabled(subscriptions.selectedProduct == nil || subscriptions.loading || subscriptions.purchasing)
+                        .disabled((subscriptions.selectedProduct == nil && !subscriptions.activationPending) || subscriptions.loading || subscriptions.purchasing || subscriptions.purchaseCompleted)
                         Button("RESTORE PURCHASES") { Task { await subscriptions.restore(env) } }
                             .font(.system(size: 13, weight: .bold, design: .rounded))
                             .frame(maxWidth: .infinity)
@@ -107,9 +107,11 @@ struct PlusPlansView: View {
             .overlay(RoundedRectangle(cornerRadius: 22).stroke(selected ? Color.pingletInk : Color.pingletMutedInk.opacity(0.22), lineWidth: selected ? 1.5 : 1))
         }
         .buttonStyle(.plain)
+        .disabled(subscriptions.purchasing || subscriptions.activationPending)
     }
 
     private var continueTitle: String {
+        if subscriptions.activationPending { return "RETRY ACTIVATION" }
         guard let product = subscriptions.selectedProduct else { return "CONTINUE" }
         let plan = product.id == AppleSubscriptionManager.annualProductID ? "ANNUAL" : "MONTHLY"
         return "CONTINUE WITH \(plan) — \(product.displayPrice)"

@@ -8,25 +8,17 @@ struct RootView: View {
     @State private var submittingShare = false; @State private var shareQueued = false
     @State private var processingItems: [Ingestion] = []; @State private var showingQueue = false
     var body: some View {
-        ZStack(alignment: .bottom) { TabView(selection: $tab) {
+        TabView(selection: $tab) {
             HomeView(onOpen: { contentID = $0 }).tabItem { Label("Home", systemImage: "house.fill") }.tag(Tab.home)
             LibraryView(onOpen: { contentID = $0 }, onAdd: { addRoute = AddRoute(text: "") }).tabItem { Label("Library", systemImage: "bookmark.fill") }.tag(Tab.library)
             ExploreView().tabItem { Label("Explore", systemImage: "safari.fill") }.tag(Tab.explore)
             SettingsView().tabItem { Label("Settings", systemImage: "gearshape.fill") }.tag(Tab.settings)
         }
         .tint(Color.pingletInk)
-        Button { addRoute = AddRoute(text: "") } label: {
-            Image(systemName: "plus")
-                .font(.system(size: 22, weight: .bold, design: .rounded))
-                .frame(width: 58, height: 58)
-                .background(Color.pingletGold, in: Circle())
-                .foregroundStyle(Color.pingletInk)
-                .overlay(Circle().stroke(Color.pingletPaper.opacity(0.9), lineWidth: 5))
-                .shadow(color: Color.pingletInk.opacity(0.22), radius: 14, y: 7)
-        }
-        .accessibilityLabel("Add a PingLet")
-        .padding(.bottom, 8)
-        if !activeProcessing.isEmpty {
+        .toolbar(.hidden, for: .tabBar)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            VStack(spacing: 0) {
+                if !activeProcessing.isEmpty {
             Button { showingQueue = true } label: {
                 HStack(spacing: 9) {
                     ProgressView().tint(Color.pingletPaper)
@@ -39,9 +31,11 @@ struct RootView: View {
                 .shadow(color: Color.pingletInk.opacity(0.22), radius: 10, y: 5)
             }
             .buttonStyle(.plain)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
-            .padding(.leading, 14).padding(.bottom, 76)
-        }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 16).padding(.vertical, 10)
+                }
+                bottomNavigation
+            }
         }
         .sheet(item: $addRoute) { AddPingLetView(initialText: $0.text) }
         .sheet(item: Binding(get: { contentID.map(ContentRoute.init) }, set: { contentID = $0?.id })) { ContentDetailView(contentID: $0.id) }
@@ -67,6 +61,54 @@ struct RootView: View {
                   let id = url.pathComponents.dropFirst().first, !id.isEmpty else { return }
             contentID = id
         }
+    }
+
+    private var bottomNavigation: some View {
+        HStack(spacing: 0) {
+            navigationItem(.home, title: "Home", icon: "house.fill")
+            navigationItem(.library, title: "Library", icon: "bookmark.fill")
+            Button { addRoute = AddRoute(text: "") } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 23, weight: .semibold, design: .rounded))
+                    .foregroundStyle(Color.pingletInk)
+                    .frame(width: 54, height: 54)
+                    .background(Color.pingletGold, in: Circle())
+                    .shadow(color: Color.pingletGold.opacity(0.22), radius: 8, y: 3)
+                    .frame(maxWidth: .infinity, minHeight: 64)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Add a PingLet")
+            navigationItem(.explore, title: "Explore", icon: "safari.fill")
+            navigationItem(.settings, title: "Settings", icon: "gearshape.fill")
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .frame(maxWidth: .infinity)
+        .background(Color.pingletPaper.opacity(0.98))
+        .overlay(alignment: .top) { Rectangle().fill(Color.pingletLine).frame(height: 0.5) }
+    }
+
+    private func navigationItem(_ destination: Tab, title: String, icon: String) -> some View {
+        let selected = tab == destination
+        return Button { tab = destination } label: {
+            VStack(spacing: 5) {
+                Image(systemName: icon)
+                    .font(.system(size: 20, weight: .semibold))
+                    .frame(width: 44, height: 30)
+                    .background(selected ? Color.pingletMint.opacity(0.7) : Color.clear, in: Capsule())
+                Text(title)
+                    .font(.system(size: 11, weight: selected ? .bold : .medium, design: .rounded))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            .foregroundStyle(selected ? Color.pingletInk : Color.pingletMutedInk)
+            .frame(maxWidth: .infinity, minHeight: 64)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title)
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
     private var activeProcessing: [Ingestion] { processingItems.filter { !["READY", "FAILED", "REJECTED"].contains($0.status) } }

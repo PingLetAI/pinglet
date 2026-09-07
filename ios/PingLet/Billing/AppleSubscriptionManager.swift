@@ -14,11 +14,14 @@ private struct ApplePurchaseRequest: Encodable { let signedTransaction: String }
     @Published private(set) var loading = false
     @Published private(set) var purchasing = false
     @Published private(set) var purchaseCompleted = false
+    @Published private(set) var activationPending = false
     @Published private(set) var message: String?
     @Published private(set) var error: String?
 
     private var updatesTask: Task<Void, Never>?
     private var started = false
+    private var pendingActivation: VerificationResult<Transaction>?
+    private enum ReconciliationOutcome { case none, activated, failed }
 
     deinit { updatesTask?.cancel() }
 
@@ -49,15 +52,24 @@ private struct ApplePurchaseRequest: Encodable { let signedTransaction: String }
         print("[PingLetStoreKit] paidPlansEnabled=\(String(describing: environment.entitlement?.paidPlansEnabled))")
         #endif
         guard environment.entitlement?.paidPlansEnabled == true else { return }
+        guard !purchasing else { return }
+        purchaseCompleted = false
         await loadProducts()
         await reconcileCurrentEntitlements(environment)
     }
 
     func purchase(_ environment: AppEnvironment) async {
-        guard let product = selectedProduct, !purchasing else { return }
+        guard !purchasing, !purchaseCompleted else { return }
         purchasing = true
+        defer { purchasing = false }
         error = nil
         message = nil
+        // Apple has already accepted this purchase. Retry activation, never payment.
+        if let pendingActivation {
+            await process(pendingActivation, environment: environment, reportErrors: true)
+            return
+        }
+        guard let product = selectedProduct else { return }
         await environment.track("PURCHASE_STARTED", metadata: product.id)
         do {
             switch try await product.purchase() {
@@ -73,21 +85,25 @@ private struct ApplePurchaseRequest: Encodable { let signedTransaction: String }
         } catch {
             self.error = error.localizedDescription
         }
-        purchasing = false
     }
 
     func restore(_ environment: AppEnvironment) async {
         guard !purchasing else { return }
         purchasing = true
+        purchaseCompleted = false
         error = nil
         message = nil
         do {
             try await AppStore.sync()
-            let found = await reconcileCurrentEntitlements(environment)
-            if found {
+            switch await reconcileCurrentEntitlements(environment) {
+            case .activated:
                 message = "Your PingLet Plus subscription has been restored."
-            } else {
+            case .none:
                 error = "No active PingLet subscription was found for this Apple Account."
+            case .failed:
+                if error == nil {
+                    error = "Apple found your subscription, but Plus could not be activated. Retry activation without purchasing again."
+                }
             }
         } catch {
             self.error = "Purchases could not be restored. Try again."
@@ -148,26 +164,28 @@ private struct ApplePurchaseRequest: Encodable { let signedTransaction: String }
         loading = false
     }
 
-    @discardableResult private func reconcileCurrentEntitlements(_ environment: AppEnvironment) async -> Bool {
+    @discardableResult private func reconcileCurrentEntitlements(_ environment: AppEnvironment) async -> ReconciliationOutcome {
         var found = false
+        var activated = false
         for await result in Transaction.currentEntitlements {
             guard case .verified(let transaction) = result,
                   Self.productIDs.contains(transaction.productID),
                   transaction.revocationDate == nil,
                   transaction.expirationDate.map({ $0 > Date() }) ?? true else { continue }
             found = true
-            await process(result, environment: environment, reportErrors: false)
+            let succeeded = await process(result, environment: environment, reportErrors: true)
+            activated = activated || succeeded
         }
         if !found { await environment.refreshEntitlement() }
-        return found
+        return activated ? .activated : found ? .failed : .none
     }
 
-    private func process(_ result: VerificationResult<Transaction>, environment: AppEnvironment, reportErrors: Bool) async {
+    @discardableResult private func process(_ result: VerificationResult<Transaction>, environment: AppEnvironment, reportErrors: Bool) async -> Bool {
         guard case .verified(let transaction) = result else {
             if reportErrors { error = "Apple could not verify this transaction." }
-            return
+            return false
         }
-        guard Self.productIDs.contains(transaction.productID) else { return }
+        guard Self.productIDs.contains(transaction.productID) else { return false }
         do {
             let entitlement: Entitlement = try await environment.session.perform(
                 "/api/v1/me/entitlements/apple",
@@ -177,10 +195,34 @@ private struct ApplePurchaseRequest: Encodable { let signedTransaction: String }
             environment.entitlement = entitlement
             environment.shared.entitlement = entitlement
             await transaction.finish()
-            purchaseCompleted = entitlement.plan == "PLUS"
-            await environment.track("PURCHASE_COMPLETED", metadata: transaction.productID)
+            if case .verified(let pending) = pendingActivation, pending.id == transaction.id {
+                pendingActivation = nil
+                activationPending = false
+            }
+            let active = transaction.revocationDate == nil
+                && (transaction.expirationDate.map { $0 > Date() } ?? false)
+                && entitlement.plan == "PLUS"
+            if active {
+                error = nil
+                message = "PingLet Plus is active."
+                purchaseCompleted = true
+                await environment.track("PURCHASE_COMPLETED", metadata: transaction.productID)
+            }
+            return active
         } catch {
-            if reportErrors { self.error = error.localizedDescription }
+            if transaction.revocationDate == nil,
+               transaction.expirationDate.map({ $0 > Date() }) ?? false {
+                pendingActivation = result
+                activationPending = true
+                if let apiError = error as? APIError, apiError.code == "PURCHASE_ACCOUNT_MISMATCH" {
+                    self.error = "This subscription belongs to another PingLet account. Sign in to the account you originally used, then restore purchases."
+                } else {
+                    self.error = "Apple confirmed your subscription, but PingLet could not activate Plus. Retry activation; you do not need to purchase again."
+                }
+            } else if reportErrors {
+                self.error = error.localizedDescription
+            }
+            return false
         }
     }
 }
