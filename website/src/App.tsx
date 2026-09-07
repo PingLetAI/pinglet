@@ -11,6 +11,9 @@ const nav = [
 
 const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=ai.pinglet.app";
 const APP_STORE_URL = import.meta.env.VITE_APP_STORE_URL as string | undefined;
+const IOS_RELEASED = import.meta.env.VITE_IOS_RELEASED === "true" && Boolean(APP_STORE_URL);
+const ANDROID_RELEASED = import.meta.env.VITE_ANDROID_RELEASED === "true";
+const PRIMARY_CTA = IOS_RELEASED ? "Get PingLet for iPhone" : "Coming first to iPhone";
 const PUBLIC_SITE_URL = (import.meta.env.VITE_PUBLIC_SITE_URL as string | undefined) || "https://pinglet.ai";
 const DOWNLOAD_URL = `${PUBLIC_SITE_URL.replace(/\/$/, "")}/download`;
 const X_URL = "https://x.com/pingletAI";
@@ -33,6 +36,7 @@ const features = [
 ];
 
 const faqs = [
+  ["When can I get PingLet?", IOS_RELEASED ? "PingLet is available for iPhone. Android will follow. Visit our download page for current platform availability." : "PingLet is launching first on iPhone. Android will follow. Follow @pinglet_ai on Instagram or TikTok for launch updates; public downloads are not open yet."],
   ["Can I try PingLet Plus without subscribing?", "Yes. Verified accounts can try every Plus feature free for 7 days with no card and no automatic subscription. When the trial ends, the account returns to Free unless you explicitly choose a paid plan through your device's app store."],
   ["Does PingLet repost social content?", "PingLet does not rehost the original social video or image. It creates a source-linked personal memory. Moderated, strongly matched insights from eligible public links may also appear anonymously in an Explore catalog; personal notes and the identity of the person who saved a link are not published."],
   ["What does the AI actually extract?", "For supported public posts, PingLet can combine the caption, speech transcript, visible text from images, OCR from sampled video frames, and necessary visual context. It removes likes, shares, follower counts, and platform chrome."],
@@ -208,7 +212,7 @@ function StoreButton({ platform, href, unavailable = false }: { platform: "andro
     <span className="text-left leading-none"><span className="block text-[.62rem] font-medium uppercase tracking-[.12em] text-current/60">{unavailable ? "Coming soon to" : platform === "android" ? "Get it on" : "Download on the"}</span><span className="mt-1 block text-base font-semibold">{platform === "android" ? "Google Play" : "App Store"}</span></span>
   </>;
   const styles = "flex min-h-16 w-full items-center justify-center gap-3 rounded-2xl border px-5 transition sm:w-auto sm:min-w-48";
-  if (unavailable || !href) return <div className={`${styles} cursor-not-allowed border-ink/10 bg-ink/5 text-ink/40`} aria-label="PingLet for iOS is coming soon">{content}</div>;
+  if (unavailable || !href) return <div className={`${styles} cursor-not-allowed border-ink/10 bg-ink/5 text-ink/40`} aria-label={`PingLet for ${platform === "ios" ? "iPhone" : "Android"} is coming soon`}>{content}</div>;
   return <a href={href} target="_blank" rel="noreferrer" className={`${styles} border-ink bg-ink text-paper hover:-translate-y-0.5 hover:bg-sage`}>{content}</a>;
 }
 
@@ -219,13 +223,14 @@ function DownloadChoices({ compact = false }: { compact?: boolean }) {
       <div className="absolute inset-0 grid place-items-center pointer-events-none"><img src="/favicon.svg" alt="" className="h-11 w-11 rounded-full border-4 border-white" /></div>
     </div>
     <div className={compact ? "text-center lg:text-left" : "text-center md:text-left"}>
-      <p className="eyebrow text-sage">Scan to download</p>
-      <h3 className="mt-3 text-2xl font-semibold tracking-[-.035em] sm:text-3xl">One code. The right store.</h3>
-      <p className="mt-3 max-w-md leading-relaxed text-ink/58">PingLet is built for iPhone and Android. Scan with your phone and we will route you to the available store for your device.</p>
+      <p className="eyebrow text-sage">{IOS_RELEASED ? "Scan to get PingLet" : "Scan for launch details"}</p>
+      <h3 className="mt-3 text-2xl font-semibold tracking-[-.035em] sm:text-3xl">{IOS_RELEASED ? "Your iPhone. A better way to remember." : "First on iPhone. Android to follow."}</h3>
+      <p className="mt-3 max-w-md leading-relaxed text-ink/58">{IOS_RELEASED ? "Get PingLet for iPhone and bring your saved ideas to your Home Screen. Android is coming later." : "We are preparing PingLet for its iPhone debut. Follow along for the public launch, with Android coming later."}</p>
       <div className={`mt-6 flex flex-col gap-3 sm:flex-row ${compact ? "lg:justify-start" : "md:justify-start"} justify-center`}>
-        <StoreButton platform="android" href={PLAY_STORE_URL} />
-        <StoreButton platform="ios" href={APP_STORE_URL} unavailable={!APP_STORE_URL} />
+        <StoreButton platform="ios" href={APP_STORE_URL} unavailable={!IOS_RELEASED} />
+        <StoreButton platform="android" href={PLAY_STORE_URL} unavailable={!ANDROID_RELEASED} />
       </div>
+      {!IOS_RELEASED && <p className="mt-5 text-sm text-ink/65">Follow the launch on <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className="font-semibold underline underline-offset-4">Instagram</a> or <a href={TIKTOK_URL} target="_blank" rel="noreferrer" className="font-semibold underline underline-offset-4">TikTok</a>.</p>}
     </div>
   </div>;
 }
@@ -234,15 +239,15 @@ function DownloadPage() {
   useEffect(() => {
     if (new URLSearchParams(window.location.search).has("preview")) return;
     const agent = navigator.userAgent.toLowerCase();
-    if (/android/.test(agent)) window.location.replace(PLAY_STORE_URL);
-    if (/iphone|ipad|ipod/.test(agent) && APP_STORE_URL) window.location.replace(APP_STORE_URL);
+    if (/android/.test(agent) && ANDROID_RELEASED) window.location.replace(PLAY_STORE_URL);
+    if (/iphone|ipad|ipod/.test(agent) && IOS_RELEASED && APP_STORE_URL) window.location.replace(APP_STORE_URL);
   }, []);
 
   return <main className="page-atmosphere min-h-screen px-5 py-8 sm:px-8">
     <div className="mx-auto flex max-w-6xl items-center justify-between"><Logo /><a href="/" className="text-sm font-semibold text-ink/55 transition hover:text-ink">Back to website</a></div>
     <div className="mx-auto grid min-h-[calc(100vh-7rem)] max-w-5xl place-items-center py-14">
       <section className="w-full rounded-[2.5rem] border border-ink/10 bg-paper/85 p-6 shadow-soft backdrop-blur sm:p-10 lg:p-14">
-        <div className="mx-auto mb-10 max-w-2xl text-center"><p className="eyebrow text-clay">Get PingLet</p><h1 className="balance mt-4 text-4xl font-semibold tracking-[-.05em] sm:text-6xl">Take what matters with you.</h1><p className="mt-5 text-lg leading-relaxed text-ink/60">Download PingLet and turn what you discover into a personal memory that returns.</p></div>
+        <div className="mx-auto mb-10 max-w-2xl text-center"><p className="eyebrow text-clay">Get PingLet</p><h1 className="balance mt-4 text-4xl font-semibold tracking-[-.05em] sm:text-6xl">Take what matters with you.</h1><p className="mt-5 text-lg leading-relaxed text-ink/60">{IOS_RELEASED ? "Available for iPhone. Keep what you discover, and meet it again on your Home Screen." : "A quieter home for what you discover. Launching first on iPhone, with Android to follow."}</p></div>
         <DownloadChoices />
         <p className="mt-9 text-center text-xs text-ink/42">The QR code contains only pinglet.ai/download. Device detection happens securely in your browser.</p>
       </section>
@@ -321,7 +326,7 @@ function App() {
         <nav className="mx-auto hidden items-center gap-8 md:flex" aria-label="Primary navigation">
           {nav.map(([label, href]) => <a key={href} href={href} className="text-sm font-medium text-ink/65 transition hover:text-ink">{label}</a>)}
         </nav>
-        <a href="/download" className="ml-auto rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-paper transition hover:bg-sage">Download app</a>
+        <a href="/download" className="ml-auto rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-paper transition hover:bg-sage">{PRIMARY_CTA}</a>
       </div>
     </header>
 
@@ -329,14 +334,14 @@ function App() {
       <section className="page-atmosphere relative min-h-screen pt-32 sm:pt-40">
         <div className="mx-auto grid max-w-7xl items-center gap-16 px-5 pb-24 sm:px-8 lg:grid-cols-[1.08fr_.92fr] lg:pb-32">
           <div>
-            <div className="reveal mb-7 inline-flex items-center gap-2 rounded-full border border-ink/10 bg-white/55 px-4 py-2 text-xs font-semibold"><Icon name="spark" className="h-4 w-4 text-clay" />AI memory for iPhone and Android</div>
+            <div className="reveal mb-7 inline-flex items-center gap-2 rounded-full border border-ink/10 bg-white/55 px-4 py-2 text-xs font-semibold"><Icon name="spark" className="h-4 w-4 text-clay" />{IOS_RELEASED ? "AI memory for your iPhone" : "Launching first on iPhone"}</div>
             <h1 className="reveal reveal-delay-1 balance max-w-3xl text-[3.5rem] font-semibold leading-[.94] tracking-[-.065em] sm:text-[5.2rem] lg:text-[6.2rem]">Save it once.<br /><span className="editorial font-normal italic text-clay">Meet it again.</span></h1>
             <p className="reveal reveal-delay-2 balance mt-8 max-w-xl text-lg leading-relaxed text-ink/65 sm:text-xl">PingLet reads the posts you care about, keeps their source and meaning, and brings the best parts back through a quiet Home Screen memory.</p>
             <div className="reveal reveal-delay-3 mt-9 flex flex-wrap gap-3">
-              <Button href="/download">Download app <Icon name="arrow" className="h-4 w-4" /></Button>
+              <Button href="/download">{PRIMARY_CTA} <Icon name="arrow" className="h-4 w-4" /></Button>
               <Button href="#how-it-works" secondary>See how it works</Button>
             </div>
-            <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 text-xs font-semibold text-ink/50"><span>iOS + ANDROID</span><span className="h-1 w-1 rounded-full bg-gold" /><span>PERSONAL SAVES LEAD</span><span className="h-1 w-1 rounded-full bg-gold" /><span>SOURCE PRESERVED</span></div>
+            <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 text-xs font-semibold text-ink/50"><span>{IOS_RELEASED ? "FOR IPHONE" : "IPHONE FIRST"}</span><span className="h-1 w-1 rounded-full bg-gold" /><span>PERSONAL SAVES LEAD</span><span className="h-1 w-1 rounded-full bg-gold" /><span>SOURCE PRESERVED</span></div>
           </div>
           <div className="reveal reveal-delay-2 py-10 lg:py-0"><WidgetPreview /></div>
         </div>
@@ -426,7 +431,7 @@ function App() {
 
       <section id="faq" className="bg-mint/60 py-24 sm:py-32"><div className="mx-auto grid max-w-7xl gap-14 px-5 sm:px-8 lg:grid-cols-[.75fr_1.25fr]"><div><p className="eyebrow text-sage">Good to know</p><h2 className="mt-4 text-4xl font-semibold tracking-[-.045em] sm:text-6xl">Questions, answered quietly.</h2></div><div className="border-t border-ink/15">{faqs.map(([question, answer]) => <details key={question} className="group border-b border-ink/15 py-1"><summary className="flex cursor-pointer list-none items-center justify-between gap-6 py-6 text-lg font-semibold"><span>{question}</span><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-ink/15 transition group-open:rotate-45">+</span></summary><p className="max-w-2xl pb-7 pr-10 leading-relaxed text-ink/60">{answer}</p></details>)}</div></div></section>
 
-      <section id="download" className="bg-gold px-5 py-20 sm:px-8 sm:py-28"><div className="mx-auto max-w-6xl"><div className="grid gap-12 lg:grid-cols-[.8fr_1.2fr] lg:items-center"><div className="text-center lg:text-left"><img src="/favicon.svg" alt="" className="mx-auto h-16 w-16 lg:mx-0" /><h2 className="balance mt-7 text-4xl font-semibold tracking-[-.05em] sm:text-5xl">Keep the things that move you moving.</h2><p className="mt-5 text-lg text-ink/65">Download PingLet and build a calmer memory for what you discover.</p></div><div className="rounded-[2rem] bg-paper/92 p-6 shadow-soft sm:p-8"><DownloadChoices compact /></div></div></div></section>
+      <section id="download" className="bg-gold px-5 py-20 sm:px-8 sm:py-28"><div className="mx-auto max-w-6xl"><div className="grid gap-12 lg:grid-cols-[.8fr_1.2fr] lg:items-center"><div className="text-center lg:text-left"><img src="/favicon.svg" alt="" className="mx-auto h-16 w-16 lg:mx-0" /><h2 className="balance mt-7 text-4xl font-semibold tracking-[-.05em] sm:text-5xl">Keep the things that move you moving.</h2><p className="mt-5 text-lg text-ink/65">{IOS_RELEASED ? "Start on iPhone and build a calmer memory for what you discover." : "Coming first to iPhone. Follow the launch and be there from the beginning."}</p></div><div className="rounded-[2rem] bg-paper/92 p-6 shadow-soft sm:p-8"><DownloadChoices compact /></div></div></div></section>
     </main>
 
     <SiteFooter />
