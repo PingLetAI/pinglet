@@ -3,6 +3,7 @@ import { PrismaService } from '../common/prisma/prisma.service';
 import { IngestionQueueService } from './ingestion-queue.service';
 import { EntitlementService } from '../entitlements/entitlement.service';
 import { CURRENT_TERMS_VERSION } from '../common/legal/terms.constants';
+import { PUBLIC_SOURCE_ANALYSIS_VERSION } from './analysis-version';
 
 @Injectable()
 export class IngestionService {
@@ -12,7 +13,7 @@ export class IngestionService {
     private readonly entitlements: EntitlementService,
   ) {}
 
-  async createUrlIngestion(userId: string, rawUrl: string, contextText?: string) {
+  async createUrlIngestion(userId: string, rawUrl: string) {
     const url = this.parseSupportedUrl(rawUrl);
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -30,6 +31,7 @@ export class IngestionService {
         status: 'READY',
         moderationStatus: 'APPROVED',
         contentItemId: { not: null },
+        analysis: { path: ['sourceScope'], equals: PUBLIC_SOURCE_ANALYSIS_VERSION },
         OR: [{ sourceUrl: normalizedUrl }, { assetUrl: normalizedUrl }],
       },
       include: { contentItem: true },
@@ -44,6 +46,7 @@ export class IngestionService {
               userId,
               contentItemId: reusable.contentItemId,
               status: 'READY',
+              analysis: { path: ['sourceScope'], equals: PUBLIC_SOURCE_ANALYSIS_VERSION },
             },
             include: { contentItem: true },
           });
@@ -67,7 +70,7 @@ export class IngestionService {
           data: {
             userId,
             type: 'URL',
-            rawText: contextText?.trim() || null,
+            rawText: null,
             sourceUrl: normalizedUrl,
             sourcePlatform: this.platformFor(url.hostname),
             assetUrl: reusable.assetUrl,
@@ -99,7 +102,7 @@ export class IngestionService {
       data: {
         userId,
         type: 'URL',
-        rawText: contextText?.trim() || null,
+        rawText: null,
         sourceUrl: normalizedUrl,
         sourcePlatform: this.platformFor(url.hostname),
         status: 'RECEIVED',

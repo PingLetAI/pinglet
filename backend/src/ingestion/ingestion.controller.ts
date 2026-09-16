@@ -26,7 +26,9 @@ export class IngestionController {
   @RateLimit(60, 3600, 'ingestion-create')
   @HttpCode(202)
   create(@Req() req: any, @Body() body: IngestionCreateDto) {
-    return this.service.createUrlIngestion(req.user.sub, body.url, body.contextText);
+    // Older clients may send contextText. Accept the field for compatibility,
+    // but never store it or include it in generalized public-post analysis.
+    return this.service.createUrlIngestion(req.user.sub, body.url);
   }
 
   @Get()

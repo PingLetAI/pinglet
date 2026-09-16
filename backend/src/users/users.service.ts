@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { CURRENT_TERMS_VERSION } from '../common/legal/terms.constants';
 
@@ -61,7 +61,13 @@ export class UsersService {
     };
   }
 
-  async acceptCurrentTerms(userId: string) {
+  async acceptCurrentTerms(userId: string, version: string) {
+    if (version !== CURRENT_TERMS_VERSION) {
+      throw new BadRequestException({
+        code: 'CONSENT_VERSION_REQUIRED',
+        message: 'Update PingLet and review the current AI processing disclosure before importing a post.',
+      });
+    }
     const acceptedAt = new Date();
     await this.prisma.user.update({
       where: { id: userId },

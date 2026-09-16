@@ -3,6 +3,8 @@ import { PrismaService } from '../common/prisma/prisma.service';
 import { ContentService } from '../content/content.service';
 import { MediaRunnerService, FrameReference } from './media-runner.service';
 import { DerivedTakeaway, OpenAiExtractionService } from './openai-extraction.service';
+import { PUBLIC_SOURCE_ANALYSIS_VERSION } from './analysis-version';
+import { CURRENT_TERMS_VERSION } from '../common/legal/terms.constants';
 
 class IngestionProcessingError extends Error {
   constructor(readonly ingestionCode: string, message: string) {
@@ -28,6 +30,20 @@ export class IngestionProcessor {
     let workspace: string | null = null;
 
     try {
+      // Jobs queued before the updated disclosure must not transmit content
+      // until the account has explicitly accepted the current AI consent.
+      const user = await this.prisma.user.findUnique({
+        where: { id: ingestion.userId },
+        select: { termsAcceptedVersion: true },
+      });
+      if (user?.termsAcceptedVersion !== CURRENT_TERMS_VERSION) {
+        await this.stage(ingestionId, 'CONSENT_REQUIRED', {
+          status: 'FAILED', errorCode: 'TERMS_ACCEPTANCE_REQUIRED',
+          errorMessage: 'Open PingLet, review AI processing, and import this post again.',
+          finishedAt: new Date(),
+        });
+        return;
+      }
       await this.stage(ingestionId, 'ACQUIRING_MEDIA', { status: 'PROCESSING', startedAt: new Date(), errorCode: null, errorMessage: null });
       const acquired = await this.media.acquire(ingestion.sourceUrl!, ingestion.id);
       workspace = acquired.workspace;
@@ -58,10 +74,8 @@ export class IngestionProcessor {
       ].filter(Boolean).join('\n');
       const transcript = transcripts.join('\n\n');
       const caption = this.cleanEngagement(acquired.caption);
-      const context = this.cleanEngagement(ingestion.rawText || '');
       const sourceDocument = [
         caption && `CAPTION:\n${caption}`,
-        context && `USER SHARED CONTEXT:\n${context}`,
         ocrText && `VISIBLE TEXT AND VISUAL CONTEXT:\n${ocrText}`,
         transcript && `FULL SPEECH TRANSCRIPT:\n${transcript}`,
       ].filter(Boolean).join('\n\n').slice(0, 150_000);
@@ -93,13 +107,16 @@ export class IngestionProcessor {
       }
 
       await this.stage(ingestionId, 'DERIVING_TAKEAWAYS');
-      const analysis = await this.openai.deriveAnalysis(sourceDocument);
+      const analysis = {
+        ...await this.openai.deriveAnalysis(sourceDocument),
+        sourceScope: PUBLIC_SOURCE_ANALYSIS_VERSION,
+      };
       const takeaways = analysis.takeaways
         .map((takeaway) => this.enforceQuoteFidelity(takeaway, sourceDocument));
       analysis.takeaways = takeaways;
       const verifiedQuote = takeaways.find((takeaway) => takeaway.type === 'QUOTE');
       const originalDisplayText = verifiedQuote?.text || this.originalExcerpt(
-        transcript || caption || context || ocrRows.map((row) => row.text).filter(Boolean).join('\n'),
+        transcript || caption || ocrRows.map((row) => row.text).filter(Boolean).join('\n'),
       );
       const primary = originalDisplayText
         ? { text: originalDisplayText, type: 'QUOTE' as const }

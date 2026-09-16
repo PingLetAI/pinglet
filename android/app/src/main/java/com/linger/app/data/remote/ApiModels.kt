@@ -148,6 +148,10 @@ data class TermsStatusResponse(
     val acceptedAt: String? = null,
 )
 
+data class TermsAcceptanceRequest(val version: String = CURRENT_VERSION) {
+    companion object { const val CURRENT_VERSION = "2026-09-16" }
+}
+
 data class CatalogResponse(
     val id: String,
     val slug: String,

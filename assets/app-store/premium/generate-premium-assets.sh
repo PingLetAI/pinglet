@@ -2,13 +2,14 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
-OUT="$ROOT/assets/app-store/premium"
-OUT_65="$OUT/6.5-inch"
-SOURCE="$OUT/source"
+PACKAGE="$ROOT/assets/app-store/premium"
+OUT="$PACKAGE/resubmission/6.9-inch"
+OUT_65="$PACKAGE/resubmission/6.5-inch"
+SOURCE="$PACKAGE/source"
 REFERENCES="$ROOT/reference"
 CHROME="${CHROME:-/usr/bin/google-chrome}"
 
-mkdir -p "$SOURCE" "$OUT_65"
+mkdir -p "$SOURCE" "$OUT" "$OUT_65"
 
 render() {
   local key="$1" image="$2" background="$3" ink="$4" accent="$5"
@@ -81,9 +82,7 @@ render "01-widget-1290x2796" "IMG_1179.png" "#151712" "#F8F2E7" "#E2B13B" \
   "THE IDEA THAT RETURNS" "Keep what matters" "within reach." \
   "Your saved ideas resurface on your Home Screen," "quietly, throughout the day."
 
-render "02-share-extract-1290x2796" "IMG_1175.png" "#F5EFE5" "#171914" "#B94C35" \
-  "SHARE TO PINGLET" "Save it once." "Remember it later." \
-  "Send a public post to PingLet. AI extracts the idea" "worth keeping and brings it back to you."
+# Excluded until recaptured: IMG_1175 advertises unsupported YouTube imports.
 
 render "03-home-1290x2796" "IMG_1170.png" "#D7EADF" "#172019" "#B94C35" \
   "A QUIETER DAILY RITUAL" "Your best ideas," "back at the right time." \
@@ -101,9 +100,6 @@ render "06-explore-1290x2796" "IMG_1173.png" "#D7EADF" "#172019" "#B94C35" \
   "CURATED FOR DISCOVERY" "Find ideas beyond" "your own saves." \
   "Explore thoughtful public collections and bring" "the ones that resonate into your daily rotation."
 
-render "07-plus-1290x2796" "IMG_1178.png" "#151712" "#F8F2E7" "#E2B13B" \
-  "TRY PINGLET PLUS" "The whole experience." "Free for 7 days." \
-  "Full summaries, insights, premium widgets, and" "more AI imports. No card. No automatic charge."
+# Excluded: headline and captured UI promote a free trial (guideline 2.3.7).
 
-cp "$ROOT/ios/PingLet/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png" "$OUT/icon-1024.png"
-printf 'Premium App Store assets created in %s\n' "$OUT"
+printf 'Resubmission screenshots created in %s\n' "$PACKAGE/resubmission"

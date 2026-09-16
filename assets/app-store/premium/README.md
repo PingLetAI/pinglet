@@ -1,21 +1,19 @@
 # PingLet Premium App Store Media
 
-Use the seven numbered PNG files in this directory for the iPhone 6.9-inch screenshot set in App Store Connect. They are `1290 x 2796`, RGB PNG files built from the real iOS screenshots in `reference/`.
+Upload **only the five PNGs per size in `resubmission/`**. Use `resubmission/6.9-inch/` for 1290 × 2796 and `resubmission/6.5-inch/` for 1284 × 2778.
 
-For the App Store Connect 6.5-inch upload slot, use the seven files in `6.5-inch/`. They are the accepted `1284 x 2778` portrait size.
+The reviewed selection is widget (01), Home (03), insights (04), Library (05), and Explore (06). Compare these unchanged captures against the final submitted build before uploading.
 
-The first three tell the core PingLet story in installation-sheet order:
+Older PNGs and sources outside `resubmission/` are historical artwork, not an upload set. Screenshot 07 contains free-trial promotions both outside and inside the phone image. Screenshot 02 advertises unsupported YouTube imports. Both are excluded. Updating the app does not change those old pixels.
 
-1. A saved idea returning through the Home Screen widget.
-2. Sharing a public post into PingLet for extraction.
-3. Seeing the current and upcoming widget rotation.
-
-The remaining screens cover insights, Library, Explore, and the no-card Plus trial.
-
-Regenerate from the repository root:
+Prepare the upload set without changing or re-rendering images:
 
 ```bash
-assets/app-store/premium/generate-premium-assets.sh
+python3 assets/app-store/premium/prepare-resubmission.py
 ```
 
-Editable compositions are written to `source/`. The app UI inside each device frame is the unaltered reference screenshot.
+This validates dimensions and RGB opacity, copies the approved filenames, and writes `resubmission/manifest.json` checksums. It refuses unexpected PNGs in the destination.
+
+`generate-premium-assets.sh` now renders only the same five compositions into `resubmission/`. It requires Chrome, GNU base64, and ffmpeg. The copy command above works on macOS without those dependencies.
+
+Remove rejected assets from every App Store Connect size, localization, and custom listing where they were uploaded. Local changes do not change App Store Connect.

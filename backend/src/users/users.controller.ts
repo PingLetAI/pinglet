@@ -14,6 +14,11 @@ class PreferencePatchDto {
   theme?: string;
 }
 
+class TermsAcceptanceDto {
+  @IsString()
+  version!: string;
+}
+
 class CatalogPreferencePatchDto {
   @IsBoolean()
   enabled!: boolean;
@@ -47,8 +52,8 @@ export class UsersController {
   }
 
   @Post('terms/accept')
-  acceptTerms(@Req() req: any) {
-    return this.users.acceptCurrentTerms(req.user.sub);
+  acceptTerms(@Req() req: any, @Body() dto: TermsAcceptanceDto) {
+    return this.users.acceptCurrentTerms(req.user.sub, dto.version);
   }
 
   @Patch('preferences')

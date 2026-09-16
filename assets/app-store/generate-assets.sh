@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Historical artwork only. For submission use premium/prepare-resubmission.py.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"

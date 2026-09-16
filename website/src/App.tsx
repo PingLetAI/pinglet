@@ -99,7 +99,7 @@ function LegalPage({ type }: { type: "privacy" | "terms" }) {
       <article className="mx-auto max-w-5xl rounded-[2.5rem] border border-ink/10 bg-paper/90 p-6 shadow-soft backdrop-blur sm:p-10 lg:p-14">
         <p className="eyebrow text-clay">Legal</p>
         <h1 className="mt-4 text-4xl font-semibold tracking-[-.05em] sm:text-6xl">{privacy ? "Privacy Policy" : "Terms of Service"}</h1>
-        <p className="mt-5 text-sm text-ink/48">Last updated August 26, 2026</p>
+        <p className="mt-5 text-sm text-ink/48">Last updated September 16, 2026</p>
         <p className="mt-8 max-w-3xl text-lg leading-relaxed text-ink/68">{privacy
           ? "PingLet is designed to keep what matters to you while collecting only the information needed to capture, process, sync, and resurface it."
           : "These terms govern your use of the PingLet applications, website, widgets, and related services operated by TinkerPal LLC."}</p>
@@ -108,13 +108,13 @@ function LegalPage({ type }: { type: "privacy" | "terms" }) {
           {privacy ? <>
             <LegalSection title="Information we collect">
               <p><strong>Account information.</strong> We collect your email address, verification status, account identifiers, plan, and subscription entitlement. You may initially use PingLet with an anonymous installation-based account.</p>
-              <p><strong>Content you choose to save.</strong> This includes private notes, quotes, reminders, public social-post URLs, optional context, source information, favorites, catalog preferences, and widget profiles.</p>
+              <p><strong>Content you choose to save.</strong> This includes private notes, quotes, reminders, public social-post URLs, source information, favorites, catalog preferences, and widget profiles. For new public-link imports, text accompanying the URL is not saved or used in analysis.</p>
               <p><strong>Processed media information.</strong> When you submit a supported public link, we may process its available caption, audio transcript, visible text, sampled video frames, OCR results, summaries, themes, and derived takeaways.</p>
               <p><strong>Device and usage information.</strong> We may collect installation ID, device platform, app version, locale, timezone, sync timestamps, content interactions, processing status, and diagnostic information. Apple and Google provide purchase status and entitlement information for their respective app stores; PingLet does not receive your full payment-card details.</p>
             </LegalSection>
             <LegalSection title="How we use information">
               <p>We use information to authenticate accounts, process saves, operate background ingestion, generate source-grounded analysis, personalize and rotate widget content, preserve source links, synchronize devices, provide support, enforce limits, verify subscriptions, prevent abuse, improve reliability, and comply with law.</p>
-              <p>AI-generated summaries and insights are produced from material you intentionally submit. Private text you write in PingLet is not used to populate Explore catalogs or advertising profiles.</p>
+              <p>AI-generated summaries and insights describe the public post you choose to import. They may be reused when another user imports the same public link. Private notes are not sent for AI analysis or used to populate Explore catalogs or advertising profiles.</p>
             </LegalSection>
             <LegalSection title="Explore catalogs">
               <p>Eligible content extracted from a public social-post link may be evaluated for an Explore catalog after automated moderation. PingLet requires strong extraction quality and a high-confidence semantic match before adding an item.</p>
@@ -123,6 +123,7 @@ function LegalPage({ type }: { type: "privacy" | "terms" }) {
             </LegalSection>
             <LegalSection title="Service providers">
               <p>We use vendors that help operate PingLet, including cloud hosting and database providers, OpenAI for transcription, moderation, vision, and structured analysis, Zoho for account email, Apple for iOS distribution and billing, and Google Play for Android distribution and billing.</p>
+              <p>Before AI imports, we ask for your permission to send public-post captions, audio, sampled images or video frames, and extracted text to OpenAI. Account details and private notes are not included in this analysis. You can decline and continue saving personal notes without AI processing.</p>
               <p>Submitted source links may be requested from the original social platform. Those platforms process requests under their own privacy policies. Vendors receive only information reasonably necessary to provide their services.</p>
             </LegalSection>
             <LegalSection title="How information is shared">

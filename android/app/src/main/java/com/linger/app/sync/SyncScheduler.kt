@@ -118,7 +118,7 @@ object SyncScheduler {
         val authRepository = AuthRepositoryImpl(api)
         val contentRepository = ContentRepository(api, dao)
 
-        val session = SessionManager(authRepository, dataStore)
+        val session = SessionManager(authRepository, dataStore, context.applicationContext)
         val feed = session.withAuthRetry {
             flushPendingFavorites(dao, api)
             dataStore.setEntitlement(api.getEntitlements())

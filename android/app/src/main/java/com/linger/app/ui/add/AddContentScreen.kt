@@ -1,6 +1,8 @@
 package com.linger.app.ui.add
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material3.*
@@ -39,20 +41,25 @@ fun AddContentScreen(
     if (state.showTermsPrompt) {
         AlertDialog(
             onDismissRequest = viewModel::dismissTermsPrompt,
-            title = { Text("Sharing content with PingLet") },
+            title = { Text("Analyze public posts with AI") },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("By continuing, you agree to our Terms of Use. Only submit content you are permitted to share. PingLet may analyze public links and use eligible AI-derived excerpts, topics, source attribution, and links in public Explore catalogs. Your personal notes, account information, and full saved details remain private.")
+                Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("With your permission, PingLet sends public-post captions, audio, sampled images or video frames, and extracted text to OpenAI for transcription, moderation, summaries, and insights.")
+                    Text("Analysis describes the public post and may be reused for others saving the same link. Eligible excerpts, topics, creator attribution, and source links may appear in public Explore collections.")
+                    Text("Account details and private notes are not sent for this analysis. Extra text beside a link is not used or saved. You can cancel and save personal notes without AI processing. Continuing accepts our Terms of Use and permits this processing for future public-post imports.")
                     Text("Do not submit illegal, sexually explicit, hateful, violent, abusive, misleading, privacy-invasive, or rights-infringing content. Content may be filtered, removed, or reported.")
                     TextButton(onClick = { uriHandler.openUri("https://pinglet.ai/terms") }) {
                         Text("READ TERMS OF USE")
+                    }
+                    TextButton(onClick = { uriHandler.openUri("https://pinglet.ai/privacy") }) {
+                        Text("PRIVACY POLICY")
                     }
                     state.error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
                 }
             },
             confirmButton = {
                 Button(onClick = viewModel::acceptTermsAndContinue, enabled = !state.acceptingTerms) {
-                    Text(if (state.acceptingTerms) "SAVING..." else "AGREE AND CONTINUE")
+                    Text(if (state.acceptingTerms) "SAVING..." else "ALLOW AI PROCESSING")
                 }
             },
             dismissButton = { TextButton(onClick = viewModel::dismissTermsPrompt) { Text("NOT NOW") } },

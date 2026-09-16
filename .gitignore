@@ -61,6 +61,9 @@ coverage/
 *.tsbuildinfo
 
 # Editors and operating systems
+# Keep shared Xcode projects/schemes, but exclude per-user workspace state.
+**/xcuserdata/
+*.xcuserstate
 .idea/
 .vscode/
 .DS_Store

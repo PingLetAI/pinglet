@@ -1,0 +1,42 @@
+[
+  {
+    "file": "6.9-inch/01-widget-1290x2796.png",
+    "sha256": "25e583c70b1a7c31937f9984651c3195b3aad2b0610a7d384c61c7d3a0e62e5b"
+  },
+  {
+    "file": "6.9-inch/03-home-1290x2796.png",
+    "sha256": "32c2f6e55170910816b7b5218323bdf19880f5a1041573c012132a074fce964c"
+  },
+  {
+    "file": "6.9-inch/04-insights-1290x2796.png",
+    "sha256": "5b13802ba2decc6fe0f5783e511d60492c4d3afd2c3812ee7f497c8c59e1443b"
+  },
+  {
+    "file": "6.9-inch/05-library-1290x2796.png",
+    "sha256": "687ac6f7e15a9b867a3120a0ed2a95ca084e26b9a1af38d30152b90e182d7e34"
+  },
+  {
+    "file": "6.9-inch/06-explore-1290x2796.png",
+    "sha256": "f769bf14b384c41e6fc85c807faef3fa30062ccd7dc9b17f5e44ebb5907b25be"
+  },
+  {
+    "file": "6.5-inch/01-widget-1284x2778.png",
+    "sha256": "3ce6a3dff198fe0318b1559e29d45a51a3e8d0050cea1ef636d8448a1bd3e3ca"
+  },
+  {
+    "file": "6.5-inch/03-home-1284x2778.png",
+    "sha256": "57c36d375b370a256256494117d8ff86b56b39f145c6cf1ffd296c6d18a51051"
+  },
+  {
+    "file": "6.5-inch/04-insights-1284x2778.png",
+    "sha256": "2390bdff831a078274d64ccacd25cdcb040df74cae350d378a2e76618d6d221d"
+  },
+  {
+    "file": "6.5-inch/05-library-1284x2778.png",
+    "sha256": "da4549600e3a1e2c078262088e47ead9e80dddd31ea45a2bd205f441e056e247"
+  },
+  {
+    "file": "6.5-inch/06-explore-1284x2778.png",
+    "sha256": "d68c8b11b0b2e7506324b3af7edf0393180eafd5fbccedb75e1432ab7ef27541"
+  }
+]

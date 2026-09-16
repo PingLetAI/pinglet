@@ -137,12 +137,11 @@ struct RootView: View {
         }
 
         submittingShare = true
-        let context = value.replacingOccurrences(of: url.absoluteString, with: "").trimmingCharacters(in: .whitespacesAndNewlines)
         do {
             let _: Ingestion = try await env.session.perform(
                 "/api/v1/me/ingestions",
                 method: .post,
-                body: IngestionRequest(url: url.absoluteString, contextText: context.isEmpty ? nil : context)
+                body: IngestionRequest(url: url.absoluteString)
             )
             env.shared.pendingShare = nil
             await env.refreshEntitlement()

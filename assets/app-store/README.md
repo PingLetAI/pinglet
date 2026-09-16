@@ -1,5 +1,7 @@
 # PingLet App Store assets
 
+**Historical artwork — do not upload this folder as a submission set.** The older insights screenshot includes a free-trial CTA. Use only the five-image set in [`premium/resubmission/`](premium/resubmission/) following [`premium/README.md`](premium/README.md).
+
 This folder contains the first-version iOS App Store visual package.
 
 ## Included

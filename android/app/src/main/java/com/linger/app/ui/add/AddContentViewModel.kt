@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import com.linger.app.data.remote.AppApiService
 import com.linger.app.data.remote.EntitlementResponse
+import com.linger.app.data.remote.TermsAcceptanceRequest
 import org.json.JSONObject
 import retrofit2.HttpException
 
@@ -50,7 +51,7 @@ class AddContentViewModel @Inject constructor(
     private fun refreshTermsStatus() {
         viewModelScope.launch {
             runCatching { sessionManager.withAuthRetry { api.getTermsStatus() } }
-                .onSuccess { response -> _state.value = _state.value.copy(termsAccepted = response.accepted) }
+                .onSuccess { response -> _state.value = _state.value.copy(termsAccepted = response.accepted && response.currentVersion == TermsAcceptanceRequest.CURRENT_VERSION) }
         }
     }
 
@@ -94,7 +95,12 @@ class AddContentViewModel @Inject constructor(
         if (_state.value.acceptingTerms) return
         viewModelScope.launch {
             _state.value = _state.value.copy(acceptingTerms = true, error = null)
-            runCatching { sessionManager.withAuthRetry { api.acceptTerms() } }
+            runCatching {
+                val response = sessionManager.withAuthRetry { api.acceptTerms() }
+                check(response.accepted && response.currentVersion == TermsAcceptanceRequest.CURRENT_VERSION) {
+                    "Update PingLet to review the current AI processing disclosure."
+                }
+            }
                 .onSuccess {
                     val pending = pendingSave
                     pendingSave = null
@@ -149,7 +155,7 @@ class AddContentViewModel @Inject constructor(
 
     private suspend fun saveContent(text: String, type: String, url: String?, author: String?): String? =
         if (url != null) {
-            repository.enqueueUrl(url, text.replace(url, "").trim().ifBlank { null }).id
+            repository.enqueueUrl(url, null).id
         } else {
             repository.saveContent(text.trim(), type.uppercase(), author)
             repository.syncFeed()

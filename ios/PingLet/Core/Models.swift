@@ -53,13 +53,17 @@ struct ExploreAction: Codable { let success: Bool; let hiddenContentIds: [String
 struct BoolResponse: Codable { let success: Bool?; let deleted: Bool? }
 struct CatalogPreference: Codable { let catalogId: String; let enabled: Bool }
 struct PreferenceResponse: Codable { let refreshMinutes: Int; let personalSystemMix: String; let theme: String }
-struct IngestionRequest: Encodable { let url: String; let contextText: String? }
+struct IngestionRequest: Encodable { let url: String }
 struct DerivedTakeaway: Codable { let text: String; let type: String; let confidence: Double }
 struct IngestedContent: Codable { let id: String; let text: String; let type: ContentType; let author: String?; let sourceUrl: String?; let sourcePlatform: String? }
 struct Ingestion: Codable, Identifiable { let id: String; let status: String; let processingStage: String?; let caption: String?; let transcript: String?; let ocrText: String?; let takeaways: [DerivedTakeaway]?; let extractionConfidence: Double?; let moderationStatus: String?; let errorCode: String?; let errorMessage: String?; let contentItem: IngestedContent? }
 
 struct Entitlement: Codable { let plan: String; let isAnonymous: Bool; let email: String?; let saveCount: Int; let saveLimit: Int?; let socialImportsUsed: Int; let socialImportLimit: Int; let accountPromptRecommended: Bool; let plusExpiresAt: String?; let entitlementSource: String; let accessExpiresAt: String?; let trialStatus: String; let trialEligible: Bool; let trialStartedAt: String?; let trialEndsAt: String?; let trialDaysRemaining: Int; let paidPlansEnabled: Bool; var plusMonthlyImportLimit: Int? = nil }
 struct TermsStatus: Codable { let currentVersion: String; let accepted: Bool; let acceptedAt: String? }
+struct TermsAcceptanceRequest: Encodable {
+    static let currentVersion = "2026-09-16"
+    let version = currentVersion
+}
 struct EventPayload: Encodable { let type: String; let contentItemId: String?; let surface: String; let timestamp: String; let metadata: String? }
 struct EventBatch: Encodable { let events: [EventPayload] }
 

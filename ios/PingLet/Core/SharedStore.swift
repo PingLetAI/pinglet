@@ -8,6 +8,7 @@ final class SharedStore {
         if let value = defaults.string(forKey: "installation_id"), !value.isEmpty { return value }
         let value = UUID().uuidString; defaults.set(value, forKey: "installation_id"); return value
     }
+    func rotateInstallationID() { defaults.set(UUID().uuidString, forKey: "installation_id") }
     var entitlement: Entitlement? { get { decode("entitlement") } set { encode(newValue, "entitlement") } }
     var feed: [FeedItem] { get { decode("feed") ?? [] } set { encode(newValue, "feed") } }
     var library: [UserContent] { get { decode("library") ?? [] } set { encode(newValue, "library") } }

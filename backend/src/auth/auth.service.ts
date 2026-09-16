@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ConflictException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
@@ -22,12 +22,24 @@ export class AuthService {
       throw new Error('installationId is required');
     }
 
-    let user = await this.prisma.user.findUnique({
-      where: { installationId },
+    // An installation ID is an identifier, not an account recovery credential.
+    // Never reuse an existing user or reassign its device from this public route.
+    const [existingUser, existingDevice] = await Promise.all([
+      this.prisma.user.findUnique({ where: { installationId } }),
+      this.prisma.device.findUnique({ where: { installationId } }),
+    ]);
+    const installationConflict = () => new ConflictException({
+      code: 'INSTALLATION_ID_IN_USE',
+      message: 'Start a new guest session or sign in to recover your account.',
     });
-
-    if (!user) {
+    if (existingUser || existingDevice) throw installationConflict();
+    let user;
+    try {
       user = await this.users.createAnonymous(installationId);
+    } catch (error) {
+      // A concurrent bootstrap must not recover the session created by the winner.
+      if ((error as { code?: string }).code === 'P2002') throw installationConflict();
+      throw error;
     }
 
     const device = await this.devices.findOrCreate({
@@ -76,7 +88,7 @@ export class AuthService {
       include: { user: true, device: true },
     });
 
-    if (!existing || existing.revokedAt || existing.expiresAt < new Date()) {
+    if (!existing || existing.revokedAt || existing.expiresAt < new Date() || existing.device.userId !== existing.userId) {
       throw new BadRequestException('Invalid or expired refresh token');
     }
 

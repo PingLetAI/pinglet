@@ -15,7 +15,8 @@
     "db:push": "prisma db push",
     "seed": "tsx prisma/seed.ts",
     "lint": "eslint \"src/**/*.ts\" \"test/**/*.ts\" --fix",
-    "test": "jest"
+    "test": "jest",
+    "test:security": "npm run build && node --test test/audit-security.test.cjs"
   },
   "dependencies": {
     "@apple/app-store-server-library": "^3.1.0",
