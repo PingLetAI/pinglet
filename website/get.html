@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <title>Get PingLet AI</title>
+    <script>
+      // Detect the scanning device, not the device displaying the QR code.
+      const agent = navigator.userAgent.toLowerCase();
+      const isIOS = /iphone|ipad|ipod/.test(agent) ||
+        (/macintosh/.test(agent) && navigator.maxTouchPoints > 1);
+      const destination = /android/.test(agent)
+        ? "/download?preview"
+        : isIOS
+          ? "https://apps.apple.com/us/app/pinglet-ai/id6806096564"
+          : "/download?preview";
+      window.location.replace(destination);
+    </script>
+  </head>
+  <body>
+    <p>Open PingLet AI in your app store:</p>
+    <p><a href="https://apps.apple.com/us/app/pinglet-ai/id6806096564">App Store</a></p>
+    <p><a href="https://play.google.com/store/apps/details?id=ai.pinglet.app">Google Play</a></p>
+  </body>
+</html>

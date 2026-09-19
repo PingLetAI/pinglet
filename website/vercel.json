@@ -6,6 +6,10 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/get.html",
+      "destination": "/get.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
@@ -19,6 +23,32 @@
           "value": "public, max-age=31536000, immutable"
         }
       ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/get.html",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(iPhone|iPad|iPod).*"
+        }
+      ],
+      "destination": "https://apps.apple.com/us/app/pinglet-ai/id6806096564",
+      "permanent": false
+    },
+    {
+      "source": "/get.html",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*Android.*"
+        }
+      ],
+      "destination": "/download?preview",
+      "permanent": false
     }
   ]
 }
