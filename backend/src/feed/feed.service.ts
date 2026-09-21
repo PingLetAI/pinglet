@@ -121,7 +121,8 @@ export class FeedService {
         catalog: catalogFilter.catalog,
         contentItem: {
           status: 'ACTIVE',
-          visibility: 'SYSTEM',
+          visibility: { in: ['SYSTEM', 'COMMUNITY'] },
+          language: 'en',
         },
       },
       include: {

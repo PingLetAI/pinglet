@@ -14,7 +14,14 @@ export class CatalogsService {
 
   async listItemsById(id: string) {
     return this.prisma.catalogItem.findMany({
-      where: { catalogId: id },
+      where: {
+        catalogId: id,
+        contentItem: {
+          status: 'ACTIVE',
+          visibility: { in: ['SYSTEM', 'COMMUNITY'] },
+          language: 'en',
+        },
+      },
       orderBy: { priority: 'desc' },
       include: {
         contentItem: {

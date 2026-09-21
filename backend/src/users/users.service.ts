@@ -192,7 +192,7 @@ export class UsersService {
 
   private requireExploreItem(contentItemId: string) {
     return this.prisma.contentItem.findFirstOrThrow({
-      where: { id: contentItemId, visibility: 'COMMUNITY', status: 'ACTIVE', catalogItems: { some: {} } },
+      where: { id: contentItemId, visibility: 'COMMUNITY', status: 'ACTIVE', language: 'en', catalogItems: { some: {} } },
     });
   }
 
@@ -207,8 +207,8 @@ export class UsersService {
     };
   }
 
-  private isExploreVisible(item: { id: string; author: string | null; sourcePlatform: string | null; sourceUrl: string | null }, exclusions: { contentIds: Set<string>; sourceKeys: Set<string> }) {
-    return !exclusions.contentIds.has(item.id) && !exclusions.sourceKeys.has(this.exploreSourceKey(item));
+  private isExploreVisible(item: { id: string; language?: string | null; author: string | null; sourcePlatform: string | null; sourceUrl: string | null }, exclusions: { contentIds: Set<string>; sourceKeys: Set<string> }) {
+    return item.language?.toLowerCase() === 'en' && !exclusions.contentIds.has(item.id) && !exclusions.sourceKeys.has(this.exploreSourceKey(item));
   }
 
   private exploreSourceKey(item: { id: string; author: string | null; sourcePlatform: string | null; sourceUrl: string | null }) {

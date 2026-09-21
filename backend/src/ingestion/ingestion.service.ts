@@ -177,7 +177,10 @@ export class IngestionService {
   private parseSupportedUrl(value: string) {
     let parsed: URL;
     try {
-      parsed = new URL(value.trim());
+      // Normalize prose punctuation once at the API boundary. All clients
+      // (iOS, Android, Share Sheet, and web) then share the same behavior.
+      const candidate = value.trim().replace(/[.,!?;:)\]}>'"]+$/g, '');
+      parsed = new URL(candidate);
     } catch {
       throw new BadRequestException('A valid public social URL is required');
     }

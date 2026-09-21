@@ -61,6 +61,14 @@ export class AdminController {
     return this.service.patchCatalog(id, body);
   }
 
+  @Delete('catalogs/:catalogId/items/:contentItemId')
+  removeFromCatalog(
+    @Param('catalogId') catalogId: string,
+    @Param('contentItemId') contentItemId: string,
+  ) {
+    return this.service.removeFromCatalog(catalogId, contentItemId);
+  }
+
   @Post('users/plus')
   grantPlus(@Body() body: GrantPlusDto) {
     return this.service.grantPlus(body.email, body.durationDays);

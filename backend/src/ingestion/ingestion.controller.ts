@@ -1,12 +1,15 @@
 import { Body, Controller, Get, HttpCode, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
 import { JwtAuthGuard } from '../common/auth/jwt-auth.guard';
 import { IngestionService } from './ingestion.service';
 import { RateLimit } from '../common/security/rate-limit.decorator';
 
 class IngestionCreateDto {
-  @IsUrl({ protocols: ['https'], require_protocol: true })
+  // URL syntax and supported-platform validation live in the service so the
+  // same canonicalization is used by every client.
+  @IsString()
+  @MaxLength(2048)
   url: string;
 
   @IsOptional()

@@ -126,6 +126,18 @@ export class AdminService {
     });
   }
 
+  async removeFromCatalog(catalogId: string, contentItemId: string) {
+    const item = await this.prisma.catalogItem.findUnique({
+      where: { catalogId_contentItemId: { catalogId, contentItemId } },
+      select: { catalogId: true, contentItemId: true },
+    });
+    if (!item) throw new NotFoundException('Curated item not found in this catalog');
+    await this.prisma.catalogItem.delete({
+      where: { catalogId_contentItemId: { catalogId, contentItemId } },
+    });
+    return { catalogId, contentItemId, removed: true };
+  }
+
   async grantPlus(rawEmail: string, durationDays = 365) {
     const email = rawEmail.trim().toLowerCase();
     const user = await this.prisma.user.findUnique({ where: { email } });
