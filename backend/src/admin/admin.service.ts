@@ -138,6 +138,30 @@ export class AdminService {
     return { catalogId, contentItemId, removed: true };
   }
 
+  async listNonEnglishCurated(catalogId?: string) {
+    const rows = await this.prisma.catalogItem.findMany({
+      where: catalogId ? { catalogId } : undefined,
+      include: {
+        catalog: { select: { id: true, slug: true, name: true } },
+        contentItem: { select: { id: true, text: true, author: true, language: true, visibility: true, status: true, sourceUrl: true } },
+      },
+      orderBy: { priority: 'desc' },
+    });
+    return rows
+      .filter(({ contentItem }) => contentItem.language?.toLowerCase() !== 'en' || /[\u0600-\u06ff]/i.test(contentItem.text))
+      .map(({ catalog, contentItem, priority }) => ({ catalog, contentItem, priority }));
+  }
+
+  async removeNonEnglishCurated(catalogId?: string) {
+    const rows = await this.listNonEnglishCurated(catalogId);
+    if (!rows.length) return { removed: 0, items: [] };
+    const pairs = rows.map(({ catalog, contentItem }) => ({ catalogId: catalog.id, contentItemId: contentItem.id }));
+    await this.prisma.$transaction(
+      pairs.map(({ catalogId: id, contentItemId }) => this.prisma.catalogItem.delete({ where: { catalogId_contentItemId: { catalogId: id, contentItemId } } })),
+    );
+    return { removed: pairs.length, items: pairs };
+  }
+
   async grantPlus(rawEmail: string, durationDays = 365) {
     const email = rawEmail.trim().toLowerCase();
     const user = await this.prisma.user.findUnique({ where: { email } });

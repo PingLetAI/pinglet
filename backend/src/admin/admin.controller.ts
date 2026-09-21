@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, UseGuards, Patch } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, UseGuards, Patch, Query } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { IsEmail, IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
 import { AdminGuard } from '../common/auth/admin.guard';
@@ -67,6 +67,16 @@ export class AdminController {
     @Param('contentItemId') contentItemId: string,
   ) {
     return this.service.removeFromCatalog(catalogId, contentItemId);
+  }
+
+  @Get('catalogs/non-english')
+  listNonEnglishCurated(@Query('catalogId') catalogId?: string) {
+    return this.service.listNonEnglishCurated(catalogId);
+  }
+
+  @Delete('catalogs/non-english')
+  removeNonEnglishCurated(@Query('catalogId') catalogId?: string) {
+    return this.service.removeNonEnglishCurated(catalogId);
   }
 
   @Post('users/plus')
