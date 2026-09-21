@@ -191,7 +191,7 @@ export class IngestionService {
     parsed.hostname = parsed.hostname.toLowerCase();
     const trackingParameters = new Set([
       'igsh', 'igshid', 'mibextid', 'ref', 'refsrc', 'share_id',
-      '_r', 'is_from_webapp', 'sender_device', 'sender_web_id',
+      '_r', 'hpir', 'is_from_webapp', 'sender_device', 'sender_web_id',
       'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term',
     ]);
     for (const key of [...parsed.searchParams.keys()]) {
