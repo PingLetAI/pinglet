@@ -108,6 +108,12 @@ struct WidgetSettingsView: View {
     var body: some View {
         Form {
             Section {
+                DisclosureGroup("Add to your Home Screen") {
+                    Text("Touch and hold your Home Screen, tap Edit, then Add Widget. Search for PingLet, choose a size, and tap Add Widget.")
+                        .font(.subheadline).foregroundStyle(Color.pingletMutedInk).padding(.vertical, 6)
+                }
+            }
+            Section {
                 Picker("Profile", selection: $key) {
                     Text("Default").tag("default")
                     Text("Widget 2").tag("profile2")

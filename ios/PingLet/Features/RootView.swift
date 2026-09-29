@@ -7,13 +7,17 @@ struct RootView: View {
     @State private var tab: Tab = .home; @State private var addRoute: AddRoute?; @State private var contentID: String?
     @State private var submittingShare = false; @State private var shareQueued = false
     @State private var processingItems: [Ingestion] = []; @State private var showingQueue = false
+    @State private var showingWidgetSettings = false
     var body: some View {
         Group {
             switch tab {
-            case .home: HomeView(onOpen: { contentID = $0 }, onAdd: { addRoute = AddRoute(text: "") })
+            case .home: HomeView(onOpen: { contentID = $0 }, onAdd: { addRoute = AddRoute(text: "") }, onWidgetSettings: {
+                showingWidgetSettings = true
+                tab = .settings
+            })
             case .library: LibraryView(onOpen: { contentID = $0 }, onAdd: { addRoute = AddRoute(text: "") })
             case .explore: ExploreView()
-            case .settings: SettingsView()
+            case .settings: SettingsView(showingWidgetSettings: $showingWidgetSettings)
             }
         }
         .tint(Color.pingletInk)

@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct SettingsView: View {
+    @Binding var showingWidgetSettings: Bool
     @EnvironmentObject private var env: AppEnvironment
     @State private var showSignOut = false
     @State private var showDelete = false
@@ -32,6 +33,7 @@ struct SettingsView: View {
                     .multilineTextAlignment(.center)
                     .padding(.top, 4)
             }
+            .navigationDestination(isPresented: $showingWidgetSettings) { WidgetSettingsView() }
             .task { await env.refreshEntitlement() }
             .alert("Sign out on this device?", isPresented: $showSignOut) {
                 Button("Cancel", role: .cancel) {}

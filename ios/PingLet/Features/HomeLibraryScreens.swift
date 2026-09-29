@@ -1,4 +1,5 @@
 import SwiftUI
+import WidgetKit
 
 private let countSuffix = try! NSRegularExpression(pattern: #"([.!?])\s+(?:\d{1,3}(?:[,.]\d{3})*|\d+(?:\.\d+)?[KkMmBb])\s*$"#)
 func cleanPingLetText(_ value: String) -> String {
@@ -49,6 +50,9 @@ struct PingLetPage<Content: View>: View {
 }
 struct HomeView: View {
     @EnvironmentObject private var env: AppEnvironment; let onOpen: (String) -> Void; let onAdd: () -> Void; @State private var tick = Date()
+    let onWidgetSettings: () -> Void
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var widgetInstalled: Bool?
     private var profile: WidgetProfile {
         SharedWidgetSelector.resolvedProfile(
             feed: env.feed,
@@ -77,16 +81,58 @@ struct HomeView: View {
                     .frame(minHeight: 44)
             }
         }.onTapGesture { if !profile.currentContentId.isEmpty { onOpen(profile.currentContentId) } }
-        DisclosureGroup("Widget setup") {
-            Text("Touch and hold your Home Screen, tap Edit, then Add Widget. Search for PingLet and choose a size. To use another profile, hold the widget, choose Edit Widget, and select Widget 2 or Widget 3.")
-                .font(.subheadline).foregroundStyle(Color.pingletMutedInk).padding(.top, 8)
-        }
-        let upcoming = Array(env.feed.filter { $0.id != profile.currentContentId }.prefix(5))
+        Button(action: onWidgetSettings) {
+            HStack(spacing: 10) {
+                Image(systemName: "rectangle.3.group")
+                Text(widgetInstalled == false ? "Set up widget" : widgetInstalled == true ? "Customize widget" : "Widget settings")
+                Spacer()
+                Image(systemName: "arrow.right")
+            }
+            .font(.subheadline.weight(.semibold))
+            .padding(.horizontal, 16).frame(minHeight: 50)
+            .foregroundStyle(widgetInstalled == false ? Color.pingletPaper : Color.pingletInk)
+            .background(widgetInstalled == false ? Color.pingletInk : Color.pingletPaper, in: RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.pingletInk.opacity(0.2), lineWidth: 1))
+            .contentShape(RoundedRectangle(cornerRadius: 16))
+        }.buttonStyle(.plain)
+        let upcoming = Array(env.feed.filter { $0.id != profile.currentContentId }.prefix(3))
         if !upcoming.isEmpty {
-            PingLetSectionLabel(title: "In your rotation")
-            PingLetCard { ForEach(Array(upcoming.enumerated()), id: \.element.id) { index, item in Button { onOpen(item.id) } label: { HStack(spacing: 12) { Text(String(format: "%02d", index + 1)).foregroundStyle(.brown); Text(cleanPingLetText(item.text)).lineLimit(2).foregroundStyle(Color.pingletInk); Spacer(); Image(systemName: "chevron.right") }.frame(minHeight: 44) }.buttonStyle(.plain); if index < upcoming.count - 1 { Divider() } } }
+            VStack(alignment: .leading, spacing: 12) {
+                Text("More to revisit").font(.headline).foregroundStyle(Color.pingletInk)
+                ForEach(upcoming) { item in
+                    Button { onOpen(item.id) } label: {
+                        HStack(alignment: .center, spacing: 14) {
+                            VStack(alignment: .leading, spacing: 9) {
+                                Text(cleanPingLetText(item.text))
+                                    .font(.body).fontDesign(.serif).lineLimit(3)
+                                    .foregroundStyle(Color.pingletInk)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                Label(item.author ?? (item.source == .personal ? "Saved by you" : "From Explore"), systemImage: item.source == .personal ? "bookmark" : "sparkles")
+                                    .font(.caption).lineLimit(1).foregroundStyle(Color.pingletMutedInk)
+                            }
+                            Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(Color.pingletMutedInk)
+                        }
+                        .padding(16).frame(maxWidth: .infinity, minHeight: 80)
+                        .background(Color.pingletPaper, in: RoundedRectangle(cornerRadius: 18))
+                        .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.pingletLine, lineWidth: 1))
+                        .multilineTextAlignment(.leading).contentShape(RoundedRectangle(cornerRadius: 18))
+                    }.buttonStyle(.plain)
+                }
+            }
         }
-    }.refreshable { await env.syncFeed() }.task { while !Task.isCancelled { try? await Task.sleep(for: .seconds(15)); tick = .now } } }
+    }.refreshable { await env.syncFeed() }
+        .task(id: scenePhase) {
+            guard scenePhase == .active else { return }
+            widgetInstalled = await withCheckedContinuation { continuation in
+                WidgetCenter.shared.getCurrentConfigurations { result in
+                    switch result {
+                    case .success(let configurations): continuation.resume(returning: configurations.contains { $0.kind == "PingLetWidget" })
+                    case .failure: continuation.resume(returning: nil)
+                    }
+                }
+            }
+        }
+        .task { while !Task.isCancelled { try? await Task.sleep(for: .seconds(15)); tick = .now } } }
 }
 
 struct LibraryView: View {
