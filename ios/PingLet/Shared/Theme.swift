@@ -75,6 +75,7 @@ struct PingLetCard<Content: View>: View {
 }
 
 struct PingLetPrimaryButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.subheadline.weight(.semibold))
@@ -83,6 +84,20 @@ struct PingLetPrimaryButtonStyle: ButtonStyle {
             .foregroundStyle(Color.pingletPaper)
             .background(Color.pingletInk.opacity(configuration.isPressed ? 0.78 : 1), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             .scaleEffect(configuration.isPressed ? 0.985 : 1)
+            .opacity(isEnabled ? 1 : 0.5)
             .animation(.easeOut(duration: 0.14), value: configuration.isPressed)
+    }
+}
+
+struct PingLetSecondaryButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.subheadline.weight(.semibold))
+            .frame(maxWidth: .infinity, minHeight: 48)
+            .foregroundStyle(Color.pingletInk)
+            .background(Color.pingletPaper, in: RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.pingletInk.opacity(0.45), lineWidth: 1))
+            .opacity(isEnabled ? (configuration.isPressed ? 0.65 : 1) : 0.5)
     }
 }

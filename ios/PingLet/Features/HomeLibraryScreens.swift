@@ -14,21 +14,28 @@ struct PingLetPage<Content: View>: View {
             PingLetCanvas()
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 20) {
-                    VStack(alignment: .leading, spacing: 10) {
+                    if !eyebrow.isEmpty || !title.isEmpty || !subtitle.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        if !eyebrow.isEmpty {
                         Text(eyebrow.uppercased())
                             .font(.system(size: 12, weight: .bold, design: .rounded))
                             .tracking(1.8)
                             .foregroundStyle(Color.pingletClay)
+                        }
+                        if !title.isEmpty {
                         Text(title)
                             .font(.system(size: titleSize, weight: .regular, design: .serif))
                             .foregroundStyle(Color.pingletInk)
                             .fixedSize(horizontal: false, vertical: true)
+                        }
+                        if !subtitle.isEmpty {
                         Text(subtitle)
-                            .font(.system(size: 17, weight: .medium, design: .rounded))
+                            .font(.subheadline)
                             .foregroundStyle(Color.pingletMutedInk)
                             .lineSpacing(3)
+                        }
                     }
-                    .padding(.bottom, 8)
+                    }
                     content
                 }
                 .padding(.horizontal, 22)
@@ -51,10 +58,10 @@ struct HomeView: View {
             date: tick
         )
     }
-    var body: some View { PingLetPage(eyebrow: "Today", title: "One good thought, kept close.", subtitle: "Your personal saves lead. PingLet fills the gaps quietly.") {
+    var body: some View { PingLetPage(eyebrow: "", title: "Today", subtitle: "") {
         PingLetCard(dark: true) {
             HStack {
-                Text("DEFAULT WIDGET").font(.caption.bold()).foregroundStyle(Color.pingletGold)
+                Text("YOUR PINGLET").font(.caption.bold()).foregroundStyle(Color.pingletGold)
                 Spacer()
                 if profile.nextChangeAt > 0 {
                     Text("Next around \(Date(timeIntervalSince1970: Double(profile.nextChangeAt) / 1000).formatted(date: .omitted, time: .shortened))").font(.caption)
@@ -70,15 +77,15 @@ struct HomeView: View {
                     .frame(minHeight: 44)
             }
         }.onTapGesture { if !profile.currentContentId.isEmpty { onOpen(profile.currentContentId) } }
-        DisclosureGroup("Add PingLet to your Home Screen") {
+        DisclosureGroup("Widget setup") {
             Text("Touch and hold your Home Screen, tap Edit, then Add Widget. Search for PingLet and choose a size. To use another profile, hold the widget, choose Edit Widget, and select Widget 2 or Widget 3.")
                 .font(.subheadline).foregroundStyle(Color.pingletMutedInk).padding(.top, 8)
         }
-        PingLetSectionLabel(title: "In your rotation", trailing: "Ready offline")
-        Text("A new PingLet returns approximately every 30 minutes.").font(.system(size: 14, weight: .medium, design: .rounded)).foregroundStyle(Color.pingletMutedInk)
         let upcoming = Array(env.feed.filter { $0.id != profile.currentContentId }.prefix(5))
-        if upcoming.isEmpty { PingLetCard { Text("Share a post or tap + to build your rotation.") } }
-        else { PingLetCard { ForEach(Array(upcoming.enumerated()), id: \.element.id) { index, item in Button { onOpen(item.id) } label: { HStack(spacing: 12) { Text(String(format: "%02d", index + 1)).foregroundStyle(.brown); Text(cleanPingLetText(item.text)).lineLimit(2).foregroundStyle(Color.pingletInk); Spacer(); Image(systemName: "chevron.right") } }.buttonStyle(.plain); if index < upcoming.count - 1 { Divider() } } } }
+        if !upcoming.isEmpty {
+            PingLetSectionLabel(title: "In your rotation")
+            PingLetCard { ForEach(Array(upcoming.enumerated()), id: \.element.id) { index, item in Button { onOpen(item.id) } label: { HStack(spacing: 12) { Text(String(format: "%02d", index + 1)).foregroundStyle(.brown); Text(cleanPingLetText(item.text)).lineLimit(2).foregroundStyle(Color.pingletInk); Spacer(); Image(systemName: "chevron.right") }.frame(minHeight: 44) }.buttonStyle(.plain); if index < upcoming.count - 1 { Divider() } } }
+        }
     }.refreshable { await env.syncFeed() }.task { while !Task.isCancelled { try? await Task.sleep(for: .seconds(15)); tick = .now } } }
 }
 
@@ -87,7 +94,7 @@ struct LibraryView: View {
     @State private var query = ""; @State private var favoritesOnly = false; @State private var loading = true; @State private var error: String?; @State private var deleteCandidate: UserContent?
     @State private var deletingIDs = Set<String>()
     private var visible: [UserContent] { env.library.filter { (!favoritesOnly || $0.favorite) && (query.isEmpty || $0.contentItem.text.localizedCaseInsensitiveContains(query) || $0.contentItem.author?.localizedCaseInsensitiveContains(query) == true) } }
-    var body: some View { PingLetPage(eyebrow: "Library", title: "Everything you kept.", subtitle: "Personal saves live here and lead your rotation.") {
+    var body: some View { PingLetPage(eyebrow: "", title: "Library", subtitle: "") {
         Picker("Library", selection: $favoritesOnly) { Text("All saves").tag(false); Text("Favorites").tag(true) }.pickerStyle(.segmented)
         if !env.library.isEmpty { TextField("Search your PingLets", text: $query).textFieldStyle(.roundedBorder) }
         if loading { ProgressView().frame(maxWidth: .infinity) }
@@ -118,7 +125,7 @@ struct LibraryView: View {
                 }
                 Button { onOpen(row.contentItemId) } label: {
                     Text(cleanPingLetText(row.contentItem.text)).font(.title3).fontDesign(.serif)
-                        .lineLimit(5).frame(maxWidth: .infinity, alignment: .leading).multilineTextAlignment(.leading)
+                        .lineLimit(3).frame(maxWidth: .infinity, alignment: .leading).multilineTextAlignment(.leading)
                 }.buttonStyle(.plain)
                 if let author = row.contentItem.author { Text(author).font(.subheadline).foregroundStyle(Color.pingletMutedInk) }
             }
