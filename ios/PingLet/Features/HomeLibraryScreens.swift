@@ -63,7 +63,7 @@ struct HomeView: View {
 
 struct LibraryView: View {
     @EnvironmentObject private var env: AppEnvironment; let onOpen: (String) -> Void; let onAdd: () -> Void
-    @State private var query = ""; @State private var favoritesOnly = false; @State private var loading = true; @State private var error: String?
+    @State private var query = ""; @State private var favoritesOnly = false; @State private var loading = true; @State private var error: String?; @State private var deleteCandidate: UserContent?
     private var visible: [UserContent] { env.library.filter { (!favoritesOnly || $0.favorite) && (query.isEmpty || $0.contentItem.text.localizedCaseInsensitiveContains(query) || $0.contentItem.author?.localizedCaseInsensitiveContains(query) == true) } }
     var body: some View { PingLetPage(eyebrow: "Library", title: "Everything you kept.", subtitle: "Personal saves live here and lead your rotation.") {
         Picker("Library", selection: $favoritesOnly) { Text("All saves").tag(false); Text("Favorites").tag(true) }.pickerStyle(.segmented)
@@ -71,8 +71,22 @@ struct LibraryView: View {
         if loading { ProgressView().frame(maxWidth: .infinity) }
         if let error { PingLetCard { Text("Your library could not be loaded").font(.title2); Text(error); Button("TRY AGAIN") { Task { await refresh() } } } }
         if !loading && visible.isEmpty { PingLetCard { Text(favoritesOnly ? "Nothing favorited yet" : "Start your library").font(.title2); Text(favoritesOnly ? "Use the heart on any PingLet to keep it close." : "Write a thought or share a public post from another app."); if !favoritesOnly { Button("ADD A PINGLET", action: onAdd) } } }
-        ForEach(visible) { row in PingLetCard { HStack { Text(row.contentItem.type.rawValue.replacingOccurrences(of: "_", with: " ")).font(.caption).foregroundStyle(.brown); Spacer(); Button { toggle(row) } label: { Image(systemName: row.favorite ? "heart.fill" : "heart").foregroundStyle(row.favorite ? Color.pingletGold : .secondary) } }; Text(cleanPingLetText(row.contentItem.text)).font(.title3); if let author = row.contentItem.author { Text(author).foregroundStyle(.secondary) } }.onTapGesture { onOpen(row.contentItemId) } }
-    }.task { await refresh() } }
+        ForEach(visible) { row in PingLetCard { HStack { Text(row.contentItem.type.rawValue.replacingOccurrences(of: "_", with: " ")).font(.caption).foregroundStyle(.brown); Spacer(); Button { toggle(row) } label: { Image(systemName: row.favorite ? "heart.fill" : "heart").foregroundStyle(row.favorite ? Color.pingletGold : .secondary) } }; Text(cleanPingLetText(row.contentItem.text)).font(.title3); if let author = row.contentItem.author { Text(author).foregroundStyle(.secondary) } }.contentShape(Rectangle()).onTapGesture { onOpen(row.contentItemId) }.onLongPressGesture { deleteCandidate = row } }
+    }.task { await refresh() }
+        .confirmationDialog("Delete this PingLet?", isPresented: Binding(get: { deleteCandidate != nil }, set: { if !$0 { deleteCandidate = nil } })) {
+            Button("Delete", role: .destructive) {
+                guard let row = deleteCandidate else { return }
+                deleteCandidate = nil
+                Task {
+                    do { try await env.deleteUserContent(row.id, contentItemId: row.contentItemId) }
+                    catch { self.error = "Could not delete this PingLet. Try again." }
+                }
+            }
+            Button("Cancel", role: .cancel) { deleteCandidate = nil }
+        } message: {
+            Text("It will be removed from your library and widget rotation.")
+        }
+}
     private func refresh() async { loading = true; do { try await env.refreshLibrary(); error = nil } catch { env.library = env.shared.library; self.error = env.library.isEmpty ? "Your library could not be loaded. Check your connection and try again." : nil }; loading = false }
     private func toggle(_ row: UserContent) { let target = !row.favorite; Task { do { try await env.setFavorite(row.contentItemId, target) } catch { try? await env.setFavorite(row.contentItemId, !target) } } }
 }

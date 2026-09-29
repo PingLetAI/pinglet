@@ -20,7 +20,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class LibraryItemUi(val contentItemId: String, val text: String, val type: String, val author: String?, val sourceUrl: String?, val favorite: Boolean)
+data class LibraryItemUi(val userContentId: String, val contentItemId: String, val text: String, val type: String, val author: String?, val sourceUrl: String?, val favorite: Boolean)
 data class LibraryUiState(
     val loading: Boolean = true,
     val items: List<LibraryItemUi> = emptyList(),
@@ -59,6 +59,21 @@ class LibraryViewModel @Inject constructor(
         }
     }
 
+    fun delete(item: LibraryItemUi) {
+        if (item.userContentId in _state.value.updatingFavoriteIds) return
+        val previous = _state.value
+        _state.value = previous.copy(items = previous.items.filterNot { it.userContentId == item.userContentId }, updatingFavoriteIds = previous.updatingFavoriteIds + item.userContentId)
+        viewModelScope.launch {
+            runCatching { sessionManager.withAuthRetry { api.deleteContent(item.userContentId) } }
+                .onFailure { _state.value = previous.copy(error = "Could not delete this PingLet. Try again.") }
+            _state.value = _state.value.copy(updatingFavoriteIds = _state.value.updatingFavoriteIds - item.userContentId)
+            dao.deleteUserContent(item.userContentId)
+            dao.deleteQueueItemsForContent(item.contentItemId)
+            dao.deletePendingActionsForContent(item.contentItemId)
+            AmbientWidget().updateAll(context)
+        }
+    }
+
     fun refresh() {
         viewModelScope.launch {
             _state.value = _state.value.copy(loading = true, error = null)
@@ -73,7 +88,7 @@ class LibraryViewModel @Inject constructor(
                         UserContentEntity(row.id, userId, row.contentItemId, row.favorite, row.archived, 1f, now, now)
                     })
                     _state.value = LibraryUiState(false, rows.filterNot { it.archived }.map { row ->
-                        LibraryItemUi(row.contentItemId, row.contentItem.text, row.contentItem.type.name, row.contentItem.author, row.contentItem.sourceUrl, row.favorite)
+                        LibraryItemUi(row.id, row.contentItemId, row.contentItem.text, row.contentItem.type.name, row.contentItem.author, row.contentItem.sourceUrl, row.favorite)
                     })
                 }
                 .onFailure {
@@ -88,7 +103,7 @@ class LibraryViewModel @Inject constructor(
         if (userId.isBlank()) return emptyList()
         return dao.userLibrary(userId).filterNot { it.archived }.mapNotNull { relation ->
             dao.contentById(relation.contentItemId)?.let { content ->
-                LibraryItemUi(relation.contentItemId, content.text, content.type, content.author, content.sourceUrl, relation.favorite)
+                LibraryItemUi(relation.id, relation.contentItemId, content.text, content.type, content.author, content.sourceUrl, relation.favorite)
             }
         }
     }

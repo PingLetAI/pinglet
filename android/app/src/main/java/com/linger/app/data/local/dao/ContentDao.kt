@@ -30,6 +30,9 @@ interface ContentDao {
     @Query("DELETE FROM queue_items")
     suspend fun clearQueue()
 
+    @Query("DELETE FROM queue_items WHERE contentItemId = :contentItemId")
+    suspend fun deleteQueueItemsForContent(contentItemId: String)
+
     @Transaction
     suspend fun replaceFeed(content: List<ContentEntity>, queue: List<QueueItemEntity>) {
         upsertContent(content)
@@ -75,4 +78,7 @@ interface ContentDao {
 
     @Query("UPDATE user_content SET favorite = :favorite, updatedAt = :updatedAt WHERE userId = :userId AND contentItemId = :contentItemId")
     suspend fun setUserContentFavorite(userId: String, contentItemId: String, favorite: Boolean, updatedAt: Long)
+
+    @Query("DELETE FROM user_content WHERE id = :userContentId")
+    suspend fun deleteUserContent(userContentId: String)
 }

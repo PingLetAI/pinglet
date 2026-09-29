@@ -1,6 +1,7 @@
 package com.linger.app.ui.library
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Favorite
@@ -21,7 +22,7 @@ import com.linger.app.ui.theme.LingerGold
 
 private enum class LibraryFilter { ALL, FAVORITES }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun LibraryScreen(
     onOpenAdd: () -> Unit,
@@ -32,6 +33,7 @@ fun LibraryScreen(
     val state by viewModel.state.collectAsState()
     var filter by rememberSaveable { mutableStateOf(LibraryFilter.ALL) }
     var query by rememberSaveable { mutableStateOf("") }
+    var deleteCandidate by remember { mutableStateOf<LibraryItemUi?>(null) }
     LaunchedEffect(Unit) { viewModel.refresh() }
     val filtered = if (filter == LibraryFilter.FAVORITES) state.items.filter { it.favorite } else state.items
     val visible = filtered.filter { query.isBlank() || it.text.contains(query, true) || it.author?.contains(query, true) == true }
@@ -84,7 +86,10 @@ fun LibraryScreen(
         items(visible.size, key = { visible[it].contentItemId }) { index ->
             val item = visible[index]
             Surface(
-                modifier = Modifier.fillMaxWidth().clickable { onOpenContent(item.contentItemId) },
+                modifier = Modifier.fillMaxWidth().combinedClickable(
+                    onClick = { onOpenContent(item.contentItemId) },
+                    onLongClick = { deleteCandidate = item },
+                ),
                 color = MaterialTheme.colorScheme.surface,
                 shape = MaterialTheme.shapes.large,
                 tonalElevation = 2.dp,
@@ -109,6 +114,15 @@ fun LibraryScreen(
             }
         }
         if (visible.isNotEmpty()) item { OutlinedButton(onClick = onOpenAdd, modifier = Modifier.fillMaxWidth()) { Text("ADD ANOTHER") } }
+    }
+    deleteCandidate?.let { item ->
+        AlertDialog(
+            onDismissRequest = { deleteCandidate = null },
+            title = { Text("Delete this PingLet?") },
+            text = { Text("It will be removed from your library and widget rotation.") },
+            confirmButton = { TextButton(onClick = { deleteCandidate = null; viewModel.delete(item) }) { Text("DELETE") } },
+            dismissButton = { TextButton(onClick = { deleteCandidate = null }) { Text("CANCEL") } },
+        )
     }
 }
 

@@ -33,6 +33,16 @@ import WidgetKit
         let _: BoolResponse = try await session.perform("/api/v1/me/content/\(id)/favorite", method: favorite ? .post : .delete, body: EmptyBody())
         shared.pendingFavorites.removeAll { $0.contentID == id }
     }
+    func deleteUserContent(_ id: String, contentItemId: String? = nil) async throws {
+        let _: BoolResponse = try await session.perform("/api/v1/me/content/\(id)", method: .delete, body: EmptyBody())
+        library.removeAll { $0.id == id }
+        if let contentItemId {
+            feed.removeAll { $0.id == contentItemId }
+        }
+        shared.library = library
+        shared.feed = feed
+        WidgetCenter.shared.reloadAllTimelines()
+    }
     func signOut() async throws {
         let _: BoolResponse = try await session.perform("/api/v1/auth/logout", method: .post, body: EmptyBody())
         try await session.resetToAnonymous(); feed = []; library = []; await bootstrap()
