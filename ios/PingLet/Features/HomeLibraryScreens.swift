@@ -49,78 +49,88 @@ struct PingLetPage<Content: View>: View {
     }
 }
 struct HomeView: View {
-    @EnvironmentObject private var env: AppEnvironment; let onOpen: (String) -> Void; let onAdd: () -> Void; @State private var tick = Date()
-    let onWidgetSettings: () -> Void
+    @EnvironmentObject private var env: AppEnvironment
     @Environment(\.scenePhase) private var scenePhase
+    let onOpen: (String) -> Void
+    let onAdd: () -> Void
+    let onWidgetSettings: () -> Void
+    @State private var tick = Date()
     @State private var widgetInstalled: Bool?
+    @AppStorage("home_widget_prompt_dismissed") private var widgetPromptDismissed = false
+    @State private var poster: PosterContent?
+    @State private var updatingFavorites = Set<String>()
+    @State private var notice: String?
     private var profile: WidgetProfile {
-        SharedWidgetSelector.resolvedProfile(
-            feed: env.feed,
-            stored: env.shared.widgetProfile(key: "default"),
-            plus: (env.entitlement ?? env.shared.entitlement)?.plan == "PLUS",
-            key: "default",
-            date: tick
-        )
+        SharedWidgetSelector.resolvedProfile(feed: env.feed, stored: env.shared.widgetProfile(key: "default"),
+            plus: (env.entitlement ?? env.shared.entitlement)?.plan == "PLUS", key: "default", date: tick)
     }
-    var body: some View { PingLetPage(eyebrow: "", title: "Today", subtitle: "") {
-        PingLetCard(dark: true) {
-            HStack {
-                Text("YOUR PINGLET").font(.caption.bold()).foregroundStyle(Color.pingletGold)
-                Spacer()
-                if profile.nextChangeAt > 0 {
-                    Text("Next around \(Date(timeIntervalSince1970: Double(profile.nextChangeAt) / 1000).formatted(date: .omitted, time: .shortened))").font(.caption)
-                }
-            }
-            Text(cleanPingLetText(profile.currentText.isEmpty ? "Keep something worth coming back to." : profile.currentText))
-                .font(.title2).fontDesign(.serif).lineLimit(7)
-            if let author = profile.currentAuthor { Text(author).font(.subheadline).foregroundStyle(Color.pingletPaper.opacity(0.8)) }
-            Rectangle().fill(Color.pingletGold).frame(width: 36, height: 3)
-            if profile.currentContentId.isEmpty {
-                Button("Save your first PingLet", action: onAdd)
-                    .font(.subheadline.weight(.semibold)).foregroundStyle(Color.pingletGold)
-                    .frame(minHeight: 44)
-            }
-        }.onTapGesture { if !profile.currentContentId.isEmpty { onOpen(profile.currentContentId) } }
-        Button(action: onWidgetSettings) {
-            HStack(spacing: 10) {
-                Image(systemName: "rectangle.3.group")
-                Text(widgetInstalled == false ? "Set up widget" : widgetInstalled == true ? "Customize widget" : "Widget settings")
-                Spacer()
-                Image(systemName: "arrow.right")
-            }
-            .font(.subheadline.weight(.semibold))
-            .padding(.horizontal, 16).frame(minHeight: 50)
-            .foregroundStyle(widgetInstalled == false ? Color.pingletPaper : Color.pingletInk)
-            .background(widgetInstalled == false ? Color.pingletInk : Color.pingletPaper, in: RoundedRectangle(cornerRadius: 16))
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.pingletInk.opacity(0.2), lineWidth: 1))
-            .contentShape(RoundedRectangle(cornerRadius: 16))
-        }.buttonStyle(.plain)
-        let upcoming = Array(env.feed.filter { $0.id != profile.currentContentId }.prefix(3))
-        if !upcoming.isEmpty {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("More to revisit").font(.headline).foregroundStyle(Color.pingletInk)
-                ForEach(upcoming) { item in
-                    Button { onOpen(item.id) } label: {
-                        HStack(alignment: .center, spacing: 14) {
-                            VStack(alignment: .leading, spacing: 9) {
-                                Text(cleanPingLetText(item.text))
-                                    .font(.body).fontDesign(.serif).lineLimit(3)
-                                    .foregroundStyle(Color.pingletInk)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                Label(item.author ?? (item.source == .personal ? "Saved by you" : "From Explore"), systemImage: item.source == .personal ? "bookmark" : "sparkles")
-                                    .font(.caption).lineLimit(1).foregroundStyle(Color.pingletMutedInk)
-                            }
-                            Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(Color.pingletMutedInk)
+    private var featured: FeedItem? { env.feed.first { $0.id == profile.currentContentId } ?? env.feed.first }
+    var body: some View {
+        PingLetPage(eyebrow: "", title: "Today", subtitle: "") {
+            if let item = featured {
+                PingLetCard(dark: true) {
+                    HStack {
+                        Text("A LITTLE PINGLET").font(.caption.weight(.semibold)).tracking(1.2).foregroundStyle(Color.pingletGold)
+                        Spacer()
+                        Button { favorite(item) } label: {
+                            Image(systemName: item.favorite ? "heart.fill" : "heart").frame(width: 44, height: 44)
                         }
-                        .padding(16).frame(maxWidth: .infinity, minHeight: 80)
-                        .background(Color.pingletPaper, in: RoundedRectangle(cornerRadius: 18))
-                        .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.pingletLine, lineWidth: 1))
-                        .multilineTextAlignment(.leading).contentShape(RoundedRectangle(cornerRadius: 18))
+                        .disabled(updatingFavorites.contains(item.id))
+                        .accessibilityLabel(item.favorite ? "Remove from favorites" : "Add to favorites")
+                        shareButton(item)
+                    }
+                    Button { onOpen(item.id) } label: {
+                        Text(cleanPingLetText(item.text)).font(.title2).fontDesign(.serif).lineSpacing(5).lineLimit(8)
+                            .frame(maxWidth: .infinity, alignment: .leading).multilineTextAlignment(.leading)
                     }.buttonStyle(.plain)
+                    if let author = item.author {
+                        Text(author).font(.subheadline).foregroundStyle(Color.pingletPaper.opacity(0.8))
+                    }
+                    Rectangle().fill(Color.pingletGold).frame(width: 32, height: 3).padding(.top, 6)
                 }
+            } else {
+                PingLetCard {
+                    Image(systemName: "text.quote").font(.title).foregroundStyle(Color.pingletClay)
+                    Text("Make room for a good idea.").font(.title2).fontDesign(.serif)
+                    Text("Save a thought or a post to get started.").font(.subheadline).foregroundStyle(Color.pingletMutedInk)
+                    Button("Add your first PingLet", action: onAdd).buttonStyle(PingLetPrimaryButtonStyle())
+                }
+            }
+            let more = Array(env.feed.filter { $0.id != featured?.id }.prefix(4))
+            if !more.isEmpty {
+                Text("Worth another look").font(.headline)
+                ForEach(more) { item in
+                    PingLetCard {
+                        HStack {
+                            Text(item.author ?? (item.source == .personal ? "Saved by you" : "From Explore"))
+                                .font(.caption).foregroundStyle(Color.pingletMutedInk).lineLimit(1)
+                            Spacer()
+                            shareButton(item)
+                        }
+                        Button { onOpen(item.id) } label: {
+                            Text(cleanPingLetText(item.text)).font(.body).fontDesign(.serif).lineSpacing(3).lineLimit(4)
+                                .frame(maxWidth: .infinity, alignment: .leading).multilineTextAlignment(.leading)
+                        }.buttonStyle(.plain)
+                    }
+                }
+            }
+            if widgetInstalled == false && !widgetPromptDismissed {
+                HStack {
+                    Button(action: onWidgetSettings) {
+                        Label("Keep a PingLet on your Home Screen", systemImage: "rectangle.3.group")
+                            .font(.subheadline).multilineTextAlignment(.leading)
+                    }.frame(minHeight: 44)
+                    Spacer(minLength: 8)
+                    Button { widgetPromptDismissed = true } label: { Image(systemName: "xmark").frame(width: 44, height: 44) }
+                        .accessibilityLabel("Dismiss widget suggestion")
+                }.foregroundStyle(Color.pingletMutedInk).padding(.top, 8)
             }
         }
-    }.refreshable { await env.syncFeed() }
+        .sheet(item: $poster) { PosterShareView(content: $0) }
+        .alert("Favorite saved locally", isPresented: Binding(get: { notice != nil }, set: { if !$0 { notice = nil } })) {
+            Button("OK") { notice = nil }
+        } message: { Text(notice ?? "") }
+        .refreshable { await env.syncFeed() }
         .task(id: scenePhase) {
             guard scenePhase == .active else { return }
             widgetInstalled = await withCheckedContinuation { continuation in
@@ -132,7 +142,29 @@ struct HomeView: View {
                 }
             }
         }
-        .task { while !Task.isCancelled { try? await Task.sleep(for: .seconds(15)); tick = .now } } }
+        .task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(15))
+                tick = .now
+            }
+        }
+    }
+    private func shareButton(_ item: FeedItem) -> some View {
+        Button {
+            poster = PosterContent(id: item.id, text: item.text, author: item.author, sourceURL: item.sourceUrl)
+        } label: {
+            Image(systemName: "square.and.arrow.up").frame(width: 44, height: 44)
+        }.buttonStyle(.plain).accessibilityLabel("Share PingLet as image")
+    }
+    private func favorite(_ item: FeedItem) {
+        guard !updatingFavorites.contains(item.id) else { return }
+        updatingFavorites.insert(item.id)
+        Task {
+            defer { updatingFavorites.remove(item.id); env.feed = env.shared.feed }
+            do { try await env.setFavorite(item.id, !item.favorite) }
+            catch { notice = "Open PingLet online to sync your favorite." }
+        }
+    }
 }
 
 struct LibraryView: View {

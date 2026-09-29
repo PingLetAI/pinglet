@@ -8,6 +8,9 @@ schemes:
       config: Debug
     archive:
       config: Release
+    test:
+      targets:
+        - PingLetPosterTests
 options:
   bundleIdPrefix: ai.pinglet.app
   deploymentTarget:
@@ -21,6 +24,16 @@ settings:
     CURRENT_PROJECT_VERSION: 14
     CODE_SIGN_STYLE: Automatic
 targets:
+  PingLetPosterTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - PosterTests
+      - path: PingLet/Core/PosterRenderer.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ai.pinglet.poster-tests
+        GENERATE_INFOPLIST_FILE: YES
   PingLet:
     type: application
     platform: iOS
@@ -28,6 +41,7 @@ targets:
       path: PingLet/Info.plist
       properties:
         CFBundleDisplayName: PingLet
+        NSPhotoLibraryAddUsageDescription: Save the PingLet posters you choose to your photo library.
         CFBundleURLTypes:
           - CFBundleURLName: ai.pinglet.app
             CFBundleURLSchemes:

@@ -143,6 +143,7 @@ struct CatalogDetailView: View {
 }
 
 struct ContentDetailView: View {
+    @State private var poster: PosterContent?
     @EnvironmentObject private var env: AppEnvironment; @Environment(\.dismiss) private var dismiss; let contentID: String; @State private var detail: ContentDetail?; @State private var failed = false
     private var local: FeedItem? { env.feed.first { $0.id == contentID } ?? env.library.first { $0.contentItemId == contentID }?.contentItem }
     var body: some View { NavigationStack { PingLetPage(eyebrow: local?.source == .personal ? "Saved by you" : "From PingLet", title: "", subtitle: "") {
@@ -153,7 +154,17 @@ struct ContentDetailView: View {
         if let source = detail?.content.sourceUrl ?? local?.sourceUrl, let url = URL(string: source) { Link(destination: url) { Label("Original source", systemImage: "arrow.up.right") }.buttonStyle(PingLetSecondaryButtonStyle()) }
         if let d = detail { if let overview = d.overview, !overview.isEmpty { detailSection("Overview", overview) }; if !d.insights.isEmpty { Text("Key insights").font(.title2); ForEach(d.insights) { insight in PingLetCard { Text(insight.title).font(.headline); Text(insight.explanation); if !insight.evidence.isEmpty { Text("“\(insight.evidence)”").foregroundStyle(.secondary) } } } }; if d.access.fullDetailsUnlocked { if let summary = d.comprehensiveSummary { disclosure("Full summary", summary) }; if !d.actions.isEmpty { disclosure("Things to take forward", d.actions.map { "• \($0)" }.joined(separator: "\n")) }; ForEach(d.themes, id: \.self) { Text($0).padding(7).background(.thinMaterial, in: Capsule()) }; disclosure("Full transcript", d.transcript); disclosure("Text found in images", d.visibleText); disclosure("Original caption", d.caption) } else if d.access.hasAnalysis { PingLetCard { Text("There is more in this PingLet").font(.title2); Text("Go deeper with full summaries, insights, and transcripts."); plusAction(d.access) } } }
         else if failed { PingLetCard { Text("Details couldn't load").font(.headline); Text(local == nil ? "Check your connection and try again." : "Your saved PingLet and original source are still available."); Button("TRY AGAIN") { Task { await load() } } } }
-    }.toolbar { Button("Close", action: dismiss.callAsFunction) }.task { await load() }.onChange(of: env.entitlement?.plan) { _, _ in Task { await load() } }.onChange(of: env.entitlement?.isAnonymous) { _, _ in Task { await load() } } } }
+    }.toolbar {
+        ToolbarItem(placement: .cancellationAction) { Button("Close", action: dismiss.callAsFunction) }
+        ToolbarItem(placement: .primaryAction) {
+            if let text = detail?.content.text ?? local?.text {
+                Button {
+                    poster = PosterContent(id: contentID, text: text, author: detail?.content.author ?? local?.author, sourceURL: detail?.content.sourceUrl ?? local?.sourceUrl)
+                } label: { Image(systemName: "square.and.arrow.up") }
+                .accessibilityLabel("Share PingLet as image")
+            }
+        }
+    }.sheet(item: $poster) { PosterShareView(content: $0) }.task { await load() }.onChange(of: env.entitlement?.plan) { _, _ in Task { await load() } }.onChange(of: env.entitlement?.isAnonymous) { _, _ in Task { await load() } } } }
     @ViewBuilder private func detailSection(_ title: String, _ value: String) -> some View { Divider(); Text(title).font(.title2); Text(value) }
     @ViewBuilder private func disclosure(_ title: String, _ value: String?) -> some View { if let value, !value.isEmpty { DisclosureGroup(title) { Text(value) } } }
     @ViewBuilder private func plusAction(_ access: DetailAccess) -> some View {

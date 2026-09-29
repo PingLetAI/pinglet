@@ -7,42 +7,46 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0401F6BD7A2C389DFB5A60B3 /* SessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BABD34C4259974DA3F86B52 /* SessionManager.swift */; };
 		0D9DC8901FB508F664F7094E /* ProductionSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C71BA5414A85F4520EB6097 /* ProductionSettingsView.swift */; };
 		143FD67144159F78256CB38F /* PingLetShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 4BC56AD71EA77C858A0C3A3C /* PingLetShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		15FC66B0848474D41EE5FF31 /* SecureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505BD52B52BEBC50F2FD13B2 /* SecureStore.swift */; };
+		1A2A80CA483F1C3BEC548641 /* SharedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE49851FA45BCCC8F96DEC56 /* SharedStore.swift */; };
 		1C35DDAB77251DEC6ED72822 /* SettingsQueueScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C693F0B9B5F90D26DA0CAAF /* SettingsQueueScreens.swift */; };
+		2201609F49A678FBA98C2220 /* PosterShareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1633FE109DFABB3F855A7EA /* PosterShareView.swift */; };
 		2672D21BCA0266DEB9A25BFA /* PingLetApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACF9CC6F09DB36782849F6DF /* PingLetApp.swift */; };
+		2CFF7EE74F761F8B785D5B16 /* SharedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE49851FA45BCCC8F96DEC56 /* SharedStore.swift */; };
 		45AFC5C239CECADDDCBAD199 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 1000598D00E30E8EC75A348C /* PrivacyInfo.xcprivacy */; };
-		51EE0318BA8F8DB7DD7C9117 /* SecureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505BD52B52BEBC50F2FD13B2 /* SecureStore.swift */; };
-		6B57D46FE4FEEECCF0DBE615 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF6A88D5950A177EE290D1D /* Models.swift */; };
+		4C4A1177D936E24FC370C800 /* WidgetSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA79483276829075D9785E14 /* WidgetSelection.swift */; };
 		6CAB77493898D308AE1B4255 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00CCCD299A46A966F335D47A /* Theme.swift */; };
+		7591978BE80B1FCAE23A641D /* PosterRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB1EBFF8E0A6376CC16825C7 /* PosterRenderer.swift */; };
 		788DC9B5665D39C9E8A36A66 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 72203DC26D8B6201B464540D /* Assets.xcassets */; };
-		800554238AFD55D3E8B1E4FE /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F1FD808D187C54C751F87BB /* APIClient.swift */; };
-		82AED908B427762F7FFD5B08 /* SessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BABD34C4259974DA3F86B52 /* SessionManager.swift */; };
-		9025C72A8A8CC028000437C4 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F1FD808D187C54C751F87BB /* APIClient.swift */; };
-		93E38A077CFAD48973EDDA31 /* SharedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F693DA18BC871435F372CD5 /* SharedStore.swift */; };
+		8283FD125B53F31AA32B5BAB /* PosterRendererTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BF8C5A52EA4D4D22097DA80 /* PosterRendererTests.swift */; };
+		908D7612C6F5C089D08DC11E /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99803D298B1A37982A5CB9EC /* Models.swift */; };
 		9448BBF8D20E15C8506083CC /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = ADFED0B16A2E58141C28345C /* PrivacyInfo.xcprivacy */; };
-		95EAF789615C49F7FFF5B206 /* SharedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F693DA18BC871435F372CD5 /* SharedStore.swift */; };
-		9900755DA49E4CE42067769E /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF6A88D5950A177EE290D1D /* Models.swift */; };
 		9E4569B0283EBFEDB25868F5 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = BA915A5FC709C3357518DEB5 /* PrivacyInfo.xcprivacy */; };
 		A0EDB27D1F516F644575B9D3 /* AppleSubscriptionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2367A3AAECEC8D77C0853499 /* AppleSubscriptionManager.swift */; };
+		A310658CDFB6773E8C515F3D /* SharedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE49851FA45BCCC8F96DEC56 /* SharedStore.swift */; };
+		A920D1C3B40B0643EBD2F6DA /* PosterRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB1EBFF8E0A6376CC16825C7 /* PosterRenderer.swift */; };
+		AA2BC313A19BF6409047DF6B /* SecureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99597EAAE0C77805446373F0 /* SecureStore.swift */; };
 		AAD0D3CF170B7406CF791315 /* ExploreDetailScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = D118EA755E1E95ED379EE995 /* ExploreDetailScreens.swift */; };
 		AD15EBF240644D921C657681 /* AddPingLetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E03D6BCEA34CD7707D13816 /* AddPingLetView.swift */; };
-		B7499CC1225B8ADA67D0650D /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF6A88D5950A177EE290D1D /* Models.swift */; };
+		B73B1BCFE7CC2F1AF7C26B08 /* WidgetSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA79483276829075D9785E14 /* WidgetSelection.swift */; };
 		BDA7DB65C4BCDF3FF1262115 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 811B946472F35352E1CAFC5E /* RootView.swift */; };
+		C2CF4519B9410A26A3DEE009 /* SessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBF266FD23787B92C88246A7 /* SessionManager.swift */; };
+		C490B63CF23111DE3F0963B8 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E528A434E8EC76C856609AB /* APIClient.swift */; };
+		C4B8F8C006F1B4A40BF47052 /* SecureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99597EAAE0C77805446373F0 /* SecureStore.swift */; };
 		C4C9F79FDCA644009E306FFB /* AddPingLetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E03D6BCEA34CD7707D13816 /* AddPingLetView.swift */; };
 		CA0C1E534ED4759B59805E40 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25B6770F90D86FC0700E6852 /* ShareViewController.swift */; };
 		CA7578D73940182A5A2F80A8 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00CCCD299A46A966F335D47A /* Theme.swift */; };
 		CAE26C86D7C2621959EF9736 /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = E47E768D1E7DA3D7E7F82640 /* AppEnvironment.swift */; };
+		CC633156FF242E196E31E8A8 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99803D298B1A37982A5CB9EC /* Models.swift */; };
 		D03261143026B3F2B981500D /* PingLetWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 72732C28E0662861C4FB4A8E /* PingLetWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		D1B026A32CBABEEEAAC63B06 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E528A434E8EC76C856609AB /* APIClient.swift */; };
 		D29A93280D5E2A4D6DC64516 /* AccountTrialScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28297141D8A9BF213C5ADF99 /* AccountTrialScreens.swift */; };
 		D33FD7D3E314FAC78D3E35BB /* HomeLibraryScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61C1F07024F0A07470B4C563 /* HomeLibraryScreens.swift */; };
-		D75F17F015C9315A2B7B26DD /* WidgetSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AB2746FECEEB72FC15129A9 /* WidgetSelection.swift */; };
+		D7A4ADB210DC553E57713B9C /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99803D298B1A37982A5CB9EC /* Models.swift */; };
 		DF06BC40700F4E7BFDB5EEA3 /* PingLetWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 152CDD3A1F895B2C858C6A0C /* PingLetWidget.swift */; };
-		E37909FE513D4AAB9B389C78 /* WidgetSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AB2746FECEEB72FC15129A9 /* WidgetSelection.swift */; };
+		EA6FEFD90666167D8014019A /* SessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBF266FD23787B92C88246A7 /* SessionManager.swift */; };
 		F15E21E4086A545BB1371807 /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = E47E768D1E7DA3D7E7F82640 /* AppEnvironment.swift */; };
-		FD449FE425C0BCDE76B41E61 /* SharedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F693DA18BC871435F372CD5 /* SharedStore.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -81,35 +85,39 @@
 		00CCCD299A46A966F335D47A /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		1000598D00E30E8EC75A348C /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		152CDD3A1F895B2C858C6A0C /* PingLetWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PingLetWidget.swift; sourceTree = "<group>"; };
+		1BF8C5A52EA4D4D22097DA80 /* PosterRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PosterRendererTests.swift; sourceTree = "<group>"; };
 		1C71BA5414A85F4520EB6097 /* ProductionSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductionSettingsView.swift; sourceTree = "<group>"; };
 		2367A3AAECEC8D77C0853499 /* AppleSubscriptionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleSubscriptionManager.swift; sourceTree = "<group>"; };
 		25B6770F90D86FC0700E6852 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
 		28297141D8A9BF213C5ADF99 /* AccountTrialScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountTrialScreens.swift; sourceTree = "<group>"; };
-		2AB2746FECEEB72FC15129A9 /* WidgetSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSelection.swift; sourceTree = "<group>"; };
 		2E03D6BCEA34CD7707D13816 /* AddPingLetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddPingLetView.swift; sourceTree = "<group>"; };
 		2FBAD6D6DA90956212C523C9 /* PingLet.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PingLet.entitlements; sourceTree = "<group>"; };
 		34E507FE3FCF1E331E794BCA /* PingLetWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PingLetWidget.entitlements; sourceTree = "<group>"; };
+		3C4873C66B6CD4AD6BF2FFF4 /* PingLetPosterTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = PingLetPosterTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3EAF92107F9FDD592534BEE9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
-		3F693DA18BC871435F372CD5 /* SharedStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedStore.swift; sourceTree = "<group>"; };
-		4BABD34C4259974DA3F86B52 /* SessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionManager.swift; sourceTree = "<group>"; };
 		4BC56AD71EA77C858A0C3A3C /* PingLetShare.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = PingLetShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		4C693F0B9B5F90D26DA0CAAF /* SettingsQueueScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsQueueScreens.swift; sourceTree = "<group>"; };
-		4CF6A88D5950A177EE290D1D /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
-		505BD52B52BEBC50F2FD13B2 /* SecureStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureStore.swift; sourceTree = "<group>"; };
-		5F1FD808D187C54C751F87BB /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		4E528A434E8EC76C856609AB /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		61C1F07024F0A07470B4C563 /* HomeLibraryScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeLibraryScreens.swift; sourceTree = "<group>"; };
 		72203DC26D8B6201B464540D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		72732C28E0662861C4FB4A8E /* PingLetWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = PingLetWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		7C96B16EB9FF38994A80908F /* PingLetShare.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PingLetShare.entitlements; sourceTree = "<group>"; };
 		811B946472F35352E1CAFC5E /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		99597EAAE0C77805446373F0 /* SecureStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureStore.swift; sourceTree = "<group>"; };
+		99803D298B1A37982A5CB9EC /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		ACF9CC6F09DB36782849F6DF /* PingLetApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PingLetApp.swift; sourceTree = "<group>"; };
 		ADFED0B16A2E58141C28345C /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		B1633FE109DFABB3F855A7EA /* PosterShareView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PosterShareView.swift; sourceTree = "<group>"; };
 		B1C2132194A34A7CC2B07AA9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		BA79483276829075D9785E14 /* WidgetSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSelection.swift; sourceTree = "<group>"; };
 		BA915A5FC709C3357518DEB5 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		C8CB48422F3ECC0EEE629AAA /* PingLet.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = PingLet.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D118EA755E1E95ED379EE995 /* ExploreDetailScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExploreDetailScreens.swift; sourceTree = "<group>"; };
+		DBF266FD23787B92C88246A7 /* SessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionManager.swift; sourceTree = "<group>"; };
 		E47E768D1E7DA3D7E7F82640 /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
 		F3E35007722A40A9497A148C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		FB1EBFF8E0A6376CC16825C7 /* PosterRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PosterRenderer.swift; sourceTree = "<group>"; };
+		FE49851FA45BCCC8F96DEC56 /* SharedStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedStore.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -120,6 +128,7 @@
 				2E03D6BCEA34CD7707D13816 /* AddPingLetView.swift */,
 				D118EA755E1E95ED379EE995 /* ExploreDetailScreens.swift */,
 				61C1F07024F0A07470B4C563 /* HomeLibraryScreens.swift */,
+				B1633FE109DFABB3F855A7EA /* PosterShareView.swift */,
 				1C71BA5414A85F4520EB6097 /* ProductionSettingsView.swift */,
 				811B946472F35352E1CAFC5E /* RootView.swift */,
 				4C693F0B9B5F90D26DA0CAAF /* SettingsQueueScreens.swift */,
@@ -133,6 +142,29 @@
 				2367A3AAECEC8D77C0853499 /* AppleSubscriptionManager.swift */,
 			);
 			path = Billing;
+			sourceTree = "<group>";
+		};
+		2779A1DFB404D6825EE2C87C /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				4E528A434E8EC76C856609AB /* APIClient.swift */,
+				99803D298B1A37982A5CB9EC /* Models.swift */,
+				FB1EBFF8E0A6376CC16825C7 /* PosterRenderer.swift */,
+				99597EAAE0C77805446373F0 /* SecureStore.swift */,
+				DBF266FD23787B92C88246A7 /* SessionManager.swift */,
+				FE49851FA45BCCC8F96DEC56 /* SharedStore.swift */,
+				BA79483276829075D9785E14 /* WidgetSelection.swift */,
+			);
+			name = Core;
+			path = PingLet/Core;
+			sourceTree = "<group>";
+		};
+		428E21D40427AD56E41551F3 /* PosterTests */ = {
+			isa = PBXGroup;
+			children = (
+				1BF8C5A52EA4D4D22097DA80 /* PosterRendererTests.swift */,
+			);
+			path = PosterTests;
 			sourceTree = "<group>";
 		};
 		4A3D106BF7E6249F080776AA /* PingLetWidget */ = {
@@ -155,7 +187,7 @@
 				1000598D00E30E8EC75A348C /* PrivacyInfo.xcprivacy */,
 				7E2128457BD07EC004BB92BE /* App */,
 				22903B03B4045BD5C1D4EB85 /* Billing */,
-				A5DECD9A0AD93CC202037D41 /* Core */,
+				2779A1DFB404D6825EE2C87C /* Core */,
 				10D6C50E3DE6C6679EC2A4AB /* Features */,
 				808F57E80135333C89792FAC /* Shared */,
 			);
@@ -183,6 +215,7 @@
 			isa = PBXGroup;
 			children = (
 				C8CB48422F3ECC0EEE629AAA /* PingLet.app */,
+				3C4873C66B6CD4AD6BF2FFF4 /* PingLetPosterTests.xctest */,
 				4BC56AD71EA77C858A0C3A3C /* PingLetShare.appex */,
 				72732C28E0662861C4FB4A8E /* PingLetWidget.appex */,
 			);
@@ -200,25 +233,14 @@
 			path = PingLetShare;
 			sourceTree = "<group>";
 		};
-		A5DECD9A0AD93CC202037D41 /* Core */ = {
-			isa = PBXGroup;
-			children = (
-				5F1FD808D187C54C751F87BB /* APIClient.swift */,
-				4CF6A88D5950A177EE290D1D /* Models.swift */,
-				505BD52B52BEBC50F2FD13B2 /* SecureStore.swift */,
-				4BABD34C4259974DA3F86B52 /* SessionManager.swift */,
-				3F693DA18BC871435F372CD5 /* SharedStore.swift */,
-				2AB2746FECEEB72FC15129A9 /* WidgetSelection.swift */,
-			);
-			path = Core;
-			sourceTree = "<group>";
-		};
 		AA4DA5AD6ABD1EFA784257B3 = {
 			isa = PBXGroup;
 			children = (
+				2779A1DFB404D6825EE2C87C /* Core */,
 				4F66746C6BACB8CBF649A040 /* PingLet */,
 				9BE3EA5DBA57CE6ED9250406 /* PingLetShare */,
 				4A3D106BF7E6249F080776AA /* PingLetWidget */,
+				428E21D40427AD56E41551F3 /* PosterTests */,
 				97BD58BD22F13F31E340898F /* Products */,
 			);
 			sourceTree = "<group>";
@@ -283,6 +305,23 @@
 			productReference = C8CB48422F3ECC0EEE629AAA /* PingLet.app */;
 			productType = "com.apple.product-type.application";
 		};
+		F3D26B8248AFC7433EDBF0B7 /* PingLetPosterTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8BAF3E1420359CC690E64BCC /* Build configuration list for PBXNativeTarget "PingLetPosterTests" */;
+			buildPhases = (
+				AB2DAEDA2D71424ECD8CECA5 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PingLetPosterTests;
+			packageProductDependencies = (
+			);
+			productName = PingLetPosterTests;
+			productReference = 3C4873C66B6CD4AD6BF2FFF4 /* PingLetPosterTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -304,6 +343,10 @@
 						DevelopmentTeam = GC29BX444D;
 						ProvisioningStyle = Automatic;
 					};
+					F3D26B8248AFC7433EDBF0B7 = {
+						DevelopmentTeam = GC29BX444D;
+						ProvisioningStyle = Automatic;
+					};
 				};
 			};
 			buildConfigurationList = AA46B17D46242D3D44A0C036 /* Build configuration list for PBXProject "PingLet" */;
@@ -320,6 +363,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
+				F3D26B8248AFC7433EDBF0B7 /* PingLetPosterTests */,
 				D27DFE7051C41749F2A4DCC0 /* PingLet */,
 				1D445014F5F6C6FF0F436408 /* PingLetWidget */,
 				CDD5F594F9788C08DAA44F11 /* PingLetShare */,
@@ -360,10 +404,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				6B57D46FE4FEEECCF0DBE615 /* Models.swift in Sources */,
+				CC633156FF242E196E31E8A8 /* Models.swift in Sources */,
 				DF06BC40700F4E7BFDB5EEA3 /* PingLetWidget.swift in Sources */,
-				95EAF789615C49F7FFF5B206 /* SharedStore.swift in Sources */,
-				E37909FE513D4AAB9B389C78 /* WidgetSelection.swift in Sources */,
+				2CFF7EE74F761F8B785D5B16 /* SharedStore.swift in Sources */,
+				4C4A1177D936E24FC370C800 /* WidgetSelection.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -371,23 +415,34 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9025C72A8A8CC028000437C4 /* APIClient.swift in Sources */,
+				C490B63CF23111DE3F0963B8 /* APIClient.swift in Sources */,
 				D29A93280D5E2A4D6DC64516 /* AccountTrialScreens.swift in Sources */,
 				C4C9F79FDCA644009E306FFB /* AddPingLetView.swift in Sources */,
 				CAE26C86D7C2621959EF9736 /* AppEnvironment.swift in Sources */,
 				A0EDB27D1F516F644575B9D3 /* AppleSubscriptionManager.swift in Sources */,
 				AAD0D3CF170B7406CF791315 /* ExploreDetailScreens.swift in Sources */,
 				D33FD7D3E314FAC78D3E35BB /* HomeLibraryScreens.swift in Sources */,
-				9900755DA49E4CE42067769E /* Models.swift in Sources */,
+				908D7612C6F5C089D08DC11E /* Models.swift in Sources */,
 				2672D21BCA0266DEB9A25BFA /* PingLetApp.swift in Sources */,
+				A920D1C3B40B0643EBD2F6DA /* PosterRenderer.swift in Sources */,
+				2201609F49A678FBA98C2220 /* PosterShareView.swift in Sources */,
 				0D9DC8901FB508F664F7094E /* ProductionSettingsView.swift in Sources */,
 				BDA7DB65C4BCDF3FF1262115 /* RootView.swift in Sources */,
-				51EE0318BA8F8DB7DD7C9117 /* SecureStore.swift in Sources */,
-				82AED908B427762F7FFD5B08 /* SessionManager.swift in Sources */,
+				C4B8F8C006F1B4A40BF47052 /* SecureStore.swift in Sources */,
+				C2CF4519B9410A26A3DEE009 /* SessionManager.swift in Sources */,
 				1C35DDAB77251DEC6ED72822 /* SettingsQueueScreens.swift in Sources */,
-				FD449FE425C0BCDE76B41E61 /* SharedStore.swift in Sources */,
+				1A2A80CA483F1C3BEC548641 /* SharedStore.swift in Sources */,
 				CA7578D73940182A5A2F80A8 /* Theme.swift in Sources */,
-				D75F17F015C9315A2B7B26DD /* WidgetSelection.swift in Sources */,
+				B73B1BCFE7CC2F1AF7C26B08 /* WidgetSelection.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AB2DAEDA2D71424ECD8CECA5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7591978BE80B1FCAE23A641D /* PosterRenderer.swift in Sources */,
+				8283FD125B53F31AA32B5BAB /* PosterRendererTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -395,14 +450,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				800554238AFD55D3E8B1E4FE /* APIClient.swift in Sources */,
+				D1B026A32CBABEEEAAC63B06 /* APIClient.swift in Sources */,
 				AD15EBF240644D921C657681 /* AddPingLetView.swift in Sources */,
 				F15E21E4086A545BB1371807 /* AppEnvironment.swift in Sources */,
-				B7499CC1225B8ADA67D0650D /* Models.swift in Sources */,
-				15FC66B0848474D41EE5FF31 /* SecureStore.swift in Sources */,
-				0401F6BD7A2C389DFB5A60B3 /* SessionManager.swift in Sources */,
+				D7A4ADB210DC553E57713B9C /* Models.swift in Sources */,
+				AA2BC313A19BF6409047DF6B /* SecureStore.swift in Sources */,
+				EA6FEFD90666167D8014019A /* SessionManager.swift in Sources */,
 				CA0C1E534ED4759B59805E40 /* ShareViewController.swift in Sources */,
-				93E38A077CFAD48973EDDA31 /* SharedStore.swift in Sources */,
+				A310658CDFB6773E8C515F3D /* SharedStore.swift in Sources */,
 				6CAB77493898D308AE1B4255 /* Theme.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -537,6 +592,22 @@
 			};
 			name = Release;
 		};
+		A6F4B65748B000DAF2184ED8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "ai.pinglet.poster-tests";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
 		AC8010474C1097B327AD11FA /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -647,6 +718,22 @@
 			};
 			name = Release;
 		};
+		D82AF0FE266EBC108B248968 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "ai.pinglet.poster-tests";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		E76F44E6D9AFC18B068230B1 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -667,6 +754,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		8BAF3E1420359CC690E64BCC /* Build configuration list for PBXNativeTarget "PingLetPosterTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A6F4B65748B000DAF2184ED8 /* Debug */,
+				D82AF0FE266EBC108B248968 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		AA46B17D46242D3D44A0C036 /* Build configuration list for PBXProject "PingLet" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
