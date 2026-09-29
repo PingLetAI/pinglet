@@ -77,7 +77,7 @@ struct HomeView: View {
                         }
                         .disabled(updatingFavorites.contains(item.id))
                         .accessibilityLabel(item.favorite ? "Remove from favorites" : "Add to favorites")
-                        shareButton(item)
+                        shareButton(item, dark: true)
                     }
                     Button { onOpen(item.id) } label: {
                         Text(cleanPingLetText(item.text)).font(.title2).fontDesign(.serif).lineSpacing(5).lineLimit(8)
@@ -149,12 +149,10 @@ struct HomeView: View {
             }
         }
     }
-    private func shareButton(_ item: FeedItem) -> some View {
-        Button {
+    private func shareButton(_ item: FeedItem, dark: Bool = false) -> some View {
+        PosterShareButton(dark: dark) {
             poster = PosterContent(id: item.id, text: item.text, author: item.author, sourceURL: item.sourceUrl)
-        } label: {
-            Image(systemName: "square.and.arrow.up").frame(width: 44, height: 44)
-        }.buttonStyle(.plain).accessibilityLabel("Share PingLet as image")
+        }
     }
     private func favorite(_ item: FeedItem) {
         guard !updatingFavorites.contains(item.id) else { return }

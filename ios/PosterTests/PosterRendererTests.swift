@@ -2,6 +2,10 @@ import XCTest
 import UIKit
 
 final class PosterRendererTests: XCTestCase {
+    func testPortraitIsDefault() {
+        XCTAssertEqual(PosterFormat.defaultFormat, .portrait)
+        XCTAssertEqual(PosterFormat.defaultFormat.size, CGSize(width: 1080, height: 1350))
+    }
     private let text = "You do not need to have every answer before you begin. Keep showing up, pay attention to what works, and let small steps become something worth keeping."
     @MainActor func testEveryFormatAndThemeExportsExactSizeAndVisibleAttribution() throws {
         let content = PosterContent(id: "test", text: text, author: "A little perspective", sourceURL: nil)

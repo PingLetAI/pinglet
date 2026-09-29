@@ -158,10 +158,9 @@ struct ContentDetailView: View {
         ToolbarItem(placement: .cancellationAction) { Button("Close", action: dismiss.callAsFunction) }
         ToolbarItem(placement: .primaryAction) {
             if let text = detail?.content.text ?? local?.text {
-                Button {
+                PosterShareButton {
                     poster = PosterContent(id: contentID, text: text, author: detail?.content.author ?? local?.author, sourceURL: detail?.content.sourceUrl ?? local?.sourceUrl)
-                } label: { Image(systemName: "square.and.arrow.up") }
-                .accessibilityLabel("Share PingLet as image")
+                }
             }
         }
     }.sheet(item: $poster) { PosterShareView(content: $0) }.task { await load() }.onChange(of: env.entitlement?.plan) { _, _ in Task { await load() } }.onChange(of: env.entitlement?.isAnonymous) { _, _ in Task { await load() } } } }

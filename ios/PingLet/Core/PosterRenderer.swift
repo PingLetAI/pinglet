@@ -12,6 +12,15 @@ enum PosterFormat: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var size: CGSize { CGSize(width: 1080, height: self == .portrait ? 1350 : self == .square ? 1080 : 1920) }
     var dimensions: String { "1080 × \(Int(size.height))" }
+    static let defaultFormat: PosterFormat = .portrait
+    var label: String { self == .story ? "Full screen" : rawValue }
+    var guidance: String {
+        switch self {
+        case .portrait: return "4:5 · Instagram feed & everyday sharing"
+        case .square: return "1:1 · Square posts"
+        case .story: return "9:16 · TikTok & Instagram Stories"
+        }
+    }
 }
 
 enum PosterTheme: String, CaseIterable, Identifiable {
@@ -56,12 +65,12 @@ enum PosterError: LocalizedError {
         guard !text.isEmpty else { throw PosterError.empty }
         guard original.contains(text) else { throw PosterError.invalidExcerpt }
         guard text.utf16.count < 12000 else { throw PosterError.tooLong }
-        let width: CGFloat = 912
+        let width: CGFloat = format == .story ? 816 : 880
         let top: CGFloat = format == .story ? 340 : 230
-        let bottom = format.size.height - (format == .story ? 310 : 210)
+        let bottom = format.size.height - (format == .story ? 400 : 230)
         let authorText = content.author?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let author = authorText.isEmpty ? nil : NSAttributedString(string: authorText, attributes: [.font: UIFont.systemFont(ofSize: 28, weight: .medium), .foregroundColor: theme.foreground])
-        let authorHeight = author.map { measured($0, width: width).height } ?? 0
+        let authorHeight = author.map { measured($0, width: width - 52).height } ?? 0
         guard authorHeight <= 110 else { throw PosterError.attributionTooLong }
         let available = bottom - top - authorHeight - (author == nil ? 0 : 48)
         let maxFont: CGFloat = text.count < 130 ? 82 : text.count < 300 ? 68 : 56
@@ -70,15 +79,15 @@ enum PosterError: LocalizedError {
             let base = UIFont.systemFont(ofSize: fontSize, weight: .regular)
             let font = UIFont(descriptor: base.fontDescriptor.withDesign(.serif) ?? base.fontDescriptor, size: fontSize)
             let paragraph = NSMutableParagraphStyle()
-            paragraph.lineSpacing = fontSize * 0.16
+            paragraph.lineSpacing = fontSize * 0.12
             paragraph.lineBreakMode = .byWordWrapping
             let attributed = NSAttributedString(string: text, attributes: [.font: font, .foregroundColor: theme.foreground, .paragraphStyle: paragraph])
             let size = measured(attributed, width: width)
             if size.height <= available {
-                let y = top + max(0, (available - size.height) * 0.42)
-                let rect = CGRect(x: 84, y: y, width: width, height: ceil(size.height) + 2)
+                let y = top + max(0, (available - size.height) * 0.38)
+                let rect = CGRect(x: 100, y: y, width: width, height: ceil(size.height) + 2)
                 return Layout(text: attributed, textRect: rect, author: author,
-                              authorRect: CGRect(x: 84, y: rect.maxY + 48, width: width, height: ceil(authorHeight) + 2), fontSize: fontSize, isExcerpt: text != original)
+                              authorRect: CGRect(x: 152, y: rect.maxY + 48, width: width - 52, height: ceil(authorHeight) + 2), fontSize: fontSize, isExcerpt: text != original)
             }
         }
         throw PosterError.tooLong
@@ -91,16 +100,35 @@ enum PosterError: LocalizedError {
         return UIGraphicsImageRenderer(size: format.size, format: configuration).image { context in
             theme.background.setFill()
             context.fill(CGRect(origin: .zero, size: format.size))
+            let cg = context.cgContext
+            if let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: [UIColor.white.withAlphaComponent(theme == .paper ? 0.28 : 0.035).cgColor, UIColor.clear.cgColor] as CFArray, locations: [0, 1]) {
+                cg.drawLinearGradient(gradient, start: .zero, end: CGPoint(x: 1080, y: format.size.height), options: [])
+            }
+            // A quiet printed-paper border; content stays well inside social overlays.
+            cg.setStrokeColor(theme.foreground.withAlphaComponent(0.12).cgColor)
+            cg.setLineWidth(1)
+            cg.stroke(CGRect(x: 48, y: 48, width: 984, height: format.size.height - 96))
             let headerY: CGFloat = format == .story ? 210 : 100
-            let footerY = format.size.height - (format == .story ? 210 : 104)
-            let brand = NSAttributedString(string: "PINGLET", attributes: [.font: UIFont.systemFont(ofSize: 26, weight: .semibold), .foregroundColor: theme.foreground, .kern: 5])
-            brand.draw(at: CGPoint(x: 84, y: headerY))
+            let footerY = format.size.height - (format == .story ? 290 : 106)
+            let brand = NSAttributedString(string: "PingLet", attributes: [.font: UIFont.systemFont(ofSize: 28, weight: .semibold), .foregroundColor: theme.foreground, .kern: 0.4])
+            brand.draw(at: CGPoint(x: 140, y: headerY))
             theme.accent.setFill()
-            context.fill(CGRect(x: 84, y: headerY + 61, width: 38, height: 4))
+            let mark = UIBezierPath()
+            mark.move(to: CGPoint(x: 112, y: headerY + 1))
+            mark.addQuadCurve(to: CGPoint(x: 126, y: headerY + 16), controlPoint: CGPoint(x: 113, y: headerY + 15))
+            mark.addQuadCurve(to: CGPoint(x: 112, y: headerY + 31), controlPoint: CGPoint(x: 113, y: headerY + 17))
+            mark.addQuadCurve(to: CGPoint(x: 98, y: headerY + 16), controlPoint: CGPoint(x: 111, y: headerY + 17))
+            mark.addQuadCurve(to: CGPoint(x: 112, y: headerY + 1), controlPoint: CGPoint(x: 111, y: headerY + 15))
+            mark.close(); mark.fill()
+            context.fill(CGRect(x: 100, y: layout.textRect.minY - 42, width: 44, height: 3))
             layout.text.draw(with: layout.textRect, options: [.usesLineFragmentOrigin, .usesFontLeading], context: nil)
+            if layout.author != nil {
+                theme.accent.setFill()
+                context.fill(CGRect(x: 100, y: layout.authorRect.minY + 17, width: 30, height: 2))
+            }
             layout.author?.draw(with: layout.authorRect, options: [.usesLineFragmentOrigin, .usesFontLeading], context: nil)
             let footer = NSAttributedString(string: layout.isExcerpt ? "EXCERPT · PINGLET.AI" : "PINGLET.AI", attributes: [.font: UIFont.systemFont(ofSize: 19, weight: .medium), .foregroundColor: theme.foreground.withAlphaComponent(0.75), .kern: 2])
-            footer.draw(at: CGPoint(x: 84, y: footerY))
+            footer.draw(at: CGPoint(x: 100, y: footerY))
         }
     }
     private static func measured(_ text: NSAttributedString, width: CGFloat) -> CGRect {

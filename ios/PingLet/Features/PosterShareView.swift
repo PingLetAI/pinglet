@@ -1,10 +1,26 @@
 import SwiftUI
 import Photos
 
+struct PosterShareButton: View {
+    var dark = false
+    let action: () -> Void
+    var body: some View {
+        Button(action: action) {
+            Label("Share", systemImage: "square.and.arrow.up")
+                .font(.system(size: 13, weight: .semibold))
+                .padding(.horizontal, 12).frame(height: 34)
+                .foregroundStyle(dark ? Color.pingletPaper : Color.pingletInk)
+                .background(dark ? Color.white.opacity(0.09) : Color.pingletMint.opacity(0.4), in: Capsule())
+                .overlay(Capsule().stroke(dark ? Color.white.opacity(0.15) : Color.pingletInk.opacity(0.09), lineWidth: 1))
+                .frame(minHeight: 44).contentShape(Rectangle())
+        }.buttonStyle(.plain).accessibilityLabel("Share PingLet as image")
+    }
+}
+
 struct PosterShareView: View {
     let content: PosterContent
     @Environment(\.dismiss) private var dismiss
-    @State private var format: PosterFormat = .portrait
+    @State private var format: PosterFormat = .defaultFormat
     @State private var theme: PosterTheme = .paper
     @State private var excerpt: String
     @State private var preview: UIImage?
@@ -28,12 +44,15 @@ struct PosterShareView: View {
                         ContentUnavailableView("Choose a shorter excerpt", systemImage: "text.quote", description: Text(fitError ?? "Preparing your poster…"))
                     }
                     Picker("Format", selection: $format) {
-                        ForEach(PosterFormat.allCases) { Text($0.rawValue).tag($0) }
+                        ForEach(PosterFormat.allCases) { Text($0.label).tag($0) }
                     }.pickerStyle(.segmented)
                     Picker("Theme", selection: $theme) {
                         ForEach(PosterTheme.allCases) { Text($0.rawValue).tag($0) }
                     }.pickerStyle(.segmented)
-                    Text(format.dimensions).font(.caption).foregroundStyle(Color.pingletMutedInk)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(format.guidance)
+                        Text(format.dimensions)
+                    }.font(.caption).foregroundStyle(Color.pingletMutedInk)
                     DisclosureGroup("Choose an excerpt", isExpanded: Binding(get: { editingExcerpt }, set: { editingExcerpt = $0 })) {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Remove words from the beginning or end. Creator attribution stays on the image.").font(.caption).foregroundStyle(Color.pingletMutedInk)
