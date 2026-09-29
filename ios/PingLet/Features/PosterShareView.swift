@@ -6,13 +6,10 @@ struct PosterShareButton: View {
     let action: () -> Void
     var body: some View {
         Button(action: action) {
-            Label("Share", systemImage: "square.and.arrow.up")
-                .font(.system(size: 13, weight: .semibold))
-                .padding(.horizontal, 12).frame(height: 34)
+            Image(systemName: "arrowshape.turn.up.right")
+                .font(.system(size: 19, weight: .regular))
                 .foregroundStyle(dark ? Color.pingletPaper : Color.pingletInk)
-                .background(dark ? Color.white.opacity(0.09) : Color.pingletMint.opacity(0.4), in: Capsule())
-                .overlay(Capsule().stroke(dark ? Color.white.opacity(0.15) : Color.pingletInk.opacity(0.09), lineWidth: 1))
-                .frame(minHeight: 44).contentShape(Rectangle())
+                .frame(width: 44, height: 44).contentShape(Rectangle())
         }.buttonStyle(.plain).accessibilityLabel("Share PingLet as image")
     }
 }
@@ -79,7 +76,7 @@ struct PosterShareView: View {
     }
     private var actions: some View {
         VStack(spacing: 10) {
-                    Button(action: share) { Label("Share image", systemImage: "square.and.arrow.up") }
+                    Button(action: share) { Label("Share image", systemImage: "arrowshape.turn.up.right") }
                         .buttonStyle(PingLetPrimaryButtonStyle()).disabled(preview == nil || saving)
                     HStack(spacing: 12) {
                         Button { Task { await saveImage() } } label: { Label(saving ? "Saving…" : "Save image", systemImage: "arrow.down.to.line") }
