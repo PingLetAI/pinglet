@@ -72,12 +72,17 @@ struct HomeView: View {
                     HStack {
                         Text("A LITTLE PINGLET").font(.caption.weight(.semibold)).tracking(1.2).foregroundStyle(Color.pingletGold)
                         Spacer()
-                        Button { favorite(item) } label: {
-                            Image(systemName: item.favorite ? "heart.fill" : "heart").frame(width: 44, height: 44)
+                        HStack(spacing: 0) {
+                            Button { favorite(item) } label: {
+                                Image(systemName: item.favorite ? "heart.fill" : "heart")
+                                    .font(.system(size: 19, weight: .regular))
+                                    .frame(width: 44, height: 44)
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(updatingFavorites.contains(item.id))
+                            .accessibilityLabel(item.favorite ? "Remove from favorites" : "Add to favorites")
+                            shareButton(item, dark: true)
                         }
-                        .disabled(updatingFavorites.contains(item.id))
-                        .accessibilityLabel(item.favorite ? "Remove from favorites" : "Add to favorites")
-                        shareButton(item, dark: true)
                     }
                     Button { onOpen(item.id) } label: {
                         Text(cleanPingLetText(item.text)).font(.title2).fontDesign(.serif).lineSpacing(5).lineLimit(8)
