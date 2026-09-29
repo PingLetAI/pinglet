@@ -8,12 +8,12 @@ struct PosterContent: Identifiable {
 }
 
 enum PosterFormat: String, CaseIterable, Identifiable {
-    case portrait = "Portrait", square = "Square", story = "Story"
+    case story = "Story", portrait = "Portrait", square = "Square"
     var id: String { rawValue }
     var size: CGSize { CGSize(width: 1080, height: self == .portrait ? 1350 : self == .square ? 1080 : 1920) }
     var dimensions: String { "1080 × \(Int(size.height))" }
-    static let defaultFormat: PosterFormat = .portrait
-    var label: String { self == .story ? "Full screen" : rawValue }
+    static let defaultFormat: PosterFormat = .story
+    var label: String { rawValue }
     var guidance: String {
         switch self {
         case .portrait: return "4:5 · Instagram feed & everyday sharing"
