@@ -21,12 +21,164 @@ private struct LegacySettingsView: View {
 }
 
 struct ProcessingQueueView: View {
-    @EnvironmentObject private var env: AppEnvironment; @State private var items: [Ingestion] = []; @State private var ready = Set<String>()
-    var body: some View { ZStack { PingLetCanvas(); ScrollView { LazyVStack(alignment: .leading, spacing: 14) { Text("Shared-post progress and history").font(.system(size: 17, weight: .medium, design: .rounded)).foregroundStyle(Color.pingletMutedInk).frame(maxWidth: .infinity, alignment: .leading); if items.isEmpty { PingLetCard { Image(systemName: "checkmark.circle").font(.title); Text("Nothing waiting").font(.title2); Text("Shared posts will appear here while PingLet extracts what is worth keeping.").foregroundStyle(Color.pingletMutedInk) } }; ForEach(items) { item in PingLetCard { HStack { Circle().fill(item.status == "READY" ? Color.pingletMint : item.status == "FAILED" ? Color.red.opacity(0.65) : Color.pingletGold).frame(width: 9); Text(item.status == "READY" ? "READY" : item.status == "FAILED" ? "NEEDS ATTENTION" : "PROCESSING").font(.system(size: 11, weight: .bold, design: .rounded)).tracking(1); Spacer() }; Text(item.contentItem?.text ?? item.caption ?? "Shared post").font(.system(size: 18, design: .serif)).lineLimit(3); Text(item.processingStage ?? item.status).font(.caption).foregroundStyle(Color.pingletMutedInk); if let message = item.errorMessage { Label(message, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.red) } } } }.padding(22) } }.navigationTitle("Processing queue").navigationBarTitleDisplayMode(.inline).task { while !Task.isCancelled { if let rows: [Ingestion] = try? await env.session.perform("/api/v1/me/ingestions") { let newReady = rows.filter { $0.status == "READY" && !ready.contains($0.id) }; items = rows; if !newReady.isEmpty { ready.formUnion(newReady.map(\.id)); await env.syncFeed() } }; try? await Task.sleep(for: .seconds(3)) } } }
+    @EnvironmentObject private var env: AppEnvironment
+    @State private var items: [Ingestion] = []
+    @State private var loading = true
+    @State private var error: String?
+    @State private var detailID: String?
+    @State private var showingAdd = false
+    var body: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 16) {
+                Text("From a saved link to a thought worth keeping.").font(.subheadline).foregroundStyle(Color.pingletMutedInk)
+                if loading && items.isEmpty { ProgressView("Loading your imports").frame(maxWidth: .infinity) }
+                if let error { Label(error, systemImage: "wifi.exclamationmark"); Button("Try again") { Task { await load() } } }
+                if !loading && items.isEmpty && error == nil {
+                    ContentUnavailableView("Nothing waiting", systemImage: "tray", description: Text("Posts you share will appear here."))
+                }
+                ForEach(items) { item in
+                    PingLetCard {
+                        Label(statusTitle(item.status), systemImage: statusIcon(item.status))
+                            .font(.caption.weight(.semibold)).foregroundStyle(Color.pingletClay)
+                        Text(item.contentItem?.text ?? item.caption ?? "Shared post")
+                            .font(.title3).fontDesign(.serif).lineLimit(4)
+                        if item.status == "READY", let content = item.contentItem {
+                            Button("Open PingLet") { detailID = content.id }
+                        } else if ["FAILED", "REJECTED"].contains(item.status) {
+                            Text(item.errorMessage ?? "This post could not be imported. Try another public link or save the words yourself.")
+                                .font(.subheadline).foregroundStyle(Color.pingletMutedInk)
+                            Button("Save another link or write a note") { showingAdd = true }
+                        } else {
+                            Label("Extracting the words and ideas. You can leave this screen.", systemImage: "clock")
+                                .font(.subheadline).foregroundStyle(Color.pingletMutedInk)
+                        }
+                    }
+                }
+            }.padding(22)
+        }
+        .background(PingLetCanvas()).navigationTitle("Your imports").navigationBarTitleDisplayMode(.inline)
+        .refreshable { await load() }
+        .sheet(isPresented: Binding(get: { detailID != nil }, set: { if !$0 { detailID = nil } })) {
+            if let detailID { ContentDetailView(contentID: detailID) }
+        }
+        .sheet(isPresented: $showingAdd) { AddPingLetView(initialText: "") }
+        .task {
+            while !Task.isCancelled {
+                await load()
+                try? await Task.sleep(for: .seconds(5))
+            }
+        }
+    }
+    private func statusTitle(_ status: String) -> String {
+        switch status { case "READY": return "Ready to read"; case "FAILED": return "Needs attention"; case "REJECTED": return "Could not be added"; default: return "In progress" }
+    }
+    private func statusIcon(_ status: String) -> String {
+        switch status { case "READY": return "checkmark.circle"; case "FAILED", "REJECTED": return "exclamationmark.circle"; default: return "clock" }
+    }
+    private func load() async {
+        defer { loading = false }
+        do {
+            let rows: [Ingestion] = try await env.session.perform("/api/v1/me/ingestions")
+            let previous = Set(items.filter { $0.status == "READY" }.map(\.id))
+            items = rows
+            error = nil
+            if rows.contains(where: { $0.status == "READY" && !previous.contains($0.id) }) {
+                try? await env.refreshLibrary()
+                await env.syncFeed()
+            }
+        } catch { self.error = "Imports could not be refreshed. Check your connection and try again." }
+    }
 }
 
 struct WidgetSettingsView: View {
-    @EnvironmentObject private var env: AppEnvironment; @State private var key = "default"; @State private var profile = WidgetProfile()
+    @EnvironmentObject private var env: AppEnvironment
+    @State private var key = "default"
+    @State private var profile = WidgetProfile()
+    @State private var large = false
     private var plus: Bool { env.entitlement?.plan == "PLUS" }
-    var body: some View { Form { Section { Picker("Widget profile", selection: $key) { Text("Default").tag("default"); Text("Widget 2").tag("profile2"); Text("Widget 3").tag("profile3") }.pickerStyle(.segmented) } header: { Text("CHOOSE WIDGET") }; if !plus { Section { VStack(alignment: .leading, spacing: 8) { Label("Make every widget your own", systemImage: "sparkles").font(.headline); Text("Plus unlocks themes, independent content profiles, schedules, typography, spacing, and manual rotation.").foregroundStyle(Color.pingletMutedInk) }.padding(.vertical, 8) } }; Section("FREE CONTROLS") { Picker("Text scale", selection: $profile.textScale) { ForEach(["SMALL","MEDIUM","LARGE"], id: \.self, content: Text.init) }.pickerStyle(.segmented); Picker("Translucency", selection: $profile.opacity) { Text("Light").tag(62); Text("Blend").tag(78); Text("Solid").tag(90) }.pickerStyle(.segmented) }; Section("PLUS APPEARANCE") { Picker("Surface", selection: $profile.theme) { ForEach(["BLEND","INK","FOREST","CLAY"], id: \.self, content: Text.init) }.disabled(!plus); Picker("Typography", selection: $profile.typography) { ForEach(["EDITORIAL","CLEAN","COMPACT"], id: \.self, content: Text.init) }.disabled(!plus); Picker("Spacing", selection: $profile.spacing) { ForEach(["COMPACT","COMFORTABLE","AIRY"], id: \.self, content: Text.init) }.disabled(!plus) }; Section("PLUS CONTENT PROFILE") { Picker("Source", selection: $profile.contentMode) { ForEach(["MIXED","PERSONAL","COLLECTIONS"], id: \.self, content: Text.init) }.disabled(!plus); Picker("Schedule", selection: $profile.scheduleMode) { Text("Anytime").tag("ANYTIME"); Text("Morning + evening").tag("DAY_RHYTHM"); Text("Contextual").tag("CONTEXTUAL") }.disabled(!plus); Toggle("Show another", isOn: $profile.manualNext).disabled(!plus).tint(Color.pingletClay) } }.scrollContentBackground(.hidden).background(PingLetCanvas()).navigationTitle("Widgets").navigationBarTitleDisplayMode(.inline).tint(Color.pingletClay).onAppear { profile = env.shared.widgetProfile(key: key) }.onChange(of: key) { _, value in profile = env.shared.widgetProfile(key: value) }.onChange(of: profile) { _, value in env.shared.setWidgetProfile(value, key: key); WidgetCenter.shared.reloadAllTimelines() } }
+    private var preview: WidgetProfile {
+        var value = SharedWidgetSelector.resolvedProfile(feed: env.feed, stored: profile, plus: plus, key: key, date: .now)
+        if value.currentContentId.isEmpty {
+            value.currentContentId = "preview"
+            value.currentText = "The things you keep can change the way you see the day."
+            value.currentAuthor = "Your next little PingLet"
+        }
+        return value
+    }
+    var body: some View {
+        Form {
+            Section {
+                Picker("Profile", selection: $key) {
+                    Text("Default").tag("default")
+                    Text("Widget 2").tag("profile2")
+                    Text("Widget 3").tag("profile3")
+                }.pickerStyle(.segmented)
+                Text("Hold a Home Screen widget, choose Edit Widget, then select the matching profile.")
+                    .font(.footnote).foregroundStyle(Color.pingletMutedInk)
+            }
+            Section("Live preview") {
+                Picker("Size", selection: $large) { Text("Medium").tag(false); Text("Large").tag(true) }.pickerStyle(.segmented)
+                let artwork = PingLetWidgetArtwork(profile: preview, large: large) {
+                    if plus && profile.manualNext { Image(systemName: "arrow.right").frame(width: 44, height: 36) }
+                    Image(systemName: preview.currentFavorite ? "heart.fill" : "heart").frame(width: 44, height: 36)
+                }
+                artwork.padding(16).frame(height: large ? 330 : 180)
+                    .background(artwork.surface.opacity(Double(profile.opacity) / 100), in: RoundedRectangle(cornerRadius: 24))
+                    .allowsHitTesting(false).accessibilityLabel("Widget appearance preview")
+                Text("Preview only. Your Home Screen layout adapts to the widget size.").font(.caption).foregroundStyle(Color.pingletMutedInk)
+            }
+            Section("Text & surface") {
+                Picker("Text size", selection: $profile.textScale) {
+                    Text("Small").tag("SMALL"); Text("Medium").tag("MEDIUM"); Text("Large").tag("LARGE")
+                }.pickerStyle(.segmented)
+                Picker("Surface opacity", selection: $profile.opacity) {
+                    Text("Soft").tag(62); Text("Balanced").tag(78); Text("Solid").tag(100)
+                }.pickerStyle(.segmented)
+            }
+            if !plus {
+                Section {
+                    Label("Make it yours with Plus", systemImage: "sparkles").font(.headline)
+                    Text("Distinct themes, typography, independent content profiles, and a button for your next thought.")
+                    if env.entitlement?.isAnonymous != false {
+                        NavigationLink("Connect your account") { AccountConnectionView() }
+                    } else if env.entitlement?.trialEligible == true {
+                        NavigationLink("Explore PingLet Plus") { TrialOfferView() }
+                    } else if env.entitlement?.paidPlansEnabled == true {
+                        NavigationLink("Explore PingLet Plus") { PlusPlansView() }
+                    }
+                }
+            }
+            Section("Appearance · Plus") {
+                Picker("Theme", selection: $profile.theme) {
+                    Text("Paper").tag("BLEND"); Text("Ink").tag("INK"); Text("Forest").tag("FOREST"); Text("Clay").tag("CLAY")
+                }
+                Picker("Typography", selection: $profile.typography) {
+                    Text("Editorial").tag("EDITORIAL"); Text("Clean").tag("CLEAN"); Text("Rounded").tag("COMPACT")
+                }
+                Picker("Spacing", selection: $profile.spacing) {
+                    Text("Compact").tag("COMPACT"); Text("Comfortable").tag("COMFORTABLE"); Text("Airy").tag("AIRY")
+                }
+            }.disabled(!plus)
+            Section {
+                Picker("Content", selection: $profile.contentMode) {
+                    Text("Personal & curated").tag("MIXED"); Text("My saves only").tag("PERSONAL"); Text("Collections only").tag("COLLECTIONS")
+                }
+                Picker("Rhythm", selection: $profile.scheduleMode) {
+                    Text("Anytime").tag("ANYTIME"); Text("Morning & evening").tag("DAY_RHYTHM"); Text("Time of day").tag("CONTEXTUAL")
+                }
+                Toggle("Show next button", isOn: $profile.manualNext)
+            } header: { Text("Content & rhythm · Plus") } footer: {
+                Text("Collections use your Explore preferences. If no content matches, your widget will invite you to add some. iOS controls the exact refresh time.")
+            }.disabled(!plus)
+        }
+        .scrollContentBackground(.hidden).background(PingLetCanvas())
+        .navigationTitle("Your widget").navigationBarTitleDisplayMode(.inline).tint(Color.pingletClay)
+        .onAppear { loadProfile() }
+        .onChange(of: key) { _, _ in loadProfile() }
+        .onChange(of: profile) { _, value in env.shared.setWidgetProfile(value, key: key); WidgetCenter.shared.reloadAllTimelines() }
+    }
+    private func loadProfile() {
+        profile = env.shared.widgetProfile(key: key)
+        if profile.opacity == 90 { profile.opacity = 100 }
+    }
 }

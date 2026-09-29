@@ -8,14 +8,15 @@ struct RootView: View {
     @State private var submittingShare = false; @State private var shareQueued = false
     @State private var processingItems: [Ingestion] = []; @State private var showingQueue = false
     var body: some View {
-        TabView(selection: $tab) {
-            HomeView(onOpen: { contentID = $0 }).tabItem { Label("Home", systemImage: "house.fill") }.tag(Tab.home)
-            LibraryView(onOpen: { contentID = $0 }, onAdd: { addRoute = AddRoute(text: "") }).tabItem { Label("Library", systemImage: "bookmark.fill") }.tag(Tab.library)
-            ExploreView().tabItem { Label("Explore", systemImage: "safari.fill") }.tag(Tab.explore)
-            SettingsView().tabItem { Label("Settings", systemImage: "gearshape.fill") }.tag(Tab.settings)
+        Group {
+            switch tab {
+            case .home: HomeView(onOpen: { contentID = $0 }, onAdd: { addRoute = AddRoute(text: "") })
+            case .library: LibraryView(onOpen: { contentID = $0 }, onAdd: { addRoute = AddRoute(text: "") })
+            case .explore: ExploreView()
+            case .settings: SettingsView()
+            }
         }
         .tint(Color.pingletInk)
-        .toolbar(.hidden, for: .tabBar)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             VStack(spacing: 0) {
                 if !activeProcessing.isEmpty {
@@ -37,9 +38,13 @@ struct RootView: View {
                 bottomNavigation
             }
         }
-        .sheet(item: $addRoute) { AddPingLetView(initialText: $0.text) }
+        .sheet(item: $addRoute) { route in AddPingLetView(initialText: route.text, onSaved: {
+            addRoute = nil
+            tab = .library
+            Task { try? await env.refreshLibrary(); await env.syncFeed(); await env.refreshEntitlement() }
+        }) }
         .sheet(item: Binding(get: { contentID.map(ContentRoute.init) }, set: { contentID = $0?.id })) { ContentDetailView(contentID: $0.id) }
-        .sheet(isPresented: $showingQueue) { NavigationStack { ProcessingQueueView() } }
+        .sheet(isPresented: $showingQueue) { NavigationStack { ProcessingQueueView().toolbar { ToolbarItem(placement: .cancellationAction) { Button("Done") { showingQueue = false } } } } }
         .task { await submitPendingShare() }
         .task { await monitorProcessing() }
         .task { await refreshFeedPeriodically() }
@@ -57,6 +62,8 @@ struct RootView: View {
             Text("Your shared post is now in the processing queue. You can keep using PingLet while it is analyzed.")
         }
         .onOpenURL { url in
+            if url.scheme?.lowercased() == "pinglet", url.host == "add" { addRoute = AddRoute(text: ""); return }
+            if url.scheme?.lowercased() == "pinglet", url.host == "explore" { tab = .explore; return }
             guard url.scheme?.lowercased() == "pinglet", url.host?.lowercased() == "content",
                   let id = url.pathComponents.dropFirst().first, !id.isEmpty else { return }
             contentID = id
@@ -121,7 +128,14 @@ struct RootView: View {
     }
     private func monitorProcessing() async {
         while !Task.isCancelled {
-            if let rows: [Ingestion] = try? await env.session.perform("/api/v1/me/ingestions") { processingItems = rows }
+            if let rows: [Ingestion] = try? await env.session.perform("/api/v1/me/ingestions") {
+                let previousReady = Set(processingItems.filter { $0.status == "READY" }.map(\.id))
+                processingItems = rows
+                if rows.contains(where: { $0.status == "READY" && !previousReady.contains($0.id) }) {
+                    try? await env.refreshLibrary()
+                    await env.syncFeed()
+                }
+            }
             try? await Task.sleep(for: .seconds(4))
         }
     }

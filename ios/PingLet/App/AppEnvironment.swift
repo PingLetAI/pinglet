@@ -38,6 +38,18 @@ import WidgetKit
         library.removeAll { $0.id == id }
         if let contentItemId {
             feed.removeAll { $0.id == contentItemId }
+            shared.pendingFavorites.removeAll { $0.contentID == contentItemId }
+            for key in ["default", "profile2", "profile3"] {
+                var profile = shared.widgetProfile(key: key)
+                if profile.currentContentId == contentItemId {
+                    profile.currentContentId = ""
+                    profile.currentText = ""
+                    profile.currentAuthor = nil
+                    profile.currentSourceUrl = nil
+                    profile.currentFavorite = false
+                    shared.setWidgetProfile(profile, key: key)
+                }
+            }
         }
         shared.library = library
         shared.feed = feed

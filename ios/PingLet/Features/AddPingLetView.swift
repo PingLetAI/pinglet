@@ -28,7 +28,7 @@ import SwiftUI
             self.error = (error as? APIError)?.errorDescription ?? "Could not record your agreement. Check your connection and try again."
         }
     }
-    private var detectedURL: URL? { text.split(whereSeparator: { $0.isWhitespace }).compactMap { URL(string: String($0)) }.first { ["http", "https"].contains($0.scheme?.lowercased() ?? "") } }
+    var detectedURL: URL? { text.split(whereSeparator: { $0.isWhitespace }).compactMap { URL(string: String($0)) }.first { ["http", "https"].contains($0.scheme?.lowercased() ?? "") } }
     private func performSave(_ env: AppEnvironment, url: URL?) async {
         saving = true; error = nil
         do {
@@ -36,7 +36,10 @@ import SwiftUI
                 let _: Ingestion = try await env.session.perform("/api/v1/me/ingestions", method: .post, body: IngestionRequest(url: url.absoluteString))
             } else {
                 struct Body: Encodable { let text: String; let type: String; let author: String? }
-                let _: UserContent = try await env.session.perform("/api/v1/me/content", method: .post, body: Body(text: text.trimmingCharacters(in: .whitespacesAndNewlines), type: "QUOTE", author: author.isEmpty ? nil : author))
+                let saved: UserContent = try await env.session.perform("/api/v1/me/content", method: .post, body: Body(text: text.trimmingCharacters(in: .whitespacesAndNewlines), type: "QUOTE", author: author.isEmpty ? nil : author))
+                env.library.insert(saved, at: 0)
+                env.shared.library = env.library
+                await env.syncFeed()
             }
             saving = false; queued = true
         } catch let api as APIError {
@@ -68,7 +71,8 @@ struct AddPingLetView: View {
                                 .tracking(1.8)
                                 .foregroundStyle(Color.pingletClay)
                             Text("Keep what found you.")
-                                .font(.system(size: 40, design: .serif))
+                                .font(.largeTitle.weight(.regular))
+                                .fontDesign(.serif)
                                 .foregroundStyle(Color.pingletInk)
                             Text("Write your own words or paste a public post link. PingLet will quietly take it from there.")
                                 .font(.system(size: 16, weight: .medium, design: .rounded))
@@ -90,16 +94,18 @@ struct AddPingLetView: View {
                                             .allowsHitTesting(false)
                                     }
                                 }
+                            if model.detectedURL == nil {
                             Divider()
                             TextField("Author or creator (optional)", text: $model.author)
                                 .font(.system(size: 15, weight: .medium, design: .rounded))
+                            }
                         }
                         if let error = model.error {
                             Label(error, systemImage: "exclamationmark.circle.fill")
                                 .font(.system(size: 14, weight: .medium, design: .rounded))
                                 .foregroundStyle(Color.red)
                         }
-                        Button(model.saving ? "SAVING…" : "EXTRACT AND SAVE") { Task { await model.save(env) } }
+                        Button(model.saving ? "Saving…" : model.detectedURL == nil ? "Save PingLet" : "Extract from link") { Task { await model.save(env) } }
                             .buttonStyle(PingLetPrimaryButtonStyle())
                             .disabled(model.saving || model.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                         Text("For links, only the public post is analyzed; extra text beside the link is not saved. Personal notes saved without a link remain private.")
@@ -113,7 +119,12 @@ struct AddPingLetView: View {
                 }
             }
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { if let onCancel { onCancel() } else { dismiss() } }.fontWeight(.semibold) } }
-            .task { await model.prepare(env) }.onChange(of: model.queued) { _, ready in if ready { if let onSaved { onSaved() } else { dismiss() } } }
+            .task { await model.prepare(env) }
+            .alert(model.detectedURL == nil ? "Saved to your library" : "Your link is in the queue", isPresented: $model.queued) {
+                Button("Done") { if let onSaved { onSaved() } else { dismiss() } }
+            } message: {
+                Text(model.detectedURL == nil ? "Your new PingLet is ready to come back to." : "You can keep using PingLet while the post is extracted. Follow its progress above the navigation bar.")
+            }
             .sheet(isPresented: $model.showTerms) {
                 NavigationStack {
                     ScrollView {

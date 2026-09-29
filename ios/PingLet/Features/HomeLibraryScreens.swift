@@ -8,7 +8,7 @@ func cleanPingLetText(_ value: String) -> String {
 
 struct PingLetPage<Content: View>: View {
     let eyebrow: String, title: String, subtitle: String; @ViewBuilder let content: Content
-    private var titleSize: CGFloat { title.count > 180 ? 27 : title.count > 90 ? 33 : 42 }
+    @ScaledMetric(relativeTo: .title) private var titleSize: CGFloat = 30
     var body: some View {
         ZStack {
             PingLetCanvas()
@@ -33,7 +33,7 @@ struct PingLetPage<Content: View>: View {
                 }
                 .padding(.horizontal, 22)
                 .padding(.top, 22)
-                .padding(.bottom, 108)
+                .padding(.bottom, 28)
             }
             .scrollIndicators(.hidden)
         }
@@ -41,7 +41,7 @@ struct PingLetPage<Content: View>: View {
     }
 }
 struct HomeView: View {
-    @EnvironmentObject private var env: AppEnvironment; let onOpen: (String) -> Void; @State private var tick = Date()
+    @EnvironmentObject private var env: AppEnvironment; let onOpen: (String) -> Void; let onAdd: () -> Void; @State private var tick = Date()
     private var profile: WidgetProfile {
         SharedWidgetSelector.resolvedProfile(
             feed: env.feed,
@@ -52,32 +52,88 @@ struct HomeView: View {
         )
     }
     var body: some View { PingLetPage(eyebrow: "Today", title: "One good thought, kept close.", subtitle: "Your personal saves lead. PingLet fills the gaps quietly.") {
-        PingLetCard(dark: true) { HStack { Text("ON YOUR WIDGET").font(.caption.bold()).foregroundStyle(Color.pingletGold); Spacer(); Text(profile.nextChangeAt > 0 ? "CHANGING SOON" : "ABOUT 30 MIN").font(.caption) }; Text(cleanPingLetText(profile.currentText.isEmpty ? "Your next thought is finding its place." : profile.currentText)).font(.system(size: 28, design: .serif)); if let author = profile.currentAuthor { Text(author).foregroundStyle(.gray) }; Rectangle().fill(Color.pingletGold).frame(width: 36, height: 3) }.onTapGesture { if !profile.currentContentId.isEmpty { onOpen(profile.currentContentId) } }
-        PingLetSectionLabel(title: "Coming up", trailing: "Ready offline")
+        PingLetCard(dark: true) {
+            HStack {
+                Text("DEFAULT WIDGET").font(.caption.bold()).foregroundStyle(Color.pingletGold)
+                Spacer()
+                if profile.nextChangeAt > 0 {
+                    Text("Next around \(Date(timeIntervalSince1970: Double(profile.nextChangeAt) / 1000).formatted(date: .omitted, time: .shortened))").font(.caption)
+                }
+            }
+            Text(cleanPingLetText(profile.currentText.isEmpty ? "Keep something worth coming back to." : profile.currentText))
+                .font(.title2).fontDesign(.serif).lineLimit(7)
+            if let author = profile.currentAuthor { Text(author).font(.subheadline).foregroundStyle(Color.pingletPaper.opacity(0.8)) }
+            Rectangle().fill(Color.pingletGold).frame(width: 36, height: 3)
+            if profile.currentContentId.isEmpty {
+                Button("Save your first PingLet", action: onAdd)
+                    .font(.subheadline.weight(.semibold)).foregroundStyle(Color.pingletGold)
+                    .frame(minHeight: 44)
+            }
+        }.onTapGesture { if !profile.currentContentId.isEmpty { onOpen(profile.currentContentId) } }
+        DisclosureGroup("Add PingLet to your Home Screen") {
+            Text("Touch and hold your Home Screen, tap Edit, then Add Widget. Search for PingLet and choose a size. To use another profile, hold the widget, choose Edit Widget, and select Widget 2 or Widget 3.")
+                .font(.subheadline).foregroundStyle(Color.pingletMutedInk).padding(.top, 8)
+        }
+        PingLetSectionLabel(title: "In your rotation", trailing: "Ready offline")
         Text("A new PingLet returns approximately every 30 minutes.").font(.system(size: 14, weight: .medium, design: .rounded)).foregroundStyle(Color.pingletMutedInk)
         let upcoming = Array(env.feed.filter { $0.id != profile.currentContentId }.prefix(5))
         if upcoming.isEmpty { PingLetCard { Text("Share a post or tap + to build your rotation.") } }
         else { PingLetCard { ForEach(Array(upcoming.enumerated()), id: \.element.id) { index, item in Button { onOpen(item.id) } label: { HStack(spacing: 12) { Text(String(format: "%02d", index + 1)).foregroundStyle(.brown); Text(cleanPingLetText(item.text)).lineLimit(2).foregroundStyle(Color.pingletInk); Spacer(); Image(systemName: "chevron.right") } }.buttonStyle(.plain); if index < upcoming.count - 1 { Divider() } } } }
-    }.task { while !Task.isCancelled { try? await Task.sleep(for: .seconds(15)); tick = .now } } }
+    }.refreshable { await env.syncFeed() }.task { while !Task.isCancelled { try? await Task.sleep(for: .seconds(15)); tick = .now } } }
 }
 
 struct LibraryView: View {
     @EnvironmentObject private var env: AppEnvironment; let onOpen: (String) -> Void; let onAdd: () -> Void
     @State private var query = ""; @State private var favoritesOnly = false; @State private var loading = true; @State private var error: String?; @State private var deleteCandidate: UserContent?
+    @State private var deletingIDs = Set<String>()
     private var visible: [UserContent] { env.library.filter { (!favoritesOnly || $0.favorite) && (query.isEmpty || $0.contentItem.text.localizedCaseInsensitiveContains(query) || $0.contentItem.author?.localizedCaseInsensitiveContains(query) == true) } }
     var body: some View { PingLetPage(eyebrow: "Library", title: "Everything you kept.", subtitle: "Personal saves live here and lead your rotation.") {
         Picker("Library", selection: $favoritesOnly) { Text("All saves").tag(false); Text("Favorites").tag(true) }.pickerStyle(.segmented)
         if !env.library.isEmpty { TextField("Search your PingLets", text: $query).textFieldStyle(.roundedBorder) }
         if loading { ProgressView().frame(maxWidth: .infinity) }
-        if let error { PingLetCard { Text("Your library could not be loaded").font(.title2); Text(error); Button("TRY AGAIN") { Task { await refresh() } } } }
-        if !loading && visible.isEmpty { PingLetCard { Text(favoritesOnly ? "Nothing favorited yet" : "Start your library").font(.title2); Text(favoritesOnly ? "Use the heart on any PingLet to keep it close." : "Write a thought or share a public post from another app."); if !favoritesOnly { Button("ADD A PINGLET", action: onAdd) } } }
-        ForEach(visible) { row in PingLetCard { HStack { Text(row.contentItem.type.rawValue.replacingOccurrences(of: "_", with: " ")).font(.caption).foregroundStyle(.brown); Spacer(); Button { toggle(row) } label: { Image(systemName: row.favorite ? "heart.fill" : "heart").foregroundStyle(row.favorite ? Color.pingletGold : .secondary) } }; Text(cleanPingLetText(row.contentItem.text)).font(.title3); if let author = row.contentItem.author { Text(author).foregroundStyle(.secondary) } }.contentShape(Rectangle()).onTapGesture { onOpen(row.contentItemId) }.onLongPressGesture { deleteCandidate = row } }
-    }.task { await refresh() }
+        if let error { PingLetCard { Label(error, systemImage: "exclamationmark.circle"); Button("Dismiss") { self.error = nil }; Button("Refresh library") { Task { await refresh() } } } }
+        if !loading && visible.isEmpty {
+            ContentUnavailableView {
+                Label(query.isEmpty ? (favoritesOnly ? "No favorites yet" : "Your ideas belong here") : "No matching PingLets", systemImage: query.isEmpty ? "bookmark" : "magnifyingglass")
+            } description: {
+                Text(query.isEmpty ? "Save a thought or share a public post. Use the heart to keep favorites close." : "Try different words or search for a creator.")
+            } actions: {
+                if !query.isEmpty { Button("Clear search") { query = "" } }
+                else if !favoritesOnly { Button("Add a PingLet", action: onAdd).buttonStyle(PingLetPrimaryButtonStyle()) }
+            }
+        }
+        ForEach(visible) { row in
+            PingLetCard {
+                HStack {
+                    Text(row.contentItem.type.rawValue.capitalized).font(.caption).foregroundStyle(Color.pingletClay)
+                    Spacer()
+                    if deletingIDs.contains(row.id) { ProgressView().accessibilityLabel("Deleting") }
+                    Button { toggle(row) } label: {
+                        Image(systemName: row.favorite ? "heart.fill" : "heart").frame(width: 44, height: 44)
+                    }.accessibilityLabel(row.favorite ? "Remove from favorites" : "Add to favorites")
+                    Menu {
+                        Button("Delete PingLet", role: .destructive) { deleteCandidate = row }
+                    } label: { Image(systemName: "ellipsis").frame(width: 44, height: 44) }
+                    .accessibilityLabel("PingLet actions")
+                }
+                Button { onOpen(row.contentItemId) } label: {
+                    Text(cleanPingLetText(row.contentItem.text)).font(.title3).fontDesign(.serif)
+                        .lineLimit(5).frame(maxWidth: .infinity, alignment: .leading).multilineTextAlignment(.leading)
+                }.buttonStyle(.plain)
+                if let author = row.contentItem.author { Text(author).font(.subheadline).foregroundStyle(Color.pingletMutedInk) }
+            }
+            .disabled(deletingIDs.contains(row.id))
+            .onLongPressGesture { deleteCandidate = row }
+            .accessibilityAction(named: "Delete PingLet") { deleteCandidate = row }
+        }
+    }.task { await refresh() }.refreshable { await refresh() }
         .confirmationDialog("Delete this PingLet?", isPresented: Binding(get: { deleteCandidate != nil }, set: { if !$0 { deleteCandidate = nil } })) {
             Button("Delete", role: .destructive) {
                 guard let row = deleteCandidate else { return }
                 deleteCandidate = nil
+                deletingIDs.insert(row.id)
                 Task {
+                    defer { deletingIDs.remove(row.id) }
                     do { try await env.deleteUserContent(row.id, contentItemId: row.contentItemId) }
                     catch { self.error = "Could not delete this PingLet. Try again." }
                 }

@@ -20,12 +20,12 @@ struct PingLetCanvas: View {
                 endPoint: .bottomTrailing
             )
             Circle()
-                .fill(Color.pingletMint.opacity(0.42))
+                .fill(Color.pingletMint.opacity(0.22))
                 .frame(width: 270, height: 270)
                 .blur(radius: 1)
                 .offset(x: 160, y: -310)
             Circle()
-                .fill(Color.pingletClay.opacity(0.10))
+                .fill(Color.pingletClay.opacity(0.06))
                 .frame(width: 220, height: 220)
                 .offset(x: -170, y: 360)
         }
@@ -59,25 +59,25 @@ struct PingLetCard<Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 13) { content }
-            .padding(20)
+            .padding(18)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                dark ? AnyShapeStyle(Color.pingletInk) : AnyShapeStyle(.ultraThinMaterial),
-                in: RoundedRectangle(cornerRadius: 26, style: .continuous)
+                dark ? AnyShapeStyle(Color.pingletInk) : AnyShapeStyle(Color.pingletPaper),
+                in: RoundedRectangle(cornerRadius: 22, style: .continuous)
             )
             .foregroundStyle(dark ? Color.pingletPaper : Color.pingletInk)
             .overlay(
-                RoundedRectangle(cornerRadius: 26, style: .continuous)
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .stroke(dark ? Color.white.opacity(0.07) : Color.pingletLine, lineWidth: 1)
             )
-            .shadow(color: Color.pingletInk.opacity(dark ? 0.16 : 0.07), radius: 18, x: 0, y: 9)
+            .shadow(color: Color.pingletInk.opacity(dark ? 0.12 : 0.035), radius: 12, x: 0, y: 5)
     }
 }
 
 struct PingLetPrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 14, weight: .bold, design: .rounded))
+            .font(.subheadline.weight(.semibold))
             .tracking(0.7)
             .frame(maxWidth: .infinity, minHeight: 54)
             .foregroundStyle(Color.pingletPaper)

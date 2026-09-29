@@ -321,7 +321,11 @@ struct SettingsView: View {
             method: .patch,
             body: Body(personalSystemMix: value)
         )
-        guard response != nil else { return }
+        guard response != nil else {
+            error = "Your content balance could not be saved. Check your connection and try again."
+            return
+        }
+        error = nil
         await env.syncFeed()
     }
 

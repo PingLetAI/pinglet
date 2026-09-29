@@ -64,8 +64,15 @@ class LibraryViewModel @Inject constructor(
         val previous = _state.value
         _state.value = previous.copy(items = previous.items.filterNot { it.userContentId == item.userContentId }, updatingFavoriteIds = previous.updatingFavoriteIds + item.userContentId)
         viewModelScope.launch {
-            runCatching { sessionManager.withAuthRetry { api.deleteContent(item.userContentId) } }
-                .onFailure { _state.value = previous.copy(error = "Could not delete this PingLet. Try again.") }
+            val deleted = runCatching { sessionManager.withAuthRetry { api.deleteContent(item.userContentId) } }.isSuccess
+            if (!deleted) {
+                _state.value = _state.value.copy(
+                    items = (_state.value.items + item).distinctBy { it.userContentId },
+                    updatingFavoriteIds = _state.value.updatingFavoriteIds - item.userContentId,
+                    error = "Could not delete this PingLet. Try again.",
+                )
+                return@launch
+            }
             _state.value = _state.value.copy(updatingFavoriteIds = _state.value.updatingFavoriteIds - item.userContentId)
             dao.deleteUserContent(item.userContentId)
             dao.deleteQueueItemsForContent(item.contentItemId)
